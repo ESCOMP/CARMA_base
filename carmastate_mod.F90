@@ -90,7 +90,7 @@ contains
   subroutine CARMASTATE_Create(cstate, carma_ptr, time, dtime, NZ, igridv, igridh,  &
       lat, lon, xc, dx, yc, dy, zc, zl, p, pl, t, rc, qh2o, relhum, told, radint)
     type(carmastate_type), intent(inout)    :: cstate      !! the carma state object
-    type(carma_type), pointer, intent(in)   :: carma_ptr   !! (in) the carma object
+    type(carma_type), pointer               :: carma_ptr   !! (in) the carma object
     real(kind=f), intent(in)                :: time        !! the model time [s]
     real(kind=f), intent(in)                :: dtime       !! the timestep size [s]
     integer, intent(in)                     :: NZ          !! the number of vertical grid points
@@ -263,7 +263,7 @@ contains
   subroutine CARMASTATE_CreateFromReference(cstate, carma_ptr, time, dtime, NZ, igridv, igridh,  &
       lat, lon, xc, dx, yc, dy, zc, zl, p, pl, t, rc, qh2o, relhum)
     type(carmastate_type), intent(inout)    :: cstate      !! the carma state object
-    type(carma_type), pointer, intent(in)   :: carma_ptr   !! (in) the carma object
+    type(carma_type), pointer               :: carma_ptr   !! (in) the carma object
     real(kind=f), intent(in)                :: time        !! the model time [s]
     real(kind=f), intent(in)                :: dtime       !! the timestep size [s]
     integer, intent(in)                     :: NZ          !! the number of vertical grid points
