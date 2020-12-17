@@ -64,6 +64,7 @@
 #define itype(ielem)          carma%f_element(ielem)%f_itype
 #define icomp(ielem)          carma%f_element(ielem)%f_icomposition
 #define isolelem(ielem)       carma%f_element(ielem)%f_isolute
+#define kappaelem(ielem)      carma%f_element(ielem)%f_kappa
 
 ! Gas object
 #define gasname(igas)         carma%f_gas(igas)%f_name
@@ -262,6 +263,7 @@
 #define nuc_small     cstate%f_nuc_small
 #define rlprod        cstate%f_rlprod
 #define phprod        cstate%f_phprod
+#define hygro         cstate%f_hygro
 
 !  Coagulation kernels and bin pair mapping
 #define ck0           carma%f_ck0

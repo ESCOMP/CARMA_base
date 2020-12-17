@@ -11,10 +11,13 @@ contains
   !!
   !! Parameterizations based upon Fitzgerald [1975] and Gerber [1985] are support and the
   !! particles are assumed to be spherical.
+  !!  
+  !! Hygroscopicity routine MUST be called prior to getwetr to update kappa for 
+  !! Yu et al. [JAMES, 2015] parameterization (irhswell = I_KAPPA)
   !!
   !! @author  Chuck Bardeen, Pete Colarco
   !! @version May-2009 from Nov-2000 
-  subroutine getwetr(carma, igroup, rh, rdry, rwet, rhopdry, rhopwet, rc, h2o_mass, h2o_vp, temp)
+  subroutine getwetr(carma, igroup, rh, rdry, rwet, rhopdry, rhopwet, rc, h2o_mass, h2o_vp, temp, kappa)
   
     ! types
     use carma_precision_mod
@@ -38,6 +41,7 @@ contains
     real(kind=f), intent(in), optional   :: h2o_mass!! water vapor mass concentration (g/cm3)
     real(kind=f), intent(in), optional   :: h2o_vp  !! water eq. vaper pressure (dynes/cm2)    
     real(kind=f), intent(in), optional   :: temp    !! temperature [K]
+    real(kind=f), intent(in), optional   :: kappa   !! weight percent [%]
   
     ! Local declarations
     real(kind=f)            :: humidity
@@ -65,7 +69,7 @@ contains
     real(kind=f)            :: c2
     real(kind=f)            :: c3
     real(kind=f)            :: c4
-                               
+    
     ! Define formats
     1 format(/,'Non-spherical particles specified for group ',i3, &
         ' (ishape=',i3,') but spheres assumed in wetr.f.'/)
@@ -77,7 +81,8 @@ contains
       ! No swelling, just use the dry values.
       rwet     = rdry
       rhopwet  = rhopdry
-    else
+      
+    else ! irhswell(igroup) /= I_NO_SWELLING
     
       !  Warning message for non-spherical particles!
       if( ishape(igroup) .ne. I_SPHERE )then
@@ -197,44 +202,60 @@ contains
         end select
         
         rwet  = ((c1 * rdry**c2 / (c3 * rdry**c4 - log10(humidity))) + rdry**3)**(1._f / 3._f)
-      
+
         ! Determine the wet density from the wet radius.
         r_ratio  = (rdry / rwet)**3
         rhopwet = r_ratio * rhopdry + (1._f - r_ratio) * RHO_W
-      end if
-    end if
+
+      end if ! irhswell(igroup) == I_GERBER
+
+      ! Mixed aerosol paremeterization (Pengfei Yu et al., JAMES, 2015) based on
+      ! Petters and Kreidenweis (ACP, 2007) hygroscopicity parameter kappa
+      if (irhswell(igroup) == I_KAPPA) then 
+	if (temp .le. 190._f) then
+	    rwet = rdry
+	    rhopwet = rhopdry
+	else ! temp > 190
+	    rwet = rdry * (1._f + humidity*kappa/(1._f-humidity))**(1._f/3._f)
+	    r_ratio  = (rdry / rwet)**3
+	    rhopwet = r_ratio * rhopdry + (1._f - r_ratio) * RHO_W
+	end if
+
+      end if ! irhswell(igroup) == I_KAPPA
     
     
-    ! Sulfate Aerosol, using weight percent.
-    if (irhswell(igroup) == I_WTPCT_H2SO4) then
-    
-      ! Adjust calculation for the Kelvin effect of H2O:
-      wtpkelv = 80._f ! start with assumption of 80 wt % H2SO4 
-      den1 = 2.00151_f - 0.000974043_f * temp ! density at 79 wt %
-      den2 = 2.01703_f - 0.000988264_f * temp ! density at 80 wt %
-      drho_dwt = den2-den1 ! change in density for change in 1 wt %
-      
-      sig1 = 79.3556_f - 0.0267212_f * temp ! surface tension at 79.432 wt %
-      sig2 = 75.608_f  - 0.0269204_f * temp ! surface tension at 85.9195 wt %      
-      dsigma_dwt = (sig2-sig1) / (85.9195_f - 79.432_f) ! change in density for change in 1 wt %
-      sigkelv = sig1 + dsigma_dwt * (80.0_f - 79.432_f)
-      
-      rwet = rdry * (100._f * rhopdry / wtpkelv / den2)**(1._f / 3._f)
+      ! Sulfate Aerosol, using weight percent.
+      if (irhswell(igroup) == I_WTPCT_H2SO4) then
+        ! Adjust calculation for the Kelvin effect of H2O:
+        wtpkelv = 80._f ! start with assumption of 80 wt % H2SO4 
+        den1 = 2.00151_f - 0.000974043_f * temp ! density at 79 wt %
+        den2 = 2.01703_f - 0.000988264_f * temp ! density at 80 wt %
+        drho_dwt = den2-den1 ! change in density for change in 1 wt %
 
-      rkelvinH2O_b = 1._f + wtpkelv * drho_dwt / den2 - 3._f * wtpkelv &
-          * dsigma_dwt / (2._f*sigkelv)
+        sig1 = 79.3556_f - 0.0267212_f * temp ! surface tension at 79.432 wt %
+        sig2 = 75.608_f  - 0.0269204_f * temp ! surface tension at 85.9195 wt %      
+        dsigma_dwt = (sig2-sig1) / (85.9195_f - 79.432_f) ! change in density for change in 1 wt %
+        sigkelv = sig1 + dsigma_dwt * (80.0_f - 79.432_f)
 
-      rkelvinH2O_a = 2._f * gwtmol(igash2so4) * sigkelv / (den1 * RGAS * temp * rwet)     
+        rwet = rdry * (100._f * rhopdry / wtpkelv / den2)**(1._f / 3._f)
 
-      rkelvinH2O = exp (rkelvinH2O_a*rkelvinH2O_b)
-            
-      h2o_kelv = h2o_mass / rkelvinH2O
-      wtpkelv = wtpct_tabaz(carma, temp, h2o_kelv, h2o_vp, rc)
-      rhopwet   = sulfate_density(carma, wtpkelv, temp, rc)
-      rwet      = rdry * (100._f * rhopdry / wtpkelv / rhopwet)**(1._f / 3._f)   
-    end if
+        rkelvinH2O_b = 1._f + wtpkelv * drho_dwt / den2 - 3._f * wtpkelv &
+            * dsigma_dwt / (2._f*sigkelv)
+
+        rkelvinH2O_a = 2._f * gwtmol(igash2so4) * sigkelv / (den1 * RGAS * temp * rwet)     
+
+        rkelvinH2O = exp (rkelvinH2O_a*rkelvinH2O_b)
+
+        h2o_kelv = h2o_mass / rkelvinH2O
+        wtpkelv = wtpct_tabaz(carma, temp, h2o_kelv, h2o_vp, rc)
+        rhopwet   = sulfate_density(carma, wtpkelv, temp, rc)
+        rwet      = rdry * (100._f * rhopdry / wtpkelv / rhopwet)**(1._f / 3._f)   
+      end if ! irhswell(igroup) == I_WTPCT_H2SO4
   
+    end if ! irhswell(igroup) /= I_NO_SWELLING
+    
     ! Return to caller with wet radius evaluated.
     return
+    
   end subroutine
 end module

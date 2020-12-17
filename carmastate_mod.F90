@@ -535,6 +535,7 @@ contains
         cstate%f_dpc_sed(NBIN,NELEM), &
         cstate%f_pconmax(NZ,NGROUP), &
         cstate%f_pcl(NZ,NBIN,NELEM), &
+        cstate%f_hygro(NZ,NBIN,NGROUP), &
         stat=ier)
       if (ier /= 0) then
         if (cstate%f_carma%f_do_print) then
@@ -778,6 +779,7 @@ contains
         cstate%f_dpc_sed, &
         cstate%f_pconmax, &
         cstate%f_pcl, &
+        cstate%f_hygro, &
         stat=ier)
       if (ier /= 0) then
         if (cstate%f_carma%f_do_print) then
@@ -939,7 +941,6 @@ contains
     real(kind=f), intent(in), optional    :: lndfrac              !! land fraction
     real(kind=f), intent(in), optional    :: ocnfrac              !! ocn fraction
     real(kind=f), intent(in), optional    :: icefrac              !! ice fraction
-
     
     integer                               :: iz     ! vertical index
     integer                               :: igas   ! gas index

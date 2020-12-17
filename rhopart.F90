@@ -49,6 +49,9 @@ subroutine rhopart(carma, cstate, rc)
   1 format(/,'rhopart::WARNING - core mass > total mass, truncating : iz=',i4,',igroup=',&
               i4,',ibin=',i4,',total mass=',e10.3,',core mass=',e10.3,',using rhop=',f9.4)
 
+  ! Calculate hygroscopicity parameter, kappa, for mixed aerosols (Yu et al., JAMES, 2015)
+  call hygroscopicity(carma, cstate, rc)
+
   ! Calculate average particle mass density for each group
   do igroup = 1,NGROUP
 
@@ -64,7 +67,7 @@ subroutine rhopart(carma, cstate, rc)
       
       ! Otherwise, the density changes depending on the amount of core and volatile
       ! components.
-      else
+      else ! ncore(igroup) >= 1
 
         ! Calculate volume of cores and the mass of shell material
         ! <vcore> is the volume of core material and <rmshell> is the
@@ -77,7 +80,7 @@ subroutine rhopart(carma, cstate, rc)
   
           mcore(:) = mcore(:) + pc(iz,:,iecore)
           vcore(:) = vcore(:) + pc(iz,:,iecore) / rhoelem(:,iecore)
-        enddo
+        end do ! jcore = 1,ncore(igroup)
       
         ! Calculate average density
         do ibin = 1,NBIN
@@ -85,7 +88,7 @@ subroutine rhopart(carma, cstate, rc)
           ! If there is no core, the the density is that of the volatile element.
           if (mcore(ibin) == 0._f) then
             rhop(iz,ibin,igroup) = rhoelem(ibin,iepart)
-          else
+          else! mcore(ibin) /= 0._f
           
             ! Since core mass and particle number (i.e. total mass) are advected separately,
             ! numerical diffusion during advection can cause problems where the core mass
@@ -108,10 +111,10 @@ subroutine rhopart(carma, cstate, rc)
             else 
               rhop(iz,ibin,igroup) = (rmass(ibin,igroup) * pc(iz,ibin,iepart)) / &
               ((pc(iz,ibin,iepart)*rmass(ibin,igroup) - mcore(ibin))/rhoelem(ibin,iepart) + vcore(ibin))
-            end if
-          end if
-        enddo
-      endif
+            end if ! mcore(ibin) > (rmass(ibin,igroup) * pc(iz,ibin,iepart))
+          end if ! mcore(ibin) == 0._f
+        end do ! ibin = 1,NBIN
+      end if ! ncore(igroup) < 1
     
       ! If these particles are hygroscopic and grow in response to the relative
       ! humidity, then caclulate a wet radius and wet density. Otherwise the wet
@@ -147,25 +150,24 @@ subroutine rhopart(carma, cstate, rc)
             h2o_vp=pvapl(iz, igash2o), temp=t(iz))
           if (rc < 0) return
 
-        else
-          ! rlow
+        else ! irhswell(igroup) /= I_WTPCT_H2SO4
           call getwetr(carma, igroup, relhum(iz), rlow(ibin,igroup), rlow_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
+            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, temp=t(iz), kappa=hygro(iz,ibin,igroup))
           if (rc < 0) return
 
           ! rup
           call getwetr(carma, igroup, relhum(iz), rup(ibin,igroup), rup_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
+            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, temp=t(iz), kappa=hygro(iz,ibin,igroup))
           if (rc < 0) return
 
           ! r
           call getwetr(carma, igroup, relhum(iz), r(ibin,igroup), r_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
+            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, temp=t(iz), kappa=hygro(iz,ibin,igroup))
           if (rc < 0) return
-        end if
-      end do
-    end do
-  enddo
+        end if ! irhswell(igroup) == I_WTPCT_H2SO4
+      end do ! ibin = 1,NBIN
+    end do ! iz = 1, NZ
+  end do ! igroup = 1,NGROUP
 
   !  Return to caller with new particle number densities.
   return

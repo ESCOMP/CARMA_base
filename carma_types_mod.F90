@@ -47,6 +47,7 @@ module carma_types_mod
     !
     character(len=CARMA_NAME_LEN)               :: f_name
     character(len=CARMA_SHORT_NAME_LEN)         :: f_shortname
+    real(kind=f)                                :: f_kappa
     real(kind=f), allocatable, dimension(:)     :: f_rho          ! (NBIN)
     integer                                     :: f_igroup
     integer                                     :: f_itype
@@ -683,6 +684,7 @@ module carma_types_mod
     !   too_big     .true. if cores are larger than largest CN
     !   nuc_small   .true. if cores are smaller than smallest nucleated CN
     !   rlprod      Latent heat production (per substep) (K/s)
+    !   kappa       Hygroscopicity parameter
     !
     real(kind=f), allocatable, dimension(:,:,:)   :: f_pcl        ! (NZ,NBIN,NELEM
     real(kind=f), allocatable, dimension(:,:)     :: f_gcl        ! (NZ,NGAS)
@@ -716,6 +718,7 @@ module carma_types_mod
     logical                                       :: f_too_big
     logical                                       :: f_nuc_small
     real(kind=f)                                  :: f_rlprod
+    real(kind=f), allocatable, dimension(:,:,:)   :: f_hygro      ! (NZ,NBIN,NGROUP)
 
     !  Coagulation kernels and bin pair mapping
     !
