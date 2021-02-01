@@ -151,19 +151,40 @@ subroutine rhopart(carma, cstate, rc)
           if (rc < 0) return
 
         else ! irhswell(igroup) /= I_WTPCT_H2SO4
-          call getwetr(carma, igroup, relhum(iz), rlow(ibin,igroup), rlow_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, temp=t(iz), kappa=hygro(iz,ibin,igroup))
-          if (rc < 0) return
+          if (irhswell(igroup) == I_PETTERS) then
+          
+            call getwetr(carma, igroup, relhum(iz), rlow(ibin,igroup), rlow_wet(iz,ibin,igroup), &
+              rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, temp=t(iz), kappa=kappahygro(iz,ibin,igroup))
+            if (rc < 0) return
 
-          ! rup
-          call getwetr(carma, igroup, relhum(iz), rup(ibin,igroup), rup_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, temp=t(iz), kappa=hygro(iz,ibin,igroup))
-          if (rc < 0) return
+            ! rup
+            call getwetr(carma, igroup, relhum(iz), rup(ibin,igroup), rup_wet(iz,ibin,igroup), &
+              rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, temp=t(iz), kappa=kappahygro(iz,ibin,igroup))
+            if (rc < 0) return
 
-          ! r
-          call getwetr(carma, igroup, relhum(iz), r(ibin,igroup), r_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, temp=t(iz), kappa=hygro(iz,ibin,igroup))
-          if (rc < 0) return
+            ! r
+            call getwetr(carma, igroup, relhum(iz), r(ibin,igroup), r_wet(iz,ibin,igroup), &
+              rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, temp=t(iz), kappa=kappahygro(iz,ibin,igroup))
+            if (rc < 0) return
+          
+          else ! I_GERBER and I_FITZGERALD
+          
+            call getwetr(carma, igroup, relhum(iz), rlow(ibin,igroup), rlow_wet(iz,ibin,igroup), &
+              rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
+            if (rc < 0) return
+
+            ! rup
+            call getwetr(carma, igroup, relhum(iz), rup(ibin,igroup), rup_wet(iz,ibin,igroup), &
+              rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
+            if (rc < 0) return
+
+            ! r
+            call getwetr(carma, igroup, relhum(iz), r(ibin,igroup), r_wet(iz,ibin,igroup), &
+              rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
+            if (rc < 0) return
+          
+          end if ! irhswell(igroup) == I_PETTERS
+          
         end if ! irhswell(igroup) == I_WTPCT_H2SO4
       end do ! ibin = 1,NBIN
     end do ! iz = 1, NZ

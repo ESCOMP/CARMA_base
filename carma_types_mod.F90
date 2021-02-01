@@ -718,7 +718,7 @@ module carma_types_mod
     logical                                       :: f_too_big
     logical                                       :: f_nuc_small
     real(kind=f)                                  :: f_rlprod
-    real(kind=f), allocatable, dimension(:,:,:)   :: f_hygro      ! (NZ,NBIN,NGROUP)
+    real(kind=f), allocatable, dimension(:,:,:)   :: f_kappahygro      ! (NZ,NBIN,NGROUP)
 
     !  Coagulation kernels and bin pair mapping
     !

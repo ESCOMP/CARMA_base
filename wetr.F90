@@ -13,7 +13,7 @@ contains
   !! particles are assumed to be spherical.
   !!  
   !! Hygroscopicity routine MUST be called prior to getwetr to update kappa for 
-  !! Yu et al. [JAMES, 2015] parameterization (irhswell = I_KAPPA)
+  !! Yu et al. [JAMES, 2015] parameterization (irhswell = I_PETTERS)
   !!
   !! @author  Chuck Bardeen, Pete Colarco
   !! @version May-2009 from Nov-2000 
@@ -41,7 +41,7 @@ contains
     real(kind=f), intent(in), optional   :: h2o_mass!! water vapor mass concentration (g/cm3)
     real(kind=f), intent(in), optional   :: h2o_vp  !! water eq. vaper pressure (dynes/cm2)    
     real(kind=f), intent(in), optional   :: temp    !! temperature [K]
-    real(kind=f), intent(in), optional   :: kappa   !! weight percent [%]
+    real(kind=f), intent(in), optional   :: kappa   !! hygroscopicity parameter (Petters & Kreidenweis, ACP, 2007)
   
     ! Local declarations
     real(kind=f)            :: humidity
@@ -159,7 +159,7 @@ contains
         rwet = (alpha * (rdry * 1e4_f)**beta) * (1e-4_f)
       
         ! Determine the wet density from the wet radius.
-        r_ratio  = (rdry / rwet)**3
+        r_ratio  = (rdry / rwet)**3._f
         rhopwet = r_ratio * rhopdry + (1._f - r_ratio) * RHO_W
       end if
       
@@ -211,7 +211,7 @@ contains
 
       ! Mixed aerosol paremeterization (Pengfei Yu et al., JAMES, 2015) based on
       ! Petters and Kreidenweis (ACP, 2007) hygroscopicity parameter kappa
-      if (irhswell(igroup) == I_KAPPA) then 
+      if (irhswell(igroup) == I_PETTERS) then 
 	if (temp .le. 190._f) then
 	    rwet = rdry
 	    rhopwet = rhopdry
@@ -221,7 +221,7 @@ contains
 	    rhopwet = r_ratio * rhopdry + (1._f - r_ratio) * RHO_W
 	end if
 
-      end if ! irhswell(igroup) == I_KAPPA
+      end if ! irhswell(igroup) == I_PETTERS
     
     
       ! Sulfate Aerosol, using weight percent.

@@ -263,7 +263,7 @@
 #define nuc_small     cstate%f_nuc_small
 #define rlprod        cstate%f_rlprod
 #define phprod        cstate%f_phprod
-#define hygro         cstate%f_hygro
+#define kappahygro    cstate%f_kappahygro
 
 !  Coagulation kernels and bin pair mapping
 #define ck0           carma%f_ck0

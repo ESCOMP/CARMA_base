@@ -50,7 +50,7 @@ contains
     integer, intent(out)                        :: rc                  !! return code, negative indicates failure
     logical, optional, intent(in)               :: is_fractal          !! is this a fractal particle?
     integer, optional, intent(in)               :: irhswell            !! the parameterization for particle swelling from relative humidity 
-                                                                       !! [I_FITZGERALD | I_GERBER]
+                                                                       !! [I_FITZGERALD | I_GERBER | I_WTPCT_H2SO4 | I_PETTERS]
     integer, optional, intent(in)               :: irhswcomp           !! the composition for particle swelling from relative humidity 
                                                                        !! [I_SWG_NH42SO4 | I_SWG_SEA_SALT | I_SWG_URBAN | I_SWG_RURAL]
     complex(kind=f), optional, intent(in)       :: refidx(carma%f_NWAVE) !! refractive index for the particle

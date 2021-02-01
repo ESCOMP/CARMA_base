@@ -65,7 +65,7 @@ module carma_enums_mod
   integer, public, parameter :: I_FITZGERALD   = 1   !! Fitzgerald
   integer, public, parameter :: I_GERBER       = 2   !! Gerber
   integer, public, parameter :: I_WTPCT_H2SO4  = 3   !! The weight percent method for sulfate aerosol
-  integer, public, parameter :: I_KAPPA        = 4   !! Pengfei Yu et al. (JAMES, 2015) hygroscopicity for mixed aerosols
+  integer, public, parameter :: I_PETTERS      = 4   !! hygroscopicity for mixed aerosols: Petters and Kreidenweis (ACP, 2007), Pengfei Yu et al. (JAMES, 2015) 
   
   !  Define vallues of flag used for particle swelling composition (Fiztgerald)
   integer, public, parameter :: I_SWF_NH42SO4   = 1   !! (NH4)2SO4

@@ -535,7 +535,7 @@ contains
         cstate%f_dpc_sed(NBIN,NELEM), &
         cstate%f_pconmax(NZ,NGROUP), &
         cstate%f_pcl(NZ,NBIN,NELEM), &
-        cstate%f_hygro(NZ,NBIN,NGROUP), &
+        cstate%f_kappahygro(NZ,NBIN,NGROUP), &
         stat=ier)
       if (ier /= 0) then
         if (cstate%f_carma%f_do_print) then
@@ -779,7 +779,7 @@ contains
         cstate%f_dpc_sed, &
         cstate%f_pconmax, &
         cstate%f_pcl, &
-        cstate%f_hygro, &
+        cstate%f_kappahygro, &
         stat=ier)
       if (ier /= 0) then
         if (cstate%f_carma%f_do_print) then
@@ -1103,22 +1103,23 @@ contains
   !! @see CARMASTATE_SetBin
   subroutine CARMASTATE_GetBin(cstate, ielem, ibin, mmr, rc, &
                                nmr, numberDensity, nucleationRate, r_wet, rhop_wet, &
-                               surface, sedimentationflux, vf, vd, dtpart)
+                               surface, sedimentationflux, vf, vd, dtpart, kappa)
     type(carmastate_type), intent(in)     :: cstate         !! the carma state object
     integer, intent(in)                   :: ielem          !! the element index
     integer, intent(in)                   :: ibin           !! the bin index
-    real(kind=f), intent(out)             :: mmr(cstate%f_NZ) !! the bin mass mixing ratio [kg/kg]
-    integer, intent(out)                  :: rc             !! return code negative indicates failure
-    real(kind=f), optional, intent(out)   :: nmr(cstate%f_NZ) !! number mixing ratio [#/kg]
+    real(kind=f), intent(out)             :: mmr(cstate%f_NZ)    !! the bin mass mixing ratio [kg/kg]
+    integer, intent(out)                  :: rc                  !! return code negative indicates failure
+    real(kind=f), optional, intent(out)   :: nmr(cstate%f_NZ)    !! number mixing ratio [#/kg]
     real(kind=f), optional, intent(out)   :: numberDensity(cstate%f_NZ)  !! number density [#/cm3]
     real(kind=f), optional, intent(out)   :: nucleationRate(cstate%f_NZ) !! nucleation rate [1/cm3/s]
     real(kind=f), optional, intent(out)   :: r_wet(cstate%f_NZ)          !! wet particle radius [cm]
     real(kind=f), optional, intent(out)   :: rhop_wet(cstate%f_NZ)       !! wet particle density [g/cm3]
-    real(kind=f), optional, intent(out)   :: surface        !! particle mass on the surface [kg/m2]
-    real(kind=f), optional, intent(out)   :: sedimentationflux         !! particle sedimentation mass flux to surface [kg/m2/s]
-    real(kind=f), optional, intent(out)   :: vf(cstate%f_NZ+1) !! fall velocity [cm/s]
-    real(kind=f), optional, intent(out)   :: vd             !! deposition velocity [cm/s]
+    real(kind=f), optional, intent(out)   :: surface             !! particle mass on the surface [kg/m2]
+    real(kind=f), optional, intent(out)   :: sedimentationflux   !! particle sedimentation mass flux to surface [kg/m2/s]
+    real(kind=f), optional, intent(out)   :: vf(cstate%f_NZ+1)   !! fall velocity [cm/s]
+    real(kind=f), optional, intent(out)   :: vd                  !! deposition velocity [cm/s]
     real(kind=f), optional, intent(out)   :: dtpart(cstate%f_NZ) !! delta particle temperature [K]
+    real(kind=f), optional, intent(out)   :: kappa(cstate%f_NZ)  !! hygroscopicity parameter
     
     integer                               :: ienconc        !! index of element that is the particle concentration for the group
     integer                               :: igroup         ! Group containing this bin
@@ -1194,6 +1195,12 @@ contains
         sedimentationflux = sedimentationflux / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       end if
     end if
+    
+    ! Is the hygroscopicity parameter requested?
+    if (present(kappa)) then
+      kappa = cstate%f_kappahygro(:, ibin, igroup)
+    end if
+    
     
     ! If this is the partcile # element, then determine some other statistics.
     if (ienconc == ielem) then
