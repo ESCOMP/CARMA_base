@@ -211,6 +211,13 @@ subroutine pheat(carma, cstate, iz, igroup, iepart, ibin, igas, dmdt, rc)
                     * rhoelem(ibin,iepart) / 2._f / dtime, &
                    dmdt)
       end if
+    elseif(neutral_volfrc(igroup) .eq. -1._f)then
+      ! When the particle neutralization is not controled by the core mass, 
+      ! instead it is controled by ambience gas
+      ! for example, in trop_strat model, sulfate in mixed particle is neutralized
+      ! by NH4. In this case, we set the neutral_volfrc = -1 for the group
+      dmdt = max((pvap * (ss + 1._f)) * g0, dmdt)
+      !write(*,*) "igroup",igroup," in pheat.F90:neutral_volfrc"
     end if
   else
   

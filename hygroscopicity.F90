@@ -28,23 +28,22 @@ subroutine hygroscopicity(carma, cstate, rc)
   integer         :: iepart         !! element in group containing the particle concentration
   integer         :: icore, i, z
   real(kind=f)    :: coremass, shellmass
-  
+
   1 format('hygroscopicity::ibin=',i4,',core mass=',e10.3,',shell mass=',e10.3,',hygroscopicity=',f9.4)
-              
+
   kappahygro(:NZ,:NBIN,:NGROUP) = -huge(1._f) ! default
-  
-  ! loop through all bins, groups, and elements to calculate hygro for each group:  
+
+  ! loop through all bins, groups, and elements to calculate hygro for each group:
   do igroup = 1,NGROUP
     ! Only calculate hygro for groups that use it
-    if (irhswell(igroup) == I_PETTERS) then 
-      iepart = ienconc(igroup)     ! element of particle number concentration             
+    if (irhswell(igroup) == I_PETTERS) then
+      iepart = ienconc(igroup)     ! element of particle number concentration
       do ibin = 1, NBIN
         do z = 1, NZ
+          kappahygro(z,ibin,igroup) = 0._f
           if (pc(z, ibin, iepart).gt.0._f) then
-            kappahygro(z,ibin,igroup) = 0._f
-
             ! Weight hygro by mass of each core
-            coremass = 0._f      
+            coremass = 0._f
             do i = 1, ncore(igroup)
               icore = icorelem(i, igroup)
               coremass = coremass + pc(z, ibin, icore)
@@ -52,20 +51,19 @@ subroutine hygroscopicity(carma, cstate, rc)
               kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) + pc(z,ibin,icore) * kappaelem(icore)
             end do ! i = 1, ncore(igroup)
 
-            ! Add shell mass to hygro weighting      
+            ! Add shell mass to hygro weighting
             shellmass = max((pc(z, ibin, iepart) * rmass(ibin, igroup)) - coremass, 0._f)
             kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) + shellmass * kappaelem(iepart)
 
             !Divide by total mass of all particles in the bin to normalize:
             kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) / pc(z, ibin, iepart) / rmass(ibin, igroup)
           end if
-!          write(LUNOPRT,1) ibin,coremass,shellmass,kappahygro(z,ibin,igroup)
         end do ! z = 1, NZ
       end do ! ibin = 1, NBIN
     end if ! irhswell(igroup) == I_PETTERS
   end do ! igroup = 1,NGROUP
 
   rc = RC_OK
-  
-  return 
+
+  return
 end subroutine !hygroscopicity
