@@ -953,6 +953,11 @@ contains
     ! Assume success.
     rc = RC_OK
 
+    do iz = 1, cstate%f_NZ
+      call coremasscheck( cstate%f_carma, cstate, iz, .true.,.false.,.false., "BeforeStep", rc )
+      if (rc < 0) return
+    end do
+
     ! Store the cloud fraction if specified
     cstate%f_cldfrc(:) = 1._f
     cstate%f_rhcrit(:) = 1._f
@@ -1046,6 +1051,11 @@ contains
 
     ! Calculate the impact of microphysics upon the state.
     call step(cstate%f_carma, cstate, rc)
+
+    do iz = 1, cstate%f_NZ
+      call coremasscheck( cstate%f_carma, cstate, iz, .false.,.true.,.true., "AfterStep", rc )
+      if (rc < 0) return
+    end do
 
     return
   end subroutine CARMASTATE_Step
