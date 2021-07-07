@@ -60,7 +60,7 @@ subroutine setupbdif(carma, cstate, rc)
   enddo
     
   ! Print out diffusivities.
-#ifdef DEBUG
+#ifdef CARMA_DEBUG
   if (do_print_init) then
    
     write(LUNOPRT,2)

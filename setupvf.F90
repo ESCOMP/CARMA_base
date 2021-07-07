@@ -66,7 +66,7 @@ subroutine setupvf(carma, cstate, rc)
   end if
 
   ! Print out fall velocities and reynolds' numbers.
-#ifdef DEBUG
+#ifdef CARMA_DEBUG
   if (do_print_init) then
    
     write(LUNOPRT,2)

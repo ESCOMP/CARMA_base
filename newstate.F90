@@ -22,7 +22,7 @@ subroutine newstate(carma, cstate, rc)
   type(carma_type), intent(in)         :: carma   !! the carma object
   type(carmastate_type), intent(inout) :: cstate  !! the carma state object
   integer, intent(inout)               :: rc      !! return code, negative indicates failure
-  
+
   real(kind=f)                    :: pc_orig(NZ,NBIN,NELEM)
   real(kind=f)                    :: gc_orig(NZ,NGAS)
   real(kind=f)                    :: t_orig(NZ)
@@ -47,15 +47,18 @@ subroutine newstate(carma, cstate, rc)
   integer                         :: ibin
   integer                         :: iz
 
-
   ! Calculate changes due to vertical transport
   if (do_vtran) then
-  
+
     call vertical(carma, cstate, rc)
     if (rc < RC_OK) return
   endif
 
-  
+  do iz = 1, NZ
+    call coremasscheck( carma, cstate, iz, .true.,.false.,.false., "AfterVertical", rc )
+    if (rc < RC_OK) return
+  end do
+
   ! There can be two phases to the microphysics: in-cloud and clear sky. Particles
   ! that are tagged as "In-cloud" will only be processed in the in-cloud loop, and their
   ! concentrations will be scaled by the cloud fraction since it is assumed to be all
@@ -63,16 +66,16 @@ subroutine newstate(carma, cstate, rc)
   ! their mass is assumed to be a gridbox average.
 
   ! If doing doing in-cloud processing, then scale the parameters for in-cloud concentrations.
-  ! 
+  !
   ! NOTE: Don't want to do this before sedimentation, since sedimentation doesn't take into
   ! account the varying cloud fractions, and thus a particle scaled at one level and cloud
   ! fraction would be scaled inappropriately at another level and cloud fraction.
   !
   ! NOTE: All detrainment also happens only in the in-cloud portion.
   if (do_incloud) then
-  
+
     ! First do the in-cloud processing.
-  
+
     ! Convert "cloud" particles to in-cloud values.
     !
     ! NOTE: If a particle is a "cloud" particle, it means that the entire mass of the
@@ -81,7 +84,7 @@ subroutine newstate(carma, cstate, rc)
     pc_orig(:,:,:) = pc(:,:,:)
     gc_orig(:,:)   = gc(:,:)
     t_orig(:)      = t(:)
-    
+
     ! If the cloud fraction gets too small it causes the microphysics to require a
     ! lot of substeps. Enforce a minimum cloud fraction for the purposes of scaling
     ! to incloud values.
@@ -90,7 +93,7 @@ subroutine newstate(carma, cstate, rc)
 
     do ielem = 1, NELEM
       igroup = igelem(ielem)
-      
+
       if (is_grp_cloud(igroup)) then
         do ibin = 1, NBIN
           pc(:, ibin, ielem)  = pc(:, ibin, ielem)  / scale_cldfrc(:)
@@ -101,17 +104,20 @@ subroutine newstate(carma, cstate, rc)
 
     call newstate_calc(carma, cstate, scale_cldfrc(:), rc)
     if (rc < RC_OK) return
-    
+
+    do iz = 1, NZ
+      call coremasscheck( carma, cstate, iz, .false.,.true.,.true., "AfterNewstate_calc", rc )
+      if (rc < RC_OK) return
+    end do
+
     ! Save the new in-cloud values for the gas, particle and temperature fields.
     pc_cloudy(:,:,:)    = pc(:,:,:)
     gc_cloudy(:,:)      = gc(:,:)
     t_cloudy(:)         = t(:)
     rlheat_cloudy(:)    = rlheat(:)
     partheat_cloudy(:)  = partheat(:)
-    
+
     if (do_substep) zsubsteps_cloudy(:) = zsubsteps(:)
-
-
 
     ! Now do the clear sky portion, using the original gridbox average concentrations.
     ! This is optional. If clear sky is not selected then all of the microphysics is
@@ -121,7 +127,7 @@ subroutine newstate(carma, cstate, rc)
     t(:)      = t_orig(:)
 
     if (do_clearsky) then
-      
+
       ! Convert "cloud" particles to clear sky values.
       !
       ! NOTE: If a particle is a "cloud" particle, it means that the entire mass of the
@@ -129,19 +135,19 @@ subroutine newstate(carma, cstate, rc)
       ! clear sky portion.
       do ielem = 1, NELEM
         igroup = igelem(ielem)
-        
+
         if (is_grp_cloud(igroup)) then
           pc(:, :, ielem)  = 0._f
           pcd(:, :, ielem) = 0._f
         end if
       end do
-      
+
       ! Don't let the supersaturation be scaled by setting the cloud fraction used
       ! by the saturation code to 1.0. Any clouds formed in-situ in the clear sky
       ! are assumed to fill the grid box.
       cldfrc_orig(:) = cldfrc(:)
       cldfrc(:)      = 1._f
-  
+
       ! Recalculate supersaturation.
       do igas = 1, NGAS
         do iz = 1, NZ
@@ -152,10 +158,15 @@ subroutine newstate(carma, cstate, rc)
 
       call newstate_calc(carma, cstate, (1._f - scale_cldfrc(:)), rc)
       if (rc < RC_OK) return
-  
+
+      do iz = 1, NZ
+        call coremasscheck( carma, cstate, iz, .false.,.true.,.true., "AfterNewstate_calc", rc )
+        if (rc < RC_OK) return
+      end do
+
       ! Restore the cloud fraction
       cldfrc(:) = cldfrc_orig(:)
-      
+
       ! Save the new clear sky values for the gas, particle and temperature fields.
       pc_clear(:,:,:)     = pc(:,:,:)
       gc_clear(:,:)       = gc(:,:)
@@ -168,13 +179,13 @@ subroutine newstate(carma, cstate, rc)
     ! If not doing a clear sky calculation, then the clear sky portion reamins
     ! the same except for any contribution from advection.
     else
-    
+
       ! NOTE: If a particle is a "cloud" particle, it means that the entire mass of the
       ! particle is in the in-cloud portion of the grid box. They have no mass in the
       ! clear sky portion.
       do ielem = 1, NELEM
         igroup = igelem(ielem)
-        
+
         if (is_grp_cloud(igroup)) then
           pc_clear(:, :, ielem)  = 0._f
         else
@@ -185,7 +196,7 @@ subroutine newstate(carma, cstate, rc)
       do igas = 1, NGAS
         gc_clear(:,:)     = gc(:,:)
       end do
-      
+
       t_clear(:)          = t(:)
       rlheat_clear(:)     = 0._f
       partheat_clear(:)   = 0._f
@@ -201,19 +212,19 @@ subroutine newstate(carma, cstate, rc)
         zsubsteps_clear(:) = 0._f
       end if
     end if
-    
-    
+
+
     ! Add up the changes to the particle from the cloudy and clear sky components.
     do ielem = 1, NELEM
       igroup = igelem(ielem)
-      
+
       do ibin = 1, NBIN
         pc(:, ibin, ielem)   = (1._f - scale_cldfrc(:)) * pc_clear(:, ibin, ielem) + scale_cldfrc(:) * pc_cloudy(:, ibin, ielem)
       end do
     end do
-        
+
     t(:) = (1._f - scale_cldfrc(:)) * t_clear(:) + scale_cldfrc(:) * t_cloudy(:)
-    
+
     if (do_grow) then
       rlheat(:)   = (1._f - scale_cldfrc(:)) * rlheat_clear(:)   + scale_cldfrc(:) * rlheat_cloudy(:)
       partheat(:) = (1._f - scale_cldfrc(:)) * partheat_clear(:) + scale_cldfrc(:) * partheat_cloudy(:)
@@ -230,16 +241,21 @@ subroutine newstate(carma, cstate, rc)
     end do
 
     if (do_substep) zsubsteps(:) = zsubsteps_clear(:) + zsubsteps_cloudy(:)
-  
-  
-  
+
+
+
   ! No special in-cloud/clear sky processing, everything is gridbox average.
   else
     scale_threshold(:) = 1._f
     call newstate_calc(carma, cstate, scale_threshold, rc)
     if (rc < RC_OK) return
+
+    do iz = 1,NZ
+      call coremasscheck( carma, cstate, iz, .false.,.true.,.true., "AfterNewstate_calc", rc )
+      if (rc < RC_OK) return
+    end do
   end if
-    
-  ! Return to caller with new state computed 
+
+  ! Return to caller with new state computed
   return
 end

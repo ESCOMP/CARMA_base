@@ -2,7 +2,7 @@
 !! element used by CARMA.
 !!
 !!  @version March-2010
-!!  @author  Chuck Bardeen 
+!!  @author  Chuck Bardeen
 module CARMAELEMENT_mod
 
   use carma_precision_mod
@@ -10,7 +10,7 @@ module CARMAELEMENT_mod
   use carma_constants_mod
   use carma_types_mod
 
-  ! CARMA explicitly declares all variables. 
+  ! CARMA explicitly declares all variables.
   implicit none
 
   ! All CARMA variables and procedures are private except those explicitly declared to be public.
@@ -24,7 +24,7 @@ module CARMAELEMENT_mod
 
 contains
 
-  !! Defines a gas used by CARMA for nucleation and growth of cloud and 
+  !! Defines a gas used by CARMA for nucleation and growth of cloud and
   !! aerosol particles.
   !!
   !! NOTE: The element density can be specifeid per bin using rhobin; however,
@@ -38,7 +38,7 @@ contains
   !! @see CARMA_AddGas
   !! @see CARMAELEMENT_Destroy
  subroutine CARMAELEMENT_Create(carma, ielement, igroup, name, rho, itype, icomposition, rc, &
-              shortname, isolute, rhobin, arat)
+              shortname, isolute, rhobin, arat, kappaElement)
     type(carma_type), intent(inout)       :: carma               !! the carma object
     integer, intent(in)                   :: ielement            !! the element index
     integer, intent(in)                   :: igroup              !! Group to which the element belongs
@@ -49,15 +49,16 @@ contains
     integer, intent(out)                  :: rc                  !! return code, negative indicates failure
     character(*), optional, intent(in)    :: shortname           !! the element shortname, maximum of 6 characters
     integer, optional, intent(in)         :: isolute             !! Index of solute for the particle element
-    real(kind=f), optional, intent(in)    :: rhobin(carma%f_NBIN)  !! mass density per bin of particle element [g/cm^3]
-    real(kind=f), optional, intent(in)    :: arat(carma%f_NBIN)    !! projected area ratio
+    real(kind=f), optional, intent(in)    :: rhobin(carma%f_NBIN)!! mass density per bin of particle element [g/cm^3]
+    real(kind=f), optional, intent(in)    :: arat(carma%f_NBIN)  !! projected area ratio
+    real(kind=f), optional, intent(in)    :: kappaElement        !! hygroscopicity parameter for the particle element [units?]
 
     ! Local variables
     integer                               :: ier
-    
+
     ! Assume success.
     rc = RC_OK
-    
+
     ! Make sure there are enough elements allocated.
     if (ielement > carma%f_NELEM) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAELEMENT_Create:: ERROR - The specifed element (", &
@@ -65,7 +66,7 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     ! Make sure there are enough groups allocated.
     if (igroup > carma%f_NGROUP) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAELEMENT_Create:: ERROR - The specifed group (", &
@@ -73,10 +74,10 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     allocate( &
       carma%f_element(ielement)%f_rho(carma%f_NBIN), &
-      stat=ier) 
+      stat=ier)
     if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAELEMENT_Add: ERROR allocating, status=", ier
       rc = RC_ERROR
@@ -89,16 +90,18 @@ contains
     carma%f_element(ielement)%f_rho(:)       = rho
     carma%f_element(ielement)%f_itype        = itype
     carma%f_element(ielement)%f_icomposition = icomposition
-    
-    
+
+
     ! Defaults for optional parameters
     carma%f_element(ielement)%f_shortname   = ""
     carma%f_element(ielement)%f_isolute     = 0
-    
+    carma%f_element(ielement)%f_kappa       = 0.0_f
+
     ! Set optional parameters.
-    if (present(shortname))  carma%f_element(ielement)%f_shortname    = shortname
+    if (present(shortname))    carma%f_element(ielement)%f_shortname = shortname
+    if (present(kappaElement)) carma%f_element(ielement)%f_kappa     = kappaElement
     if (present(isolute)) then
-    
+
       ! Make sure there are enough solutes allocated.
       if (isolute > carma%f_NSOLUTE) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAELEMENT_Create:: ERROR - The specifed solute (", &
@@ -110,17 +113,17 @@ contains
       carma%f_element(ielement)%f_isolute      = isolute
     end if
     if (present(rhobin)) carma%f_element(ielement)%f_rho(:) = rhobin(:)
-    
+
     ! If the area ratio is specfied (usually along with rhobin), then set this
     ! for the group.
     if (present(arat)) carma%f_group(igroup)%f_arat(:) = arat(:)
-    
+
     ! Keep track of the fact that another element has been added to the group.
     carma%f_group(igroup)%f_nelem = carma%f_group(igroup)%f_nelem + 1
-    
+
     return
   end subroutine CARMAELEMENT_Create
-    
+
 
   !! Deallocates the memory associated with a CARMAELEMENT object.
   !!
@@ -138,7 +141,7 @@ contains
 
     ! Assume success.
     rc = RC_OK
-    
+
     ! Make sure there are enough elements allocated.
     if (ielement > carma%f_NELEM) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAELEMENT_Destroy:: ERROR - The specifed element (", &
@@ -150,7 +153,7 @@ contains
     if (allocated(carma%f_element(ielement)%f_rho)) then
       deallocate( &
         carma%f_element(ielement)%f_rho, &
-        stat=ier) 
+        stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAELEMENT_Destroy: ERROR deallocating, status=", ier
         rc = RC_ERROR
@@ -172,7 +175,7 @@ contains
   !!
   !! @see CARMAELEMENT_Create
   !! @see CARMA_GetElement
-  subroutine CARMAELEMENT_Get(carma, ielement, rc, igroup, name, shortname, rho, itype, icomposition, isolute)
+  subroutine CARMAELEMENT_Get(carma, ielement, rc, igroup, name, shortname, rho, itype, icomposition, isolute, kappaElement)
     type(carma_type), intent(in)                :: carma           !! the carma object
     integer, intent(in)                         :: ielement        !! the element index
     integer, intent(out)                        :: rc              !! return code, negative indicates failure
@@ -183,7 +186,8 @@ contains
     integer, optional, intent(out)              :: itype           !! Particle type specification
     integer, optional, intent(out)              :: icomposition    !! Particle compound specification
     integer, optional, intent(out)              :: isolute         !! Index of solute for the particle element
-    
+    real(kind=f), optional, intent(out)          :: kappaElement    !! hygroscopicity parameter for the particle element [units?]
+
     ! Assume success.
     rc = RC_OK
 
@@ -203,11 +207,12 @@ contains
     if (present(itype))        itype        = carma%f_element(ielement)%f_itype
     if (present(icomposition)) icomposition = carma%f_element(ielement)%f_icomposition
     if (present(isolute))      isolute      = carma%f_element(ielement)%f_isolute
-        
+    if (present(kappaElement)) kappaElement = carma%f_element(ielement)%f_kappa
+
     return
   end subroutine CARMAELEMENT_Get
-  
-  
+
+
   !! Prints information about an element.
   !!
   !! @author  Chuck Bardeen
@@ -218,7 +223,7 @@ contains
     type(carma_type), intent(in)              :: carma         !! the carma object
     integer, intent(in)                       :: ielement      !! the element index
     integer, intent(out)                      :: rc            !! return code, negative indicates failure
-    
+
     ! Local variables
     character(len=CARMA_NAME_LEN)             :: name             ! name
     character(len=CARMA_SHORT_NAME_LEN)       :: shortname        ! shortname
@@ -234,10 +239,10 @@ contains
     ! Test out the Get method.
     if (carma%f_do_print) then
       call CARMAELEMENT_Get(carma, ielement, rc, name=name, shortname=shortname, igroup=igroup, &
-                            itype=itype, icomposition=icomposition, rho=rho, isolute=isolute) 
+                            itype=itype, icomposition=icomposition, rho=rho, isolute=isolute)
       if (rc < 0) return
 
-    
+
       write(carma%f_LUNOPRT,*) "    name          : ", trim(name)
       write(carma%f_LUNOPRT,*) "    igroup        : ", igroup
       write(carma%f_LUNOPRT,*) "    shortname     : ", trim(shortname)
@@ -261,7 +266,7 @@ contains
       write(carma%f_LUNOPRT,*) "    icomposition  : ", icomposition
       write(carma%f_LUNOPRT,*) "    isolute       : ", isolute
     end if
-    
+
     return
   end subroutine CARMAELEMENT_Print
 end module
