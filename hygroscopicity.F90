@@ -54,7 +54,7 @@ subroutine hygroscopicity(carma, cstate, rc)
             end do ! i = 1, ncore(igroup)
 
             if (coremass.gt.pc(z, ibin, iepart) * rmass(ibin, igroup) * thresh1) then
-              write(LUNOPRT,*) "hygro59: z,ibin,pc,rmass,coremass",\
+              write(LUNOPRT,*) "hygro59: z,ibin,pc,rmass,coremass", &
                 z,ibin,pc(z, ibin, iepart),rmass(ibin, igroup),coremass
               rc=RC_ERROR
               return
@@ -72,7 +72,7 @@ subroutine hygroscopicity(carma, cstate, rc)
             end if
           end if
           if (kappahygro(z,ibin,igroup).gt.thresh1.or.kappahygro(z,ibin,igroup).lt.thresh0) then
-            write(LUNOPRT,*) "hygro77: z,ibin,kappahygro,pc,rmass,shellmass,coremass",\
+            write(LUNOPRT,*) "hygro77: z,ibin,kappahygro,pc,rmass,shellmass,coremass", &
               z,ibin,kappahygro(z,ibin,igroup),pc(z, ibin, iepart),rmass(ibin, igroup),shellmass,coremass
             rc=RC_ERROR
             return
