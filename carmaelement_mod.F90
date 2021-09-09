@@ -38,7 +38,7 @@ contains
   !! @see CARMA_AddGas
   !! @see CARMAELEMENT_Destroy
  subroutine CARMAELEMENT_Create(carma, ielement, igroup, name, rho, itype, icomposition, rc, &
-              shortname, isolute, rhobin, arat, kappaElement)
+              shortname, isolute, rhobin, arat, kappa)
     type(carma_type), intent(inout)       :: carma               !! the carma object
     integer, intent(in)                   :: ielement            !! the element index
     integer, intent(in)                   :: igroup              !! Group to which the element belongs
@@ -51,7 +51,7 @@ contains
     integer, optional, intent(in)         :: isolute             !! Index of solute for the particle element
     real(kind=f), optional, intent(in)    :: rhobin(carma%f_NBIN)!! mass density per bin of particle element [g/cm^3]
     real(kind=f), optional, intent(in)    :: arat(carma%f_NBIN)  !! projected area ratio
-    real(kind=f), optional, intent(in)    :: kappaElement        !! hygroscopicity parameter for the particle element [units?]
+    real(kind=f), optional, intent(in)    :: kappa               !! hygroscopicity parameter for the particle element [units?]
 
     ! Local variables
     integer                               :: ier
@@ -99,7 +99,7 @@ contains
 
     ! Set optional parameters.
     if (present(shortname))    carma%f_element(ielement)%f_shortname = shortname
-    if (present(kappaElement)) carma%f_element(ielement)%f_kappa     = kappaElement
+    if (present(kappa)) carma%f_element(ielement)%f_kappa = kappa
     if (present(isolute)) then
 
       ! Make sure there are enough solutes allocated.
@@ -175,7 +175,7 @@ contains
   !!
   !! @see CARMAELEMENT_Create
   !! @see CARMA_GetElement
-  subroutine CARMAELEMENT_Get(carma, ielement, rc, igroup, name, shortname, rho, itype, icomposition, isolute, kappaElement)
+  subroutine CARMAELEMENT_Get(carma, ielement, rc, igroup, name, shortname, rho, itype, icomposition, isolute, kappa)
     type(carma_type), intent(in)                :: carma           !! the carma object
     integer, intent(in)                         :: ielement        !! the element index
     integer, intent(out)                        :: rc              !! return code, negative indicates failure
@@ -186,7 +186,7 @@ contains
     integer, optional, intent(out)              :: itype           !! Particle type specification
     integer, optional, intent(out)              :: icomposition    !! Particle compound specification
     integer, optional, intent(out)              :: isolute         !! Index of solute for the particle element
-    real(kind=f), optional, intent(out)          :: kappaElement    !! hygroscopicity parameter for the particle element [units?]
+    real(kind=f), optional, intent(out)         :: kappa           !! hygroscopicity parameter for the particle element [units?]
 
     ! Assume success.
     rc = RC_OK
@@ -207,7 +207,7 @@ contains
     if (present(itype))        itype        = carma%f_element(ielement)%f_itype
     if (present(icomposition)) icomposition = carma%f_element(ielement)%f_icomposition
     if (present(isolute))      isolute      = carma%f_element(ielement)%f_isolute
-    if (present(kappaElement)) kappaElement = carma%f_element(ielement)%f_kappa
+    if (present(kappa))        kappa        = carma%f_element(ielement)%f_kappa
 
     return
   end subroutine CARMAELEMENT_Get
@@ -227,11 +227,12 @@ contains
     ! Local variables
     character(len=CARMA_NAME_LEN)             :: name             ! name
     character(len=CARMA_SHORT_NAME_LEN)       :: shortname        ! shortname
-    real(kind=f)                              :: rho(carma%f_NBIN)  ! density (g/cm3)
+    real(kind=f)                              :: rho(carma%f_NBIN)! density (g/cm3)
     integer                                   :: igroup           ! Group to which the element belongs
     integer                                   :: itype            ! Particle type specification
     integer                                   :: icomposition     ! Particle compound specification
     integer                                   :: isolute          ! Index of solute for the particle element
+    real(kind=f)                              :: kappa            !
 
     ! Assume success.
     rc = RC_OK
@@ -239,7 +240,7 @@ contains
     ! Test out the Get method.
     if (carma%f_do_print) then
       call CARMAELEMENT_Get(carma, ielement, rc, name=name, shortname=shortname, igroup=igroup, &
-                            itype=itype, icomposition=icomposition, rho=rho, isolute=isolute)
+                            itype=itype, icomposition=icomposition, rho=rho, isolute=isolute, kappa=kappa)
       if (rc < 0) return
 
 
@@ -265,6 +266,7 @@ contains
 
       write(carma%f_LUNOPRT,*) "    icomposition  : ", icomposition
       write(carma%f_LUNOPRT,*) "    isolute       : ", isolute
+      write(carma%f_LUNOPRT,*) "    kappa         : ", kappa
     end if
 
     return

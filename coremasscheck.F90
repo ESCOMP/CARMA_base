@@ -32,9 +32,7 @@ subroutine coremasscheck(carma, cstate, iz, fixcoremass,logmsg,abort, packagenam
   integer                        :: iepart,i,icore
   real(kind=f)                   :: coremass
   real(kind=f)                   :: factor
-
-  real(kind=f), parameter :: thresh  = 1e-10_f     ! relative threshold for core mass and kappa checking
-  real(kind=f), parameter :: thresh1 = 1._f+thresh
+  real(kind=f),parameter         :: roundoff = 1.e-14_f
 
   ! check the coremass exceeding the total mass
   do igroup = 1,NGROUP
@@ -46,18 +44,22 @@ subroutine coremasscheck(carma, cstate, iz, fixcoremass,logmsg,abort, packagenam
               icore = icorelem(i,igroup)
               coremass = coremass + pc(iz, ibin, icore)
            end do ! i = 1, ncore(igroup)
-           if (coremass > pc(iz, ibin, iepart) * rmass(ibin, igroup) * thresh1) then
-              if(fixcoremass)then
+           if (coremass > pc(iz, ibin, iepart) * rmass(ibin, igroup)) then
+             if(coremass < pc(iz, ibin, iepart) * rmass(ibin, igroup)*(1._f+roundoff))then
+                pc(iz, ibin, iepart) = coremass/rmass(ibin,igroup) + SMALL_PC
+             else
+               if(fixcoremass)then
                  pc(iz, ibin, iepart) = coremass/rmass(ibin,igroup) + SMALL_PC
-              endif
-              if (logmsg) then
+               endif
+               if (logmsg) then
                  write(LUNOPRT,*) "Error - coremass exceeds total: ",packagename
                  write(LUNOPRT,*) "coremass",coremass,"total",pc(iz, ibin, iepart) * rmass(ibin,igroup)
-              end if
-              if (abort) then
+               end if
+               if (abort) then
                  rc = RC_ERROR
                  return
-              end if
+               end if
+             end if
            end if
         end if
      end do
