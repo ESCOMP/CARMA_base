@@ -336,7 +336,7 @@ contains
       do_grow, do_incloud, do_explised, do_print_init, do_substep, do_thermo, do_vdiff, &
       do_vtran, do_drydep, vf_const, minsubsteps, maxsubsteps, maxretries, conmax, &
       do_pheat, do_pheatatm, dt_threshold, cstick, gsticki, gstickl, tstick, do_clearsky, &
-      do_partialinit)
+      do_partialinit, do_coremasscheck)
     type(carma_type), intent(inout)     :: carma         !! the carma object
     integer, intent(out)                :: rc            !! return code, negative indicates failure
     logical, intent(in), optional       :: do_cnst_rlh   !! use constant values for latent heats
@@ -368,7 +368,8 @@ contains
     real(kind=f), intent(in), optional  :: tstick        !! accommodation coefficient - temperature, default = 1.0
     logical, intent(in), optional       :: do_clearsky   !! do clear sky growth and coagulation?
     logical, intent(in), optional       :: do_partialinit !! do initialization of coagulation from reference atm (requires do_fixedinit)?
-    
+    logical, intent(in), optional       :: do_coremasscheck
+
     ! Assume success.
     rc = RC_OK
 
@@ -395,6 +396,7 @@ contains
     carma%f_tstick        = 1._f
     carma%f_do_clearsky   = .FALSE.
     carma%f_do_partialinit  = .FALSE.
+    carma%f_do_coremasscheck = .FALSE.
 
     ! Store off any control flag values that have been supplied.
     if (present(do_cnst_rlh))   carma%f_do_cnst_rlh   = do_cnst_rlh
@@ -419,7 +421,7 @@ contains
     if (present(tstick))        carma%f_tstick        = tstick
     if (present(do_clearsky))   carma%f_do_clearsky   = do_clearsky
     if (present(do_partialinit))  carma%f_do_partialinit  = do_partialinit
-    
+    if (present(do_coremasscheck)) carma%f_do_coremasscheck = do_coremasscheck 
     
     ! Setup the bin structure.
     call setupbins(carma, rc)
@@ -1439,7 +1441,7 @@ contains
   !! @see CARMA_Create
   subroutine CARMA_Get(carma, rc, LUNOPRT, NBIN, NELEM, NGAS, NGROUP, NSOLUTE, NWAVE, do_detrain, &
     do_drydep, do_fixedinit, do_grow, do_print, do_print_init, do_thermo, wave, dwave, do_wave_emit, &
-    do_partialinit)
+    do_partialinit,do_coremasscheck)
     
     type(carma_type), intent(in)        :: carma                !! the carma object
     integer, intent(out)                :: rc                   !! return code, negative indicates failure
@@ -1461,6 +1463,7 @@ contains
     real(kind=f), optional, intent(out) :: wave(carma%f_NWAVE)  !! the wavelengths centers (cm)
     real(kind=f), optional, intent(out) :: dwave(carma%f_NWAVE) !! the wavelengths widths (cm)
     logical, optional, intent(out)      :: do_wave_emit(carma%f_NWAVE) !! do emission in this band?
+    logical, optional, intent(out)      :: do_coremasscheck
     
     ! Assume success.
     rc = RC_OK
@@ -1485,6 +1488,8 @@ contains
     if (present(wave))  wave(:)    = carma%f_wave(:)
     if (present(dwave)) dwave(:)   = carma%f_dwave(:)
     if (present(do_wave_emit)) do_wave_emit(:)   = carma%f_do_wave_emit(:)
+
+    if (present(do_coremasscheck)) do_coremasscheck = carma%f_do_coremasscheck
 
     return
   end subroutine CARMA_Get

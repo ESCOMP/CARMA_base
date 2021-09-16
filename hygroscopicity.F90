@@ -28,7 +28,7 @@ subroutine hygroscopicity(carma, cstate, rc)
   integer         :: iepart         !! element in group containing the particle concentration
   integer         :: icore, i, z
   real(kind=f)    :: coremass, shellmass
-  real(kind=f), parameter :: thresh  = 1e-10_f     ! relative threshold for core mass and kappa checking
+  real(kind=f), parameter :: thresh  = 1e-14_f     ! relative threshold for core mass and kappa checking
   real(kind=f), parameter :: thresh1 = 1._f+thresh
   real(kind=f), parameter :: thresh0 = 0._f-thresh
 
@@ -53,23 +53,11 @@ subroutine hygroscopicity(carma, cstate, rc)
               kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) + pc(z,ibin,icore) * kappaelem(icore)
             end do ! i = 1, ncore(igroup)
 
-            if (coremass.gt.pc(z, ibin, iepart) * rmass(ibin, igroup) * thresh1) then
-              write(LUNOPRT,*) "hygro59: z,ibin,pc,rmass,coremass", &
-                z,ibin,pc(z, ibin, iepart),rmass(ibin, igroup),coremass
-              rc=RC_ERROR
-              return
-            end if
-
-            if (coremass.gt.pc(z, ibin, iepart) * rmass(ibin, igroup)) then
-              !Divide by total mass of all cores in the bin to normalize:
-              kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) / coremass
-            else
-              ! Add shell mass to hygro weighting
-              shellmass = max((pc(z, ibin, iepart) * rmass(ibin, igroup)) - coremass, 0._f)
-              kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) + shellmass * kappaelem(iepart)
-              !Divide by total mass of all particles in the bin to normalize:
-              kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) / pc(z, ibin, iepart) / rmass(ibin, igroup)
-            end if
+            ! Add shell mass to hygro weighting
+            shellmass = max((pc(z, ibin, iepart) * rmass(ibin, igroup)) - coremass, 0._f)
+            kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) + shellmass * kappaelem(iepart)
+            !Divide by total mass of all particles in the bin to normalize:
+            kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) / pc(z, ibin, iepart) / rmass(ibin, igroup)
           end if
           if (kappahygro(z,ibin,igroup).gt.thresh1.or.kappahygro(z,ibin,igroup).lt.thresh0) then
             write(LUNOPRT,*) "hygro77: z,ibin,kappahygro,pc,rmass,shellmass,coremass", &

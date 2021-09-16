@@ -385,6 +385,7 @@ module carma_types_mod
     logical                                       :: f_do_detrain
     logical                                       :: f_do_fixedinit
     logical                                       :: f_do_grow
+    logical                                       :: f_do_coremasscheck
     logical                                       :: f_do_clearsky
     logical                                       :: f_do_incloud
     logical                                       :: f_do_vtran

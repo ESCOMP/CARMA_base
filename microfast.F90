@@ -52,8 +52,10 @@ subroutine microfast(carma, cstate, iz, scale_threshold, rc)
   call zeromicro(carma, cstate, iz, rc)
   if (rc < RC_OK) return
 
-  call coremasscheck( carma, cstate, iz, .false.,.true.,.true., "AfterZeromicro", rc )
-  if (rc < RC_OK) return
+  if(do_coremasscheck)then
+    call coremasscheck( carma, cstate, iz, .false.,.true.,.true., "AfterZeromicro", rc )
+    if (rc < RC_OK) return
+  end if
 
   ! Calculate (implicit) particle loss rates for nucleation, growth,
   ! evaporation, melting, etc.
@@ -115,8 +117,10 @@ subroutine microfast(carma, cstate, iz, scale_threshold, rc)
     if (rc < RC_OK) return
   endif
 
-  call coremasscheck( carma, cstate, iz, .false.,.true.,.true., "Beforegrowth", rc )
-  if (rc < RC_OK) return
+  if(do_coremasscheck)then
+    call coremasscheck( carma, cstate, iz, .false.,.true.,.true., "Beforegrowth", rc )
+    if (rc < RC_OK) return
+  end if
 
   ! Calculate particle production terms and solve for particle
   ! concentrations at end of time step.
@@ -135,9 +139,6 @@ subroutine microfast(carma, cstate, iz, scale_threshold, rc)
      if (rc < RC_OK) return
     enddo
   enddo
-
-  call coremasscheck( carma, cstate, iz, .true.,.false.,.false., "AfterPsolve", rc )
-  if (rc < RC_OK) return
 
   ! Calculate particle production terms for evaporation;
   ! gas loss rates and production terms due to particle nucleation;
