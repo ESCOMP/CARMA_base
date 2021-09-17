@@ -1,5 +1,5 @@
-!! This module (fractal_meanfield_mod.F90) contains the main routines 
-!! necessary to calculate the solution of the mean field approximation 
+!! This module (fractal_meanfield_mod.F90) contains the main routines
+!! necessary to calculate the solution of the mean field approximation
 !! for a dry fractal particle composed of identical spherical monomers.
 !! This is used to generate optical properties for these paticles in CARMA.
 !!
@@ -25,7 +25,7 @@
 !!   - FUNCTION xfreal_n()    calling: besseljy,phi
 !!   - FUNCTION xfimag_n()    calling: besseljy,phi
 !!   - FUNCTION BESSELJY()
-!! 
+!!
 !! Routines to calculate the scattered wave
 !! of monomer:
 !!   - FUNCTION fpi()         calling: plgndr()
@@ -48,13 +48,13 @@ module fractal_meanfield_mod
   use carma_constants_mod
   use carma_types_mod
   use carma_mod
-  
+
   use adgaquad_types_mod
   use adgaquad_mod
   use lusolvec_mod
 
   implicit none
-  
+
   private
 
   public :: fractal_meanfield
@@ -62,7 +62,7 @@ module fractal_meanfield_mod
   ! Private module varibles: Moved from COMMON blocks
   integer, parameter :: nmi=40
   integer, parameter :: n2m = 2*nmi
-  
+
   contains
 
   !!
@@ -105,7 +105,7 @@ module fractal_meanfield_mod
     real(kind=f)                       :: sigext        ! extinction cross section
     real(kind=f)                       :: sigsca        ! scattering cross section
     real(kind=f)                       :: sigabs        ! absorption cross section
-    real(kind=f)                       :: totg          ! asymmetry parameter 
+    real(kind=f)                       :: totg          ! asymmetry parameter
     real(kind=f)                       :: sigext2,sigext3
     real(kind=f)                       :: rems          ! radius of equivalent mass sphere
     real(kind=f)                       :: gems          ! geometric cross-section of equivalent mass sphere
@@ -117,8 +117,8 @@ module fractal_meanfield_mod
     real(kind=f)                       :: xl(39)        ! place holder for  wavelength
     real(kind=f)                       :: xn(39)        ! place holder for real index of refraction
     real(kind=f)                       :: xk(39)        ! place holder for imaginary index of refraction
-    real(kind=f)                       :: val           
-    real(kind=f)                       :: funca(nmi,nmi,0:n2m)       ! for storage of funa(nu,n;p)  
+    real(kind=f)                       :: val
+    real(kind=f)                       :: funca(nmi,nmi,0:n2m)       ! for storage of funa(nu,n;p)
     complex(kind=f)                    :: res           ! for storage of funs_n
     complex(kind=f)                    :: funcs(0:n2m)
     real(kind=f)                       :: s11(0:nth-1)
@@ -130,7 +130,7 @@ module fractal_meanfield_mod
     complex(kind=f)                    :: s1(0:nth-1)
     complex(kind=f)                    :: s2(0:nth-1)
     complex(kind=f)                    :: ajt
-    complex(kind=f)                    :: an(nf)   
+    complex(kind=f)                    :: an(nf)
     complex(kind=f)                    :: bn(nf)
     complex(kind=f)                    :: ni,i,id,onec,zeroc
     complex(kind=f)                    :: d1(nmi)
@@ -142,7 +142,7 @@ module fractal_meanfield_mod
     complex(kind=f)                    :: EpABC(n2m,n2m)
     integer                            :: luindx(n2m)  ! For LU decomposition
     real(kind=f)                       :: dlu
-    integer                            :: ifail 
+    integer                            :: ifail
     integer                            :: iwork(maxsub)
     integer                            :: neval,nsubin
     real(kind=f)                       :: work(lenw)
@@ -155,9 +155,11 @@ module fractal_meanfield_mod
     integer                            :: n2stop, n3stop, ntheta, ii, kk, nn, jj, iy, ir, q, interv
     real(kind=f)                       :: a0, c0, a1, c1, a2, c2
     real(kind=f)                       :: qabs
-    
+
     ! Previously these were globals, which wouldn't be thread safe.
     type(adgaquad_vars_type)           :: fx_vars
+
+    errabs=0.0_f
 
     ! Set the return code to default to okay.
     rc = RC_OK
@@ -168,7 +170,7 @@ module fractal_meanfield_mod
     fx_vars%alpha = alpha_in
     xl(1) = xl_in
     xk(1) = xk_in
-    xn(1) = xn_in    
+    xn(1) = xn_in
 
     ! *** Complex constants 1, 1, identity(1,1), zero(0,0) :
     i     = cmplx(0._f,1._f,kind=f)
@@ -179,18 +181,18 @@ module fractal_meanfield_mod
     ! Other initializations
     funca(:,:,:) = 0.0_f
     fx_vars%a = rmon *1.e-2_f           ! a = r_monomer in m
-    beta=ang*(3.1415926_f / 180._f)     ! =0 when ang=0  
+    beta=ang*(3.1415926_f / 180._f)     ! =0 when ang=0
     Ap1(:,:) = zeroc
     Bp1(:,:) = zeroc
     sstest(:) = 0.0_f
     setest(:) = 0.0_f
 
-    ! **************************************************************** 
-    ! *** Definition and calculation  of factorials 0 - nf   
-    ! *** (nf set in adgaqaud_types_mod.F90)
-    ! *** and storage   [ real*8   fact()   (double prec.) ] 
     ! ****************************************************************
-  
+    ! *** Definition and calculation  of factorials 0 - nf
+    ! *** (nf set in adgaqaud_types_mod.F90)
+    ! *** and storage   [ real*8   fact()   (double prec.) ]
+    ! ****************************************************************
+
     fx_vars%fact(0)=1._f      ! factorials fact(n)=n!
     do ii=1,nf
       fx_vars%fact(ii) = fx_vars%fact(ii-1)*ii*1._f
@@ -200,25 +202,25 @@ module fractal_meanfield_mod
     fx_vars%coeff=anorm(carma,fx_vars,rc)
     if (rc < 0) return
 
-    ! ****************************************************************   
+    ! ****************************************************************
     ! anorm() integrated INT_0^inf[ x**(df-1.)*exp(-x**df/2._f)  dx ]
-    ! and occupied 
+    ! and occupied
     !    anorm := 4 pi * INT_0^inf[ x**(df-1.)*exp(-x**df/2._f)  dx ]
     !          == geometric scalingfactor Eq.(10) in [Botet et al, 1995]
     !    c     := 0.5
-    ! ****************************************************************  
- 
-    kk=1 
+    ! ****************************************************************
+
+    kk=1
     ni=xn(kk)*1._f+i*xk(kk)*xv*1._f      ! ni := complex index of refraction of monomer
                                          ! (xv := 1 ; input parameter in file "calpha")
     lbd=xl(kk)*1.e-6_f                   ! lbd := wavelength in m
                                          !        (in matrix medium / material !)
-    fx_vars%k=2._f*pi/lbd                ! k   := abs.val. of wavevector in m^-1 
+    fx_vars%k=2._f*pi/lbd                ! k   := abs.val. of wavevector in m^-1
                                          !        (in matrix medium / material !)
-  
+
     ! *** ******************************************************************
-    ! *** Calculation of Mie coefficients for monomer scattering             
-    ! *** up to a maximum order of nf=50                                        
+    ! *** Calculation of Mie coefficients for monomer scattering
+    ! *** up to a maximum order of nf=50
     ! *** ******************************************************************
 
     do ii=1,nf
@@ -228,13 +230,13 @@ module fractal_meanfield_mod
 
     rn=xn(kk)        ! Re(relative_n_complex,monomer)
     ri=xk(kk)*xv     ! Im(relative_n_complex,monomer)
-                      ! xv should be set to 1 (sse above)              
-                      ! a = monomer sphere radius                      
-                      ! lbd = wavelength in matrix medium              
+                      ! xv should be set to 1 (sse above)
+                      ! a = monomer sphere radius
+                      ! lbd = wavelength in matrix medium
 
     ! Call Mie routine
     call cmie(lbd,rn,ri,fx_vars%a,an,bn,nstop)
-    
+
     do ii=1,nf
       if (an(ii).ne.0._f) nstop=ii
     end do
@@ -275,7 +277,7 @@ module fractal_meanfield_mod
 
     rg=fx_vars%alpha*fx_vars%nb**(1._f/fx_vars%df)*fx_vars%a    ! rg := radius of gyration
     krg=fx_vars%k*rg
-    ntheta=7800                 !180-int(krg**.5*28*log10(dxk(kk)))               
+    ntheta=7800                 !180-int(krg**.5*28*log10(dxk(kk)))
     if (ntheta*0.5_f .eq. (ntheta/2)*1._f) ntheta=ntheta+1
 
     ! *** ******************************************************************
@@ -290,48 +292,48 @@ module fractal_meanfield_mod
     ! *** ******************************************************************
     ! *** Eq.(12) of Botet et al 1997 defines a matrix eqn. of order 2N :
     ! *** (since N=n1stop, 2N = 2 * n1stop = order of SLE)
-    ! ***                                                                       
-    ! ***      EpABC * dvec = cvec     with                                     
-    ! ***                                                                       
-    ! *** dvec and cvec  being the 2N-vectors                                   
-    ! ***                                                                       
-    ! ***              ( d^(1)_1,1 )                 ( a_1 )                    
-    ! ***              ( d^(1)_1,2 )                 ( a_2 )                    
-    ! ***              (   ...     )                 ( ... )                    
-    ! ***              ( d^(1)_1,n )                 ( a_n )                    
-    ! ***      dvec := ( d^(2)_1,1 )   and   cvec := ( b_1 )    and further     
-    ! ***              ( d^(2)_1,2 )                 ( b_2 )                    
-    ! ***              (   ...     )                 ( ... )                    
-    ! ***              ( d^(2)_1,n )                 ( b_n )                    
-    ! ***                                                        
-    ! ***                                                                       
-    ! ***    EpABC :=  1 + AB * C    where AB, 1, C are the 2N*2N - matrices    
-    ! ***                                                                       
-    ! ***          ( a_1 0  0 ...          ... 0 )                              
-    ! ***          (  0 a_2 0 ...          ... 0 )                              
-    ! ***    AB := (  0  0  ...  0  0  0   ... 0 )   1 := 2N*2N unity matrix    
-    ! ***          (  0  0  ... a_n 0  0   ... 0 )                              
-    ! ***          (  0  0  ...  0 b_1 0   ... 0 )                              
-    ! ***          (  ...             ...  ... 0 )                              
-    ! ***          (  ...          ... 0 b_n-1 0 )                              
-    ! ***          (  0  0  ...    ... 0   0  b_n)                              
-    ! ***                                                                       
-    ! *** and      (  A   B  )                                                  
-    ! ***    C  := (         )  where A and B are the two N*N matrices          
-    ! ***          (  B   A  )  given by Eq.(13),                               
-    ! ***                       including the factor (N_monomers - 1):          
-    ! ***                                                                       
-    ! ***    A_n,nu :=  (N_m-1) * A_(1,n)^(1,nu)  and                           
-    ! ***    B_n,nu :=  (N_m-1) * B_(1,n)^(1,nu)                                
-    ! ***                                                                       
-    ! ***    (A_(1,n... and B_(1,n... according to Eq.(13) of Botet 1997)       
-    ! *** ******************************************************************  
+    ! ***
+    ! ***      EpABC * dvec = cvec     with
+    ! ***
+    ! *** dvec and cvec  being the 2N-vectors
+    ! ***
+    ! ***              ( d^(1)_1,1 )                 ( a_1 )
+    ! ***              ( d^(1)_1,2 )                 ( a_2 )
+    ! ***              (   ...     )                 ( ... )
+    ! ***              ( d^(1)_1,n )                 ( a_n )
+    ! ***      dvec := ( d^(2)_1,1 )   and   cvec := ( b_1 )    and further
+    ! ***              ( d^(2)_1,2 )                 ( b_2 )
+    ! ***              (   ...     )                 ( ... )
+    ! ***              ( d^(2)_1,n )                 ( b_n )
+    ! ***
+    ! ***
+    ! ***    EpABC :=  1 + AB * C    where AB, 1, C are the 2N*2N - matrices
+    ! ***
+    ! ***          ( a_1 0  0 ...          ... 0 )
+    ! ***          (  0 a_2 0 ...          ... 0 )
+    ! ***    AB := (  0  0  ...  0  0  0   ... 0 )   1 := 2N*2N unity matrix
+    ! ***          (  0  0  ... a_n 0  0   ... 0 )
+    ! ***          (  0  0  ...  0 b_1 0   ... 0 )
+    ! ***          (  ...             ...  ... 0 )
+    ! ***          (  ...          ... 0 b_n-1 0 )
+    ! ***          (  0  0  ...    ... 0   0  b_n)
+    ! ***
+    ! *** and      (  A   B  )
+    ! ***    C  := (         )  where A and B are the two N*N matrices
+    ! ***          (  B   A  )  given by Eq.(13),
+    ! ***                       including the factor (N_monomers - 1):
+    ! ***
+    ! ***    A_n,nu :=  (N_m-1) * A_(1,n)^(1,nu)  and
+    ! ***    B_n,nu :=  (N_m-1) * B_(1,n)^(1,nu)
+    ! ***
+    ! ***    (A_(1,n... and B_(1,n... according to Eq.(13) of Botet 1997)
+    ! *** ******************************************************************
 
     n2stop = 2 * n1stop       ! n2stop = order of SLE
 
-    ! *** ******************************************************************  
-    ! *** Error handling moved from xfreal_n, xfimag_n.  Calculations fail 
-    ! *** in integration package when n2stop > 48. n2stop is related to the 
+    ! *** ******************************************************************
+    ! *** Error handling moved from xfreal_n, xfimag_n.  Calculations fail
+    ! *** in integration package when n2stop > 48. n2stop is related to the
     ! *** number of complex mie scattering coefficients used in teh calculation
     ! *** which is in turn related to the size parameter of monomers.
     ! *** If nstop>48 end calculation here instead of continuing.
@@ -355,24 +357,24 @@ module fractal_meanfield_mod
       dvec(ii)        = zeroc        ! solution vector d
       dvec(n1stop+ii) = zeroc
     end do
-  
+
     do pp=0,n2stop       !variable p
       res = funs_n(carma,fx_vars,pp,rc)   ! Eq.(16)    S_p(k R_g)
       if (rc < 0) return
       funcs(pp) = res
     end do
-    
+
     ! Calculate terms A and B
 
-    ! *** loops over indices nu,n,p :                                              
+    ! *** loops over indices nu,n,p :
     do ii=1,n1stop       !variable n
       do jj=1,n1stop     !variable nu
         mm = IABS(ii-jj)
         tt = ii+jj
 
-        ! *** ******************************************************************       
-        !        calculation of A_(1,n)^(1,nu) according to Eq.(13)                    
-        ! *** ******************************************************************       
+        ! *** ******************************************************************
+        !        calculation of A_(1,n)^(1,nu) according to Eq.(13)
+        ! *** ******************************************************************
         do pp=mm,tt
 
           funca(jj,ii,pp) = funa(carma,fx_vars,jj,ii,pp,rc)       ! Eq.(14)    a(nu,n;p)a
@@ -381,7 +383,7 @@ module fractal_meanfield_mod
           Ap1(ii,jj) = Ap1(ii,jj) + &
                        ( onec * (ii*(ii+1)+jj*(jj+1)-pp*(pp+1)) ) &
                                  * funca(jj,ii,pp) * funcs(pp)
-        end do  ! loop over pp (variable p)                            
+        end do  ! loop over pp (variable p)
 
         ! scaling factors of eq.(13), factor (N_mon-1) from eq.(12)
         Ap1(ii,jj) = Ap1(ii,jj) * (2._f*jj+1._f)/(jj*(jj*1._f+1._f))
@@ -397,17 +399,17 @@ module fractal_meanfield_mod
         ! scaling factors of eq.(13), factor (N_mon-1) from eq.(12)
         Bp1(ii,jj) = Bp1(ii,jj) * (2._f*jj+1._f)/(jj*(jj*1._f+1._f))
         Bp1(ii,jj) = Bp1(ii,jj) * (fx_vars%nb-1._f) * 2._f/(ii*(ii*1._f+1._f))
-      end do  ! loop over jj=1,n1stop (variable nu)                         
-    end do ! loop over ii=1,n1stop (variable n) 
+      end do  ! loop over jj=1,n1stop (variable nu)
+    end do ! loop over ii=1,n1stop (variable n)
 
-    ! *** ******************************************************************      
+    ! *** ******************************************************************
     ! End of Calculation of terms A and B
 
-    ! *** ******************************************************************       
-    ! *** Setup and solution of matrix equation of order 2N ( = n2stop )           
-    ! *** constituted by eq.(12)                                                   
-    ! *** ******************************************************************       
-    ! *** matrix product (AB * C)  (definitions see above)                         
+    ! *** ******************************************************************
+    ! *** Setup and solution of matrix equation of order 2N ( = n2stop )
+    ! *** constituted by eq.(12)
+    ! *** ******************************************************************
+    ! *** matrix product (AB * C)  (definitions see above)
     do ii=1,n1stop
       do jj=1,n1stop
         EpABC(ii,jj)               = an(ii) * Ap1(ii,jj)
@@ -416,16 +418,16 @@ module fractal_meanfield_mod
         EpABC(ii+n1stop,jj+n1stop) = bn(ii) * Ap1(ii,jj)
       end do
     end do
-    
-    ! *** ******************************************************************       
-    ! *** add 2N*2N unity matrix                                                   
+
+    ! *** ******************************************************************
+    ! *** add 2N*2N unity matrix
     do ii=1,n1stop
       EpABC(ii,ii)               = EpABC(ii,ii) + onec
       EpABC(ii+n1stop,ii+n1stop) = EpABC(ii+n1stop,ii+n1stop) + onec
     end do
-    
-    ! ======================================================================       
-    ! *** solve matrix equation using external routines (LU decomposition)         
+
+    ! ======================================================================
+    ! *** solve matrix equation using external routines (LU decomposition)
     CALL LUDCMPC(EpABC,n2stop,n2m,luindx,dlu)
     CALL LUBKSBC(EpABC,n2stop,n2m,luindx,cvec)
     do ii=1,n1stop
@@ -433,22 +435,22 @@ module fractal_meanfield_mod
       d2(ii) = cvec(ii+n1stop)
     end do
 
-    ! *** ******************************************************************       
-    ! *** SECOND PART:  Recomposition of the total wave scattered by               
-    ! ***               the entire agglomerate/cluster by adding the               
-    ! ***               waves scattered by each monomer taking into                
-    ! ***               account the respective phase of the single waves.          
-    ! *** ****************************************************************** 
+    ! *** ******************************************************************
+    ! *** SECOND PART:  Recomposition of the total wave scattered by
+    ! ***               the entire agglomerate/cluster by adding the
+    ! ***               waves scattered by each monomer taking into
+    ! ***               account the respective phase of the single waves.
+    ! *** ******************************************************************
 
-    ! *** ******************************************************************       
-    ! ----------------------------------------------------------------------       
-    !  1) Calculate the amplitude functions |S1^j(th)|  et |S2^j(th)|              
-    !     of one monomer of the agglomerate/cluster:                               
-    !     ( see e.g. Bohren, Huffman (1983) p.112, Eq.(4.74) with the              
-    !       substitutions a_n -> d^1_1,n  and b_n -> d^2_1,n                       
-    !       or   Rannou (1999) Eq.(1)-(6)                        )                 
-    ! ----------------------------------------------------------------------       
-    ! *** ******************************************************************  
+    ! *** ******************************************************************
+    ! ----------------------------------------------------------------------
+    !  1) Calculate the amplitude functions |S1^j(th)|  et |S2^j(th)|
+    !     of one monomer of the agglomerate/cluster:
+    !     ( see e.g. Bohren, Huffman (1983) p.112, Eq.(4.74) with the
+    !       substitutions a_n -> d^1_1,n  and b_n -> d^2_1,n
+    !       or   Rannou (1999) Eq.(1)-(6)                        )
+    ! ----------------------------------------------------------------------
+    ! *** ******************************************************************
 
     do iy=0,ntheta-1,1          ! loop over angles
       angle=iy*180._f/(ntheta-1)
@@ -467,41 +469,41 @@ module fractal_meanfield_mod
       s11(iy)=abs(s1(iy))**2._f+abs(s2(iy))**2._f
       pol(iy)=abs(s1(iy))**2._f-abs(s2(iy))**2._f
       pol(iy)=pol(iy)/(abs(s1(iy))**2_f+abs(s2(iy))**2._f)
-      ! ***    S_11(theta) = 1/2 * ( |S_1|^2 + |S_2|^2 )                             
-      ! ***    above, s1(theta) = 2 * S_1(theta)                                     
-      ! ***  =>S_11(theta) = 1/2 * ( |1/2*s1|^2 + |1/2*s2|^2 )                       
-      !                     = 1/8 * ( |s1|^2 + |s2|^2 )                              
+      ! ***    S_11(theta) = 1/2 * ( |S_1|^2 + |S_2|^2 )
+      ! ***    above, s1(theta) = 2 * S_1(theta)
+      ! ***  =>S_11(theta) = 1/2 * ( |1/2*s1|^2 + |1/2*s2|^2 )
+      !                     = 1/8 * ( |s1|^2 + |s2|^2 )
       s11_n(iy)=.125_f*(abs(s1(iy))**2._f+abs(s2(iy))**2._f)
     end do
 
     s01=s1(0)
     s02=s2(0)
 
-    ! *** Extinction cross section sigext( d^1_1,n , d^2_1,n ) ***                 
+    ! *** Extinction cross section sigext( d^1_1,n , d^2_1,n ) ***
     sigext=0._f
     do ir=1,n1stop                ! loop (sum) over Mie-indices
       sigext=sigext+(2._f*ir+1._f)*REAL(d1(ir)+d2(ir))
     end do
     sigext  = fx_vars%nb * 2._f*pi/fx_vars%k**2._f * sigext    ! Eq.(27)
 
-    ! *** Alternatively (in a test, all values agreed with rel.acc. 1e-6),         
-    ! *** Extinction cross section sigext( S(0 deg) ) (optical theorem) ***        
-    ! *** (see e.g. Bohren, Huffman (1983), Eq. (4.76))                            
-    ! *** S(0)=S_1(0)=S_2(0);  sigma_ext = 4 pi / k^2 * Re(S(0))                   
-    ! *** above, s1(theta) = 2 * S_1(theta) (factor 2 in 'xfact')                  
-    !     sigext2 = nb * 4._f*pi/k**2._f * 0.5_f*REAL(s01)                         
-    !     sigext3 = nb * 4._f*pi/k**2._f * 0.5_f*REAL(s02)                         
-    ! *** ******************************************************************    
+    ! *** Alternatively (in a test, all values agreed with rel.acc. 1e-6),
+    ! *** Extinction cross section sigext( S(0 deg) ) (optical theorem) ***
+    ! *** (see e.g. Bohren, Huffman (1983), Eq. (4.76))
+    ! *** S(0)=S_1(0)=S_2(0);  sigma_ext = 4 pi / k^2 * Re(S(0))
+    ! *** above, s1(theta) = 2 * S_1(theta) (factor 2 in 'xfact')
+    !     sigext2 = nb * 4._f*pi/k**2._f * 0.5_f*REAL(s01)
+    !     sigext3 = nb * 4._f*pi/k**2._f * 0.5_f*REAL(s02)
+    ! *** ******************************************************************
 
-    ! *** ******************************************************************       
-    ! ----------------------------------------------------------------------       
-    ! 2) Calculate the phase integral in Eq.(26) with P(r) already                 
-    !    substituted ( compare Eq.(10) and (Botet 1995) ) :                        
-    !         INT(0;infinity)[ sin(2XuZ) u^(d-2) f_co(u) du ]                      
-    !    taking into account the different phases of the single                    
-    !    scattered waves.                                                          
-    ! ----------------------------------------------------------------------       
-    ! *** ******************************************************************   
+    ! *** ******************************************************************
+    ! ----------------------------------------------------------------------
+    ! 2) Calculate the phase integral in Eq.(26) with P(r) already
+    !    substituted ( compare Eq.(10) and (Botet 1995) ) :
+    !         INT(0;infinity)[ sin(2XuZ) u^(d-2) f_co(u) du ]
+    !    taking into account the different phases of the single
+    !    scattered waves.
+    ! ----------------------------------------------------------------------
+    ! *** ******************************************************************
     do q=0,ntheta-1,1
       angle=q*180._f/(ntheta-1)
       if (angle .eq.   0._f) angle=0.001_f
@@ -514,9 +516,9 @@ module fractal_meanfield_mod
       p1=0._f
       dp1=0._f
 
-      !======================================================================       
-      !---    Version using the QUADPACK - routine :                                
-      !----------------------------------------------------------------------       
+      !======================================================================
+      !---    Version using the QUADPACK - routine :
+      !----------------------------------------------------------------------
       ifail = 0
       CALL dqagi(fp1,fx_vars,bound,interv,errabs,errrel,p1,dp1,neval,ifail,maxsub,lenw,nsubin,iwork,work)
       if(ifail.ne.0) then
@@ -524,28 +526,28 @@ module fractal_meanfield_mod
         rc = RC_ERROR
         return
       endif
-      !======================================================================       
+      !======================================================================
 
       p1=2._f*pi * (fx_vars%nb-1._f) / (fx_vars%coeff*fx_vars%zed*krg)*p1 + 1._f
       xint(q)=p1
     end do
 
-    ! *** now, xint(theta) contains the square bracket terms in                    
-    ! *** Botet (1997) Eq.(26)  or Rannou (1999) Eq.(1)            
+    ! *** now, xint(theta) contains the square bracket terms in
+    ! *** Botet (1997) Eq.(26)  or Rannou (1999) Eq.(1)
 
-    ! *** ******************************************************************       
-    ! ----------------------------------------------------------------------       
-    ! 3) Calculation of the phase function, calculation of the optical             
-    !    properties (asymmetrie factor g, scatt. cross section sigma_s)            
-    !    by angular integration:   INT_0^180[ ... d_theta ]                        
-    ! ----------------------------------------------------------------------       
-    ! *** ******************************************************************  
+    ! *** ******************************************************************
+    ! ----------------------------------------------------------------------
+    ! 3) Calculation of the phase function, calculation of the optical
+    !    properties (asymmetrie factor g, scatt. cross section sigma_s)
+    !    by angular integration:   INT_0^180[ ... d_theta ]
+    ! ----------------------------------------------------------------------
+    ! *** ******************************************************************
 
     total=0._f
     totg=0._f
 
     do q=1,ntheta-2,2
-      angle=(q-1)*180._f/(ntheta-1)          ! angle in deg 
+      angle=(q-1)*180._f/(ntheta-1)          ! angle in deg
       a0=fx_vars%nb*xint(q-1)*s11(q-1)*sin(angle*3.1415926353_f/180._f)
       c0=cos(angle*3.1415926353_f/180._f)
 
@@ -562,40 +564,40 @@ module fractal_meanfield_mod
     end do
     totg=totg/total
 
-    ! *** ******************************************************************       
-    ! *** angular integration of I(theta) according to                             
-    ! *** Botet (1997) Eq.(26)  or  Rannou (1999) Eq.(1)                           
-    ! ***      I(theta)  =  N 2pi/k^2 * S(theta) * [ phase integral ]              
-    ! *** with                                                                     
-    ! ***      S(theta)      =  s11_n(i)                                           
-    ! ***      [ phase i. ]  =  xint(i)                                            
-    ! *** Perfom integration using the following rule:                             
-    ! ***  Integral_0^pi[ I(theta) sin(theta) d_theta ]                            
-    ! ***                                                                          
-    ! ***   = Sum_q=1^ntheta-1{ Integral_th_(i-1)^th_i [                           
-    ! ***                                                                          
-    ! ***       1/2(I(th_(i-1))+I(th_i)) * sin(th) d_th ] }                        
-    ! ***                                                                          
-    ! ***   = sin(delta_theta/2) * Sum_q=1^ntheta-1{                               
-    ! ***                                                                          
-    ! ***       ( I(th_(i-1)) + I(th_i) ) * sin(th_middle)  }                      
-    ! ***                                                                          
-    ! *** ****************************************************************** 
+    ! *** ******************************************************************
+    ! *** angular integration of I(theta) according to
+    ! *** Botet (1997) Eq.(26)  or  Rannou (1999) Eq.(1)
+    ! ***      I(theta)  =  N 2pi/k^2 * S(theta) * [ phase integral ]
+    ! *** with
+    ! ***      S(theta)      =  s11_n(i)
+    ! ***      [ phase i. ]  =  xint(i)
+    ! *** Perfom integration using the following rule:
+    ! ***  Integral_0^pi[ I(theta) sin(theta) d_theta ]
+    ! ***
+    ! ***   = Sum_q=1^ntheta-1{ Integral_th_(i-1)^th_i [
+    ! ***
+    ! ***       1/2(I(th_(i-1))+I(th_i)) * sin(th) d_th ] }
+    ! ***
+    ! ***   = sin(delta_theta/2) * Sum_q=1^ntheta-1{
+    ! ***
+    ! ***       ( I(th_(i-1)) + I(th_i) ) * sin(th_middle)  }
+    ! ***
+    ! *** ******************************************************************
 
-    !dthetad = 180._f / (ntheta-1)     ! angular interval in deg              
-    dthetar =   pi   / (ntheta-1)     ! angular interval in rad              
+    !dthetad = 180._f / (ntheta-1)     ! angular interval in deg
+    dthetar =   pi   / (ntheta-1)     ! angular interval in rad
     sumsca = 0._f
     do q=1,ntheta-1,1
-      angler = (DBLE(q)-.5_f)*dthetar ! middle of interval in rad           
-      weight = SIN(angler)           ! integration weight                  
+      angler = (DBLE(q)-.5_f)*dthetar ! middle of interval in rad
+      weight = SIN(angler)           ! integration weight
       val    = s11_n(q-1)*xint(q-1) + s11_n(q)*xint(q)
       sumsca = sumsca + val*weight
     end do
-    
-    sumsca = sin(.5_f*dthetar) * sumsca  ! interval width factor            
-    ! *** Scattering cross section                                                 
+
+    sumsca = sin(.5_f*dthetar) * sumsca  ! interval width factor
+    ! *** Scattering cross section
     sigsca = 2._f * pi / fx_vars%k**2._f * DBLE(fx_vars%nb) * sumsca
-    ! Warning! sigabs is well computed using this approximation                    
+    ! Warning! sigabs is well computed using this approximation
     sigabs=fx_vars%nb*(sigmae-sigmas)
     ! sigext=sigabs+sigsca is better than the mean-field value
     ! previously defined. This is used hereafter. (P.Rannou)
@@ -607,13 +609,13 @@ module fractal_meanfield_mod
     ! *** cross section of equivalent mass sphere
     gems = pi * rems**2._f
 
-    ! *** Extinction and scattering efficiencies:                                  
+    ! *** Extinction and scattering efficiencies:
     qsca = sigsca / gems
     qabs = sigabs / gems
     qext = qabs + qsca
 
     gfac = totg
-    
+
   end subroutine fractal_meanfield
 
   !!
@@ -622,7 +624,7 @@ module fractal_meanfield_mod
   !! @author P. Rannou, R. Botet, Eric Wolf
   !! @version March 2013
   subroutine cmie(lambda,xn,xk,rad,an,bn,nstop)
-    
+
     ! Arguments
     real(kind=f), intent(in) :: lambda      !! wavelength (microns)
     real(kind=f), intent(in) :: xn          !! real index of refraction
@@ -635,7 +637,7 @@ module fractal_meanfield_mod
     ! Local declarations
     integer, parameter :: nang = 451    ! number of angles
     complex(kind=f) :: refrel           ! complex index of refraction
-    real(kind=f) :: theta(10000)        
+    real(kind=f) :: theta(10000)
     real(kind=f) :: x,dang
 
     refrel=cmplx(xn,xk,kind=f)
@@ -655,7 +657,7 @@ module fractal_meanfield_mod
   SUBROUTINE intmie(x,refrel,nang,an,bn,nstop)
 
     ! Arguments
-    real(kind=f), intent(in) :: x               !! size parameter of monomer 
+    real(kind=f), intent(in) :: x               !! size parameter of monomer
     complex(kind=f), intent(in) :: refrel       !! complex index of refraction
     integer, intent(in) :: nang                 !! number of angles
     complex(kind=f), intent(out) :: an(nf)      !! Mie wave coefficient an
@@ -671,7 +673,7 @@ module fractal_meanfield_mod
     integer :: nmx,nn,n,j
     real(kind=f) :: rn, xstop, dang, ymod, chi0, chi1, apsi0, apsi1, fn, chi, apsi
 
-    dx=x            
+    dx=x
     y=x*refrel
 
     xstop=x+4._f*x**.3333_f+2._f
@@ -713,7 +715,7 @@ module fractal_meanfield_mod
     chi0=-sin(x)
     chi1=cos(x)
 
-    apsi0=psi0        
+    apsi0=psi0
     apsi1=psi1
 
     xi0=cmplx(apsi0,-chi0,kind=f)
@@ -721,32 +723,32 @@ module fractal_meanfield_mod
 
     n=1
 
-    !   ************* iterate over index n ************* 
+    !   ************* iterate over index n *************
 200 dn=n
     rn=n
     fn=(2._f*rn+1._f)/(rn*(rn+1._f))
- 
+
     psi=(2._f*dn-1._f)*psi1/dx-psi0     ! calculate Bessel functions
-    chi=(2._f*rn-1._f)*chi1/x-chi0      
+    chi=(2._f*rn-1._f)*chi1/x-chi0
     apsi=psi
     xi=cmplx(apsi,-chi,kind=f)
- 
+
     an(n)=(d(n)/refrel+rn/x)*apsi-apsi1
     an(n)=an(n)/((d(n)/refrel+rn/x)*xi-xi1)
     bn(n)=(refrel*d(n)+rn/x)*apsi-apsi1
     bn(n)=bn(n)/((refrel*d(n)+rn/x)*xi-xi1)
- 
+
     psi0=psi1
     psi1=psi
-    apsi1=psi1           
- 
+    apsi1=psi1
+
     chi0=chi1
     chi1=chi
     xi1=cmplx(apsi1,-chi1,kind=f)
 
     n=n+1
     rn=n
- 
+
     do 999 j=1,nang
       pi1(j)=((2._f*rn-1._f)/(rn-1._f))*amu(j)*pi(j)
       pi1(j)=pi1(j)-rn*pi0(j)/(rn-1._f)
@@ -772,23 +774,23 @@ module fractal_meanfield_mod
     type(adgaquad_vars_type), intent(inout) :: fx_vars  !! varaibles for functions being integrated
     integer, intent(in)             :: n                !! indices
     integer, intent(in)             :: nu               !! indices
-    integer, intent(in)             :: p                !! indices 
+    integer, intent(in)             :: p                !! indices
     integer, intent(inout)          :: rc               !! return code
-    real(kind=f)                    :: funa             !! 
+    real(kind=f)                    :: funa             !!
 
     ! Local declarations
-    integer, parameter              :: maxsub=1000   
+    integer, parameter              :: maxsub=1000
     real(kind=f)                    :: r,xa,xb,era,erl
-    integer                         :: interv      
+    integer                         :: interv
     integer                         :: ifail
     integer, parameter              :: lenw=4000                         ! .ge. 4*maxsub
     integer                         :: iwork(maxsub),neval,nsubin        ! nsubin=last
     real(kind=f)                    :: work(lenw)
-    real(kind=f)                    :: bound, rres, rerr 
+    real(kind=f)                    :: bound, rres, rerr
 
     ! Set return code assuming success.
     rc = RC_OK
-    
+
     ! Initializations
     funa=0._f
     fx_vars%u1=n
@@ -810,7 +812,7 @@ module fractal_meanfield_mod
     !--- Version using the QUADPACK - routine :
     !----------------------------------------------------------------------
     ifail = 0
-    
+
     call dqag(fpl,fx_vars,xa,xb,era,erl,3,rres,rerr,neval,ifail,maxsub,lenw,nsubin,iwork,work)
 
     if (ifail.ne.0) then
@@ -843,7 +845,7 @@ module fractal_meanfield_mod
   !! @version March 2013
   FUNCTION fpl(x, fx_vars)
 
-    ! Arguments    
+    ! Arguments
     real(kind=f),intent(in) :: x                        !!
     type(adgaquad_vars_type), intent(inout) :: fx_vars  !! varaibles for functions being integrated
 
@@ -872,14 +874,14 @@ module fractal_meanfield_mod
   FUNCTION plgndr(l,m,x,fx_vars)
 
     ! Arguments
-    integer, intent(in) :: l                         !! indices                          
+    integer, intent(in) :: l                         !! indices
     integer, intent(in) :: m                         !! indices
     real(kind=f), intent(in) :: x                    !! return result
     type(adgaquad_vars_type), intent(in) :: fx_vars  !! variables for functions being integrated
 
     ! Local declarations
     real(kind=f) :: plgndr
-    integer ::lbl  
+    integer ::lbl
     real(kind=f) :: pll, pmm, somx2, pmmp1
     integer :: i, ll
     real(kind=f) :: fact1
@@ -937,8 +939,8 @@ module fractal_meanfield_mod
     return
   END FUNCTION plgndr
 
-  !! 
-  !! replaces funb(nu,n,p) in original code, 
+  !!
+  !! replaces funb(nu,n,p) in original code,
   !! saving n*n re-calculations of funa(nu,n,p).
   !!
   !! Calculates eq. 15, Botet et al. 1997
@@ -946,30 +948,30 @@ module fractal_meanfield_mod
   !! @author P. Rannou, R. Botet, Eric Wolf
   !! @version March 2013
   FUNCTION funb_n(nu,n,p,funca)
-    
+
     ! Arguments
     integer, intent(in) :: nu                            !! indices
     integer, intent(in) :: n                             !! indices
-    integer, intent(in) :: p                             !! indices  
+    integer, intent(in) :: p                             !! indices
     real(kind=f), intent(in) :: funca(nmi,nmi,0:n2m)     !! return result
 
     ! Local Declarations
     real(kind=f)  :: funb_n
     integer :: i, l, j
     real(kind=f) :: var
-  
+
     funb_n = 0._f
     i = int((p*1._f-1._f-abs(n*1._f-nu*1._f))*1._f/2._f)
     !print*,nu,n,p,i
- 
+
     do l=0,i
-      j = p-2*l-1 
+      j = p-2*l-1
 
       ! omit j = -1 (when nu=n and p=l=i=0)
       IF (j .GE. 0) THEN
 
         var = funca(nu,n,j)    ! in main, a(nu,n,p) was stored in
-                               ! funca(nu,n;p) 
+                               ! funca(nu,n;p)
         funb_n = funb_n + var
       ENDIF
 
@@ -1008,7 +1010,7 @@ module fractal_meanfield_mod
     real(kind=f) ::  work(lenw)
     real(kind=f) :: rg, bound, errabs, errrel
     integer :: interv
-    
+
     rc = RC_OK
 
     rg=fx_vars%alpha*fx_vars%nb**(1._f/fx_vars%df)*fx_vars%a
@@ -1123,7 +1125,7 @@ module fractal_meanfield_mod
   !! @author P. Rannou, R. Botet, Eric Wolf
   !! @version Mar 2013
   FUNCTION xfimag_n(xx, fx_vars)
-    
+
     ! Arguments
     real(kind=f), intent(in) :: xx
     type(adgaquad_vars_type), intent(inout) :: fx_vars  !! variables for functions being integrated
@@ -1155,9 +1157,9 @@ module fractal_meanfield_mod
 
   !! Spherical Bessel functions j_n(z) and y_n(z) of complex
   !! argument to desired accuracy,
-  !! and their derivatives, up to a maximal order n=LMAX. 
-  !! j_n(z) = SQRT(pi/2 / z) * J_(n + 1/2)(z) 
-  !! y_n(z) = SQRT(pi/2 / z) * Y_(n + 1/2)(z) 
+  !! and their derivatives, up to a maximal order n=LMAX.
+  !! j_n(z) = SQRT(pi/2 / z) * J_(n + 1/2)(z)
+  !! y_n(z) = SQRT(pi/2 / z) * Y_(n + 1/2)(z)
   !! Adapted from:
   !!         I.J.Thompson, A.R.Barnett
   !!        "Modified Bessel Funkctions I_v(z) and K_v(z)
@@ -1187,7 +1189,7 @@ module fractal_meanfield_mod
   !! @author P. Rannou, R. Botet, Eric Wolf
   !! @version Mar 2013
   SUBROUTINE BESSELJY (X, LMAX, XJ, XJP, XY, XYP, IFAIL)
-    
+
     ! Arguments
     complex(kind=f), intent(in) :: X
     integer, intent(in) :: LMAX
@@ -1195,7 +1197,7 @@ module fractal_meanfield_mod
     complex(kind=f), intent(out) :: XJP(0:LMAX)
     complex(kind=f), intent(out) :: XY(0:LMAX)
     complex(kind=f), intent(out) :: XYP(0:LMAX)
-    integer, intent(out) :: IFAIL   
+    integer, intent(out) :: IFAIL
 
     ! Local Declarations
     INTEGER, PARAMETER :: LIMIT = 20000
@@ -1241,7 +1243,7 @@ module fractal_meanfield_mod
       XJ(L) = PL * XJ(L+1) + XJP(L+1)
       XJP(L) = PL * XJ(L) - XJ(L+1)
 3     PL = PL - XI
-   
+
     ! *** Calculate the l=0 Besselfunktionen
     XJ0 = XI * SIN(X)
     XY(0) = - XI * COS(X)
@@ -1272,9 +1274,9 @@ module fractal_meanfield_mod
     RETURN
   END SUBROUTINE BESSELJY
 
-  !! 
+  !!
   !! Angular function pi_l( x=cos(theta) )
-  !! e.g. Bohren,Huffman (1983) 
+  !! e.g. Bohren,Huffman (1983)
   !!      pp.94 ff Eq.(4.46)-(4.49)
   !!      p.112
   !! CALLS:  FUNCTION plgndr() Legendre-Functions
@@ -1282,15 +1284,15 @@ module fractal_meanfield_mod
   !! @author P. Rannou, R. Botet, Eric Wolf
   !! @version Mar 2013
   FUNCTION fpi(l,x,fx_vars)
-  
+
     ! Arguments
     integer, intent(in) :: l
     real(kind=f), intent(in) :: x
     type(adgaquad_vars_type), intent(inout) :: fx_vars  !! varaibles for functions being integrated
-    
+
     ! Local declarations
     real(kind=f) :: fpi
-    real(kind=f) :: y 
+    real(kind=f) :: y
     real(kind=f) :: flag
 
     y=x
@@ -1304,7 +1306,7 @@ module fractal_meanfield_mod
 
   !!
   !! Angular function tau_l( x=cos(theta) )
-  !! e.g. Bohren,Huffman (1983) 
+  !! e.g. Bohren,Huffman (1983)
   !!      pp.94 ff Eq.(4.46)-(4.49)
   !!      p.112
   !! CALLS:  FUNCTION plgndr() Legendre-Functions
@@ -1348,14 +1350,14 @@ module fractal_meanfield_mod
 
     ! Local Declarations
     real(kind=f) :: krg,s1,s2,s3,rg
-   
+
     rg=fx_vars%alpha*fx_vars%a*fx_vars%nb**(1._f/fx_vars%df)
     krg=fx_vars%k*rg
     s1=sin(2._f*krg*fx_vars%zed*u)
     s2=u**(fx_vars%df-2._f)
     s3=fco(u, fx_vars)
     fp1=s1*s2*s3
-    
+
     return
   END FUNCTION fp1
 
@@ -1381,7 +1383,7 @@ module fractal_meanfield_mod
     integer :: iwork(maxsub),neval,nsubin        ! nsubin=last
     real(kind=f) :: work(lenw)
     real(kind=f) :: bound,errrel,errabs,b,db,c
-    
+
     rc = RC_OK
 
     bound=0._f
@@ -1401,7 +1403,7 @@ module fractal_meanfield_mod
       rc = RC_ERROR
       return
     endif
-    
+
     c=0.5_f
     anorm=b*4._f*3.1415926_f
     return
@@ -1413,7 +1415,7 @@ module fractal_meanfield_mod
   !!
   !! @author P. Rannou, R. Botet, Eric Wolf
   !! @version March 2013
-  FUNCTION phi(x,fx_vars)   
+  FUNCTION phi(x,fx_vars)
 
     ! Arguments
     real(kind=f), intent(in) :: x
@@ -1438,7 +1440,7 @@ module fractal_meanfield_mod
   !! @author P. Rannou, R. Botet, Eric Wolf
   !! @version March 2013
   FUNCTION fco(z, fx_vars)
-    
+
     ! Arguments
     real(kind=f), intent(in) :: z
     type(adgaquad_vars_type), intent(inout) :: fx_vars  !! varaibles for functions being integrated
@@ -1459,10 +1461,10 @@ module fractal_meanfield_mod
   FUNCTION fdval(x, fx_vars)
 
     type(adgaquad_vars_type), intent(inout) :: fx_vars  !! varaibles for functions being integrated
-   
+
     ! Arguments
     real(kind=f), intent(in) :: x
-   
+
     ! Local Declarations
     real(kind=f) :: fdval
 
@@ -1471,5 +1473,3 @@ module fractal_meanfield_mod
   END FUNCTION fdval
 
 end module
-
-
