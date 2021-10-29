@@ -17,7 +17,7 @@ contains
   !!
   !! @author  Chuck Bardeen, Pete Colarco
   !! @version May-2009 from Nov-2000
-  subroutine getwetr(carma, igroup, rh, rdry, rwet, rhopdry, rhopwet, rc, h2o_mass, h2o_vp, temp, kappa)
+  subroutine getwetr(carma, igroup, rh, rdry, rwet, rhopdry, rhopwet, rc, h2o_mass, h2o_vp, temp, kappa,cstate, iz)
 
     ! types
     use carma_precision_mod
@@ -42,6 +42,8 @@ contains
     real(kind=f), intent(in), optional   :: h2o_vp  !! water eq. vaper pressure (dynes/cm2)
     real(kind=f), intent(in), optional   :: temp    !! temperature [K]
     real(kind=f), intent(in), optional   :: kappa   !! hygroscopicity parameter (Petters & Kreidenweis, ACP, 2007)
+    type(carmastate_type), intent(in),optional :: cstate  !! the carma state object
+    integer, intent(in),optional                  :: iz      !! level index
 
     ! Local declarations
     real(kind=f)            :: humidity
@@ -49,6 +51,7 @@ contains
     real(kind=f)            :: wtpkelv, den1, den2, drho_dwt
     real(kind=f)            :: sigkelv, sig1, sig2, dsigma_dwt
     real(kind=f)            :: rkelvinH2O_a, rkelvinH2O_b, rkelvinH2O, h2o_kelv
+    real(kind=f)            :: rvap,gc_cgs,rwet190,rhopwet190,rh190,r_ratio190,pvap190h2o
 
     ! The following parameters relate to the swelling of seasalt like particles
     ! following Fitzgerald, Journal of Applied Meteorology, [1975].
@@ -212,14 +215,23 @@ contains
       ! Mixed aerosol paremeterization (Pengfei Yu et al., JAMES, 2015) based on
       ! Petters and Kreidenweis (ACP, 2007) hygroscopicity parameter kappa
       if (irhswell(igroup) == I_PETTERS) then
-	if (temp .le. 190._f) then
-	    rwet = rdry
-	    rhopwet = rhopdry
-	else ! temp > 190
+         if (temp .le. 190._f) then
+            rvap = RGAS / gwtmol(igash2o)
+            gc_cgs = gc(iz,igash2o) / (zmet(iz)*xmet(iz)*ymet(iz))
+            pvap190h2o = 10.0_f * exp(54.842763_f - (6763.22_f / 190._f) - (4.210_f * log(190._f)) &
+                       + (0.000367_f * 190._f) + (tanh(0.0415_f * (190._f - 218.8_f)) &
+                       * (53.878_f - (1331.22_f / 190._f) - (9.44523_f * log(190._f)) + 0.014025_f * 190._f)))
+            rh190 = gc_cgs * rvap * 190._f/pvap190h2o
+            rwet190 = rdry * (1._f + rh190*kappa/(1._f-rh190))**(1._f/3._f)
+            r_ratio190 = (rdry / rwet190)**3._f
+            rhopwet190 = r_ratio190 * rhopdry + (1._f - r_ratio190) * RHO_W
+            rwet = rwet190
+            rhopwet = rhopwet190
+         else ! temp > 190
 	    rwet = rdry * (1._f + humidity*kappa/(1._f-humidity))**(1._f/3._f)
 	    r_ratio  = (rdry / rwet)**3._f
 	    rhopwet = r_ratio * rhopdry + (1._f - r_ratio) * RHO_W
-	end if
+         end if
 
       end if ! irhswell(igroup) == I_PETTERS
 
