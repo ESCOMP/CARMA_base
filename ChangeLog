@@ -1,3 +1,19 @@
+
+===============================================================
+Tag name:
+Originator(s): Francis Vitt
+Date: Sep 17, 2021
+
+One-line Summary:
+
+Initialize an undefined parameter
+
+Purpose of changes:
+
+Set errabs to zero fractal_meanfield.  Otherwise, this was undefined
+and could be NaNs at times which caused a floating point exception
+on casper compiled with the intel compiler.
+
 ===============================================================
 Tag name:
 Originator(s): Mike Mills, Yunquian Zha
