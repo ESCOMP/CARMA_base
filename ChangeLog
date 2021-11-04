@@ -1,3 +1,17 @@
+===============================================================
+Tag name:
+Originator(s): Mike Mills, Yunquian Zha
+Date: ????
+
+One-line Summary:
+
+Changes to support CARMA trop_strat model
+
+Purpose of changes:
+
+ Add hygroscopicity subroutines.
+ Add core mass check to ensure the first element of the group doesn't go negative.
+ Add the option that particle neutralization is controlled by the ambiance gas.
 
 ===============================================================
 Tag name:
@@ -13,21 +27,6 @@ Purpose of changes:
 Set errabs to zero fractal_meanfield.  Otherwise, this was undefined
 and could be NaNs at times which caused a floating point exception
 on casper compiled with the intel compiler.
-
-===============================================================
-Tag name:
-Originator(s): Mike Mills, Yunquian Zha
-Date: Aug 13, 2013
-
-One-line Summary:
-
-Changes to support CARMA trop_strat model
-
-Purpose of changes:
-
- Add hygroscopicity subroutines.
- Add core mass check to ensure the first element of the group doesn't go negative.
- Add the option that particle neutralization is controlled by the ambiance gas.
 
 ===============================================================
 Tag name:
