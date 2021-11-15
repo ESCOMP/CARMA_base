@@ -51,7 +51,11 @@ contains
     real(kind=f)            :: wtpkelv, den1, den2, drho_dwt
     real(kind=f)            :: sigkelv, sig1, sig2, dsigma_dwt
     real(kind=f)            :: rkelvinH2O_a, rkelvinH2O_b, rkelvinH2O, h2o_kelv
-    real(kind=f)            :: rvap,gc_cgs,rwet190,rhopwet190,rh190,r_ratio190,pvap190h2o
+    real(kind=f)            :: rvap,rh190
+
+    real(kind=f), parameter :: pvap190h2o = 190._f / ( 10.0_f * exp(54.842763_f - (6763.22_f / 190._f) &
+         - (4.210_f * log(190._f)) + (0.000367_f * 190._f) + (tanh(0.0415_f * (190._f - 218.8_f)) &
+         * (53.878_f - (1331.22_f / 190._f) - (9.44523_f * log(190._f)) + 0.014025_f * 190._f))) )
 
     ! The following parameters relate to the swelling of seasalt like particles
     ! following Fitzgerald, Journal of Applied Meteorology, [1975].
@@ -215,53 +219,63 @@ contains
       ! Mixed aerosol paremeterization (Pengfei Yu et al., JAMES, 2015) based on
       ! Petters and Kreidenweis (ACP, 2007) hygroscopicity parameter kappa
       if (irhswell(igroup) == I_PETTERS) then
+
+         if (.not.( present(h2o_mass) .and. &
+                    present(temp) .and. &
+                    present(kappa) )) then
+            if (do_print) write(LUNOPRT,*) "wetr:: ERROR - h2o_mass,temp,kappa for PETTERS"
+            rc = RC_ERROR
+            return
+         endif
+
          if (temp .le. 190._f) then
             rvap = RGAS / gwtmol(igash2o)
-            gc_cgs = gc(iz,igash2o) / (zmet(iz)*xmet(iz)*ymet(iz))
-            pvap190h2o = 10.0_f * exp(54.842763_f - (6763.22_f / 190._f) - (4.210_f * log(190._f)) &
-                       + (0.000367_f * 190._f) + (tanh(0.0415_f * (190._f - 218.8_f)) &
-                       * (53.878_f - (1331.22_f / 190._f) - (9.44523_f * log(190._f)) + 0.014025_f * 190._f)))
-            rh190 = gc_cgs * rvap * 190._f/pvap190h2o
-            rwet190 = rdry * (1._f + rh190*kappa/(1._f-rh190))**(1._f/3._f)
-            r_ratio190 = (rdry / rwet190)**3._f
-            rhopwet190 = r_ratio190 * rhopdry + (1._f - r_ratio190) * RHO_W
-            rwet = rwet190
-            rhopwet = rhopwet190
+            rh190 = h2o_mass * rvap * pvap190h2o
+            rh190 = min(max(rh190,tiny(1.0_f)), 0.995_f)
+            rwet = rdry * (1._f + rh190*kappa/(1._f-rh190))**(1._f/3._f)
          else ! temp > 190
-	    rwet = rdry * (1._f + humidity*kappa/(1._f-humidity))**(1._f/3._f)
-	    r_ratio  = (rdry / rwet)**3._f
-	    rhopwet = r_ratio * rhopdry + (1._f - r_ratio) * RHO_W
+            rwet = rdry * (1._f + humidity*kappa/(1._f-humidity))**(1._f/3._f)
          end if
-
+         r_ratio = (rdry / rwet)**3._f
+         rhopwet = r_ratio * rhopdry + (1._f - r_ratio) * RHO_W
       end if ! irhswell(igroup) == I_PETTERS
 
 
       ! Sulfate Aerosol, using weight percent.
       if (irhswell(igroup) == I_WTPCT_H2SO4) then
-        ! Adjust calculation for the Kelvin effect of H2O:
-        wtpkelv = 80._f ! start with assumption of 80 wt % H2SO4
-        den1 = 2.00151_f - 0.000974043_f * temp ! density at 79 wt %
-        den2 = 2.01703_f - 0.000988264_f * temp ! density at 80 wt %
-        drho_dwt = den2-den1 ! change in density for change in 1 wt %
 
-        sig1 = 79.3556_f - 0.0267212_f * temp ! surface tension at 79.432 wt %
-        sig2 = 75.608_f  - 0.0269204_f * temp ! surface tension at 85.9195 wt %
-        dsigma_dwt = (sig2-sig1) / (85.9195_f - 79.432_f) ! change in density for change in 1 wt %
-        sigkelv = sig1 + dsigma_dwt * (80.0_f - 79.432_f)
+         if (.not.( present(h2o_mass) .and. &
+                    present(h2o_vp) .and. &
+                    present(temp) )) then
+            if (do_print) write(LUNOPRT,*) "wetr:: ERROR - h2o_mass,h2o_vp,temp for WTPCT_H2SO4"
+            rc = RC_ERROR
+            return
+         endif
 
-        rwet = rdry * (100._f * rhopdry / wtpkelv / den2)**(1._f / 3._f)
+         ! Adjust calculation for the Kelvin effect of H2O:
+         wtpkelv = 80._f ! start with assumption of 80 wt % H2SO4
+         den1 = 2.00151_f - 0.000974043_f * temp ! density at 79 wt %
+         den2 = 2.01703_f - 0.000988264_f * temp ! density at 80 wt %
+         drho_dwt = den2-den1 ! change in density for change in 1 wt %
 
-        rkelvinH2O_b = 1._f + wtpkelv * drho_dwt / den2 - 3._f * wtpkelv &
-            * dsigma_dwt / (2._f*sigkelv)
+         sig1 = 79.3556_f - 0.0267212_f * temp ! surface tension at 79.432 wt %
+         sig2 = 75.608_f  - 0.0269204_f * temp ! surface tension at 85.9195 wt %
+         dsigma_dwt = (sig2-sig1) / (85.9195_f - 79.432_f) ! change in density for change in 1 wt %
+         sigkelv = sig1 + dsigma_dwt * (80.0_f - 79.432_f)
 
-        rkelvinH2O_a = 2._f * gwtmol(igash2so4) * sigkelv / (den1 * RGAS * temp * rwet)
+         rwet = rdry * (100._f * rhopdry / wtpkelv / den2)**(1._f / 3._f)
 
-        rkelvinH2O = exp (rkelvinH2O_a*rkelvinH2O_b)
+         rkelvinH2O_b = 1._f + wtpkelv * drho_dwt / den2 - 3._f * wtpkelv &
+              * dsigma_dwt / (2._f*sigkelv)
 
-        h2o_kelv = h2o_mass / rkelvinH2O
-        wtpkelv = wtpct_tabaz(carma, temp, h2o_kelv, h2o_vp, rc)
-        rhopwet   = sulfate_density(carma, wtpkelv, temp, rc)
-        rwet      = rdry * (100._f * rhopdry / wtpkelv / rhopwet)**(1._f / 3._f)
+         rkelvinH2O_a = 2._f * gwtmol(igash2so4) * sigkelv / (den1 * RGAS * temp * rwet)
+
+         rkelvinH2O = exp (rkelvinH2O_a*rkelvinH2O_b)
+
+         h2o_kelv = h2o_mass / rkelvinH2O
+         wtpkelv = wtpct_tabaz(carma, temp, h2o_kelv, h2o_vp, rc)
+         rhopwet   = sulfate_density(carma, wtpkelv, temp, rc)
+         rwet      = rdry * (100._f * rhopdry / wtpkelv / rhopwet)**(1._f / 3._f)
       end if ! irhswell(igroup) == I_WTPCT_H2SO4
 
     end if ! irhswell(igroup) /= I_NO_SWELLING
