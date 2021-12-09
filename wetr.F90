@@ -53,9 +53,10 @@ contains
     real(kind=f)            :: rkelvinH2O_a, rkelvinH2O_b, rkelvinH2O, h2o_kelv
     real(kind=f)            :: rvap,rh190
 
+    ! the vaporp_h2o_murphy2005 equation to calculate the vapor pressure at 190 K for liquid water
     real(kind=f), parameter :: pvap190h2o = 190._f / ( 10.0_f * exp(54.842763_f - (6763.22_f / 190._f) &
-         - (4.210_f * log(190._f)) + (0.000367_f * 190._f) + (tanh(0.0415_f * (190._f - 218.8_f)) &
-         * (53.878_f - (1331.22_f / 190._f) - (9.44523_f * log(190._f)) + 0.014025_f * 190._f))) )
+                               - (4.210_f * log(190._f)) + (0.000367_f * 190._f) + (tanh(0.0415_f * (190._f - 218.8_f)) &
+                               * (53.878_f - (1331.22_f / 190._f) - (9.44523_f * log(190._f)) + 0.014025_f * 190._f))) )
 
     ! The following parameters relate to the swelling of seasalt like particles
     ! following Fitzgerald, Journal of Applied Meteorology, [1975].

@@ -46,10 +46,10 @@ subroutine coremasscheck(carma, cstate, iz, fixcoremass,logmsg,abort, packagenam
            end do ! i = 1, ncore(igroup)
            if (coremass > pc(iz, ibin, iepart) * rmass(ibin, igroup)) then
              if(coremass < pc(iz, ibin, iepart) * rmass(ibin, igroup)*(1._f+roundoff))then
-                pc(iz, ibin, iepart) = coremass/rmass(ibin,igroup) + SMALL_PC
+                pc(iz, ibin, iepart) = coremass/rmass(ibin,igroup) + ALMOST_ZERO
              else
                if(fixcoremass)then
-                 pc(iz, ibin, iepart) = coremass/rmass(ibin,igroup) + SMALL_PC
+                 pc(iz, ibin, iepart) = coremass/rmass(ibin,igroup) + ALMOST_ZERO
                endif
                if (logmsg) then
                  write(LUNOPRT,*) "Error - coremass exceeds total: ",packagename
