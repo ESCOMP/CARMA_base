@@ -102,7 +102,7 @@ subroutine setupgrow(carma, cstate, rc)
     
   enddo
 
-#ifdef DEBUG
+#ifdef CARMA_DEBUG
   ! Report some initialization values
   if (do_print_init) then
     write(LUNOPRT,5)

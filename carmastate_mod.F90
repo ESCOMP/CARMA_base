@@ -1,5 +1,5 @@
 !! The CARMA state module contains the atmospheric data for use with the CARMA
-!! module. This implementation has been customized to work within other model 
+!! module. This implementation has been customized to work within other model
 !! frameworks. CARMA adds a lot of extra state information (atmospheric
 !! properties, fall velocities, coagulation kernels, growth kernels, ...) and
 !! thus has a large memory footprint. Because only one column will be operated
@@ -7,8 +7,8 @@
 !! at a time and each cstate object only represents one column. This keeps
 !! the memory requirements of CARMA to a minimum.
 !!
-!! @version Feb-2009 
-!! @author  Chuck Bardeen, Pete Colarco, Jamie Smith 
+!! @version Feb-2009
+!! @author  Chuck Bardeen, Pete Colarco, Jamie Smith
 !
 ! NOTE: Documentation for this code can be generated automatically using f90doc,
 ! which is freely available from:
@@ -28,13 +28,13 @@ module carmastate_mod
   use carma_constants_mod
   use carma_types_mod
 
-  ! cstate explicitly declares all variables. 
+  ! cstate explicitly declares all variables.
   implicit none
 
   ! All cstate variables and procedures are private except those explicitly
   ! declared to be public.
   private
-  
+
   ! Declare the public methods.
   public CARMASTATE_Create
   public CARMASTATE_CreateFromReference
@@ -49,9 +49,9 @@ module carmastate_mod
   public CARMASTATE_SetGas
   public CARMASTATE_SetState
   public CARMASTATE_Step
-  
+
 contains
-  
+
   ! These are the methods that provide the interface between the parent model and
   ! the atmospheric state data of the CARMA microphysical model. There are many other
   ! methods that are not in this file that are used to implement the microphysical
@@ -117,7 +117,7 @@ contains
     real(kind=f)                            :: rvap
     real(kind=f)                            :: pvap_liq
     real(kind=f)                            :: pvap_ice
-    real(kind=f)                            :: gc_cgs  
+    real(kind=f)                            :: gc_cgs
 
     ! Assume success.
     rc = RC_OK
@@ -130,48 +130,48 @@ contains
     cstate%f_dtime_orig = dtime
     cstate%f_dtime      = dtime
     cstate%f_nretries   = 0
-    
+
     ! Save the grid dimensions.
     cstate%f_NZ   = NZ
     cstate%f_NZP1 = NZ+1
-    
+
     ! Save the grid definition.
     cstate%f_igridv = igridv
     cstate%f_igridh = igridh
-    
+
     ! Store away the grid location information.
     cstate%f_lat  = lat
     cstate%f_lon  = lon
-    
+
     ! Allocate all the dynamic variables related to state.
     call CARMASTATE_Allocate(cstate, rc)
     if (rc < 0) return
-    
+
     cstate%f_xc(:)  = xc(:)
     cstate%f_dx(:)  = dx(:)
     cstate%f_yc(:)  = yc(:)
-    cstate%f_dy(:)  = dy(:)        
+    cstate%f_dy(:)  = dy(:)
     cstate%f_zc(:)  = zc(:)
     cstate%f_zl(:)  = zl(:)
 
     ! Store away the grid state, doing any necessary unit conversions from MKS to CGS.
-    cstate%f_p(:)  = p(:)  * RPA2CGS    
-    cstate%f_pl(:) = pl(:) * RPA2CGS    
+    cstate%f_p(:)  = p(:)  * RPA2CGS
+    cstate%f_pl(:) = pl(:) * RPA2CGS
     cstate%f_t(:)  = t(:)
-    
+
     cstate%f_pcd(:,:,:)     = 0._f
-    
+
     if (carma_ptr%f_do_substep) then
       if (present(told)) then
         cstate%f_told(:) = told
       else
         if (carma_ptr%f_do_print) write(carma_ptr%f_LUNOPRT,*) "CARMASTATE_Create: Error - Need to specify told when substepping."
         rc = RC_ERROR
-        
+
         return
       end if
-    end if 
-    
+    end if
+
     ! Calculate the metrics, ...
     ! if Cartesian coordinates were specifed, then the units need to be converted
     ! from MKS to CGS.
@@ -181,22 +181,22 @@ contains
       cstate%f_yc = cstate%f_yc * RM2CGS
       cstate%f_dy = cstate%f_dy * RM2CGS
     end if
-    
+
     if (cstate%f_igridv == I_CART) then
       cstate%f_zc = cstate%f_zc * RM2CGS
       cstate%f_zl = cstate%f_zl * RM2CGS
     end if
-    
+
     ! Initialize the state of the atmosphere.
     call setupatm(carma_ptr, cstate, carma_ptr%f_do_fixedinit, rc)
     if (rc < 0) return
-    
+
     ! Set the realtive humidity. If necessary, it will be calculated from
     ! the specific humidity.
     if (present(relhum)) then
       cstate%f_relhum(:) = relhum(:)
     else if (present(qh2o)) then
-    
+
       ! Define gas constant for this gas
       rvap = RGAS/WTMOL_H2O
 
@@ -209,7 +209,7 @@ contains
         cstate%f_relhum(iz) = ( gc_cgs * rvap * t(iz)) / pvap_liq
       enddo
     end if
-    
+
     ! Need for vertical transport.
     !
     ! NOTE: How should these be set? Optional parameters?
@@ -219,21 +219,21 @@ contains
       cstate%f_pc_topbnd(:,:) = 0._f
       cstate%f_pc_botbnd(:,:) = 0._f
     end if
-        
+
     ! Radiative intensity for particle heating.
     !
     ! W/m2/sr/cm -> erg/s/cm2/sr/cm
     if (carma_ptr%f_do_grow) then
       if (present(radint)) cstate%f_radint(:,:) = radint(:,:) * 1e7_f / 1e4_f
     end if
-    
+
     return
   end subroutine CARMASTATE_Create
 
 
   !! Create the CARMASTATE object, which contains information about the
   !! atmospheric state.
-  !! 
+  !!
   !! This call is similar to CARMASTATE_Create, but differs in that all the
   !! initialization happens here based on the the fixed state information provided rather
   !! than occurring in CARMASTATE_Step.
@@ -249,7 +249,7 @@ contains
   !! recalculated as the wet radius changes.
   !!
   !! CARMASTATE_Create should still be called again after this call with the actual
-  !! column of state information from the model. The initialization will be done once 
+  !! column of state information from the model. The initialization will be done once
   !! from the reference state, but the microphysical calculations will be done on the
   !! model state. Multiple CARMASTATE_Create ... CARMASTATE_Step calls can be done
   !! before a CARMASTATE_Destroy. This reduces the amount of memory allocations and
@@ -284,13 +284,13 @@ contains
     real(kind=f), intent(in) , optional     :: qh2o(NZ)    !! specific humidity at center [mmr]
     real(kind=f), intent(in) , optional     :: relhum(NZ)  !! relative humidity at center [fraction]
     real(kind=f), intent(in) , optional     :: qh2so4(NZ)  !! H2SO4 mass mixing ratio at center [mmr]
-    
+
     integer                                 :: iz
     integer                                 :: igas
     real(kind=f)                            :: rvap
     real(kind=f)                            :: pvap_liq
     real(kind=f)                            :: pvap_ice
-    real(kind=f)                            :: gc_cgs  
+    real(kind=f)                            :: gc_cgs
 
     ! Assume success.
     rc = RC_OK
@@ -303,37 +303,37 @@ contains
     cstate%f_dtime_orig = dtime
     cstate%f_dtime      = dtime
     cstate%f_nretries   = 0
-    
+
     ! Save the grid dimensions.
     cstate%f_NZ   = NZ
     cstate%f_NZP1 = NZ+1
-    
+
     ! Save the grid definition.
     cstate%f_igridv = igridv
     cstate%f_igridh = igridh
-    
+
     ! Store away the grid location information.
     cstate%f_lat  = lat
     cstate%f_lon  = lon
-    
+
     ! Allocate all the dynamic variables related to state.
     call CARMASTATE_Allocate(cstate, rc)
     if (rc < 0) return
-    
+
     cstate%f_xc(:)  = xc(:)
     cstate%f_dx(:)  = dx(:)
     cstate%f_yc(:)  = yc(:)
-    cstate%f_dy(:)  = dy(:)        
+    cstate%f_dy(:)  = dy(:)
     cstate%f_zc(:)  = zc(:)
     cstate%f_zl(:)  = zl(:)
 
     ! Store away the grid state, doing any necessary unit conversions from MKS to CGS.
-    cstate%f_p(:)  = p(:)  * RPA2CGS    
-    cstate%f_pl(:) = pl(:) * RPA2CGS    
+    cstate%f_p(:)  = p(:)  * RPA2CGS
+    cstate%f_pl(:) = pl(:) * RPA2CGS
     cstate%f_t(:)  = t(:)
-    
+
     cstate%f_pcd(:,:,:)     = 0._f
-    
+
     ! Calculate the metrics, ...
     ! if Cartesian coordinates were specifed, then the units need to be converted
     ! from MKS to CGS.
@@ -343,12 +343,12 @@ contains
       cstate%f_yc = cstate%f_yc * RM2CGS
       cstate%f_dy = cstate%f_dy * RM2CGS
     end if
-    
+
     if (cstate%f_igridv == I_CART) then
       cstate%f_zc = cstate%f_zc * RM2CGS
       cstate%f_zl = cstate%f_zl * RM2CGS
     end if
-    
+
     ! Initialize the state of the atmosphere.
     call setupatm(carma_ptr, cstate, .false., rc)
     if (rc < 0) return
@@ -356,25 +356,25 @@ contains
     ! If the model uses a gas, then set the relative and
     ! specific humidities.
     if (carma_ptr%f_igash2o /= 0) then
-    
+
       if (present(qh2o)) then
         cstate%f_gc(:, carma_ptr%f_igash2o) = qh2o(:) * cstate%f_rhoa_wet(:)
-      
+
         ! Define gas constant for this gas
         rvap = RGAS/WTMOL_H2O
-  
+
         ! Calculate relative humidity
         do iz = 1, NZ
           call vaporp_h2o_murphy2005(carma_ptr, cstate, iz, rc, pvap_liq, pvap_ice)
           if (rc < 0) return
-  
+
           gc_cgs = qh2o(iz) * cstate%f_rhoa_wet(iz) / (cstate%f_zmet(iz)*cstate%f_xmet(iz)*cstate%f_ymet(iz))
           cstate%f_relhum(iz) = (gc_cgs * rvap * t(iz)) / pvap_liq
         enddo
-        
+
       else if (present(relhum)) then
         cstate%f_relhum(:) = relhum
-        
+
         ! Define gas constant for this gas
         rvap = RGAS/WTMOL_H2O
 
@@ -382,13 +382,13 @@ contains
         do iz = 1, NZ
           call vaporp_h2o_murphy2005(carma_ptr, cstate, iz, rc, pvap_liq, pvap_ice)
           if (rc < 0) return
-  
+
           gc_cgs = (rvap * t(iz)) / (pvap_liq * relhum(iz))
           cstate%f_gc(iz, carma_ptr%f_igash2o) = gc_cgs * &
                (cstate%f_zmet(iz)*cstate%f_xmet(iz)*cstate%f_ymet(iz)) / &
-               cstate%f_rhoa_wet(iz) 
+               cstate%f_rhoa_wet(iz)
         enddo
-      end if      
+      end if
     end if
 
     ! If the model uses sulfuric acid, then set that gas concentration.
@@ -415,15 +415,15 @@ contains
       cstate%f_pc_topbnd(:,:) = 0._f
       cstate%f_pc_botbnd(:,:) = 0._f
     end if
-    
-    
+
+
     ! Now do the initialization that is normally done in CARMASTATE_Step. However
     ! here it is done using the reference atmosphere.
-    
+
     ! Determine the particle densities.
     call rhopart(cstate%f_carma, cstate, rc)
     if (rc < 0) return
-    
+
     ! Save off the wet radius and wet density as reference values to be used
     ! later to scale process rates based upon changes to the wet radius and
     ! wet density when particle swelling is used.
@@ -433,34 +433,34 @@ contains
     ! If configured for fixed initialization, then we will lose some accuracy
     ! in the calculation of the fall velocities, growth kernels, ... and in return
     ! will gain a significant performance by not having to initialize as often.
-  
+
     ! Initialize the vertical transport.
     if (cstate%f_carma%f_do_vtran .or. cstate%f_carma%f_do_coag .or. cstate%f_carma%f_do_grow) then
       call setupvf(cstate%f_carma, cstate, rc)
-      
+
       if (cstate%f_carma%f_do_vdiff) then
         call setupbdif(cstate%f_carma, cstate, rc)
       end if
     end if
 
-    ! Intialize the nucleation, growth and evaporation.      
+    ! Intialize the nucleation, growth and evaporation.
     if (cstate%f_carma%f_do_grow)  then
       call setupgrow(cstate%f_carma, cstate, rc)
       if (rc < 0) return
 
       call setupgkern(cstate%f_carma, cstate, rc)
       if (rc < 0) return
-      
+
        call setupnuc(cstate%f_carma, cstate, rc)
       if (rc < 0) return
     end if
-    
+
     ! Initialize the coagulation.
     if (cstate%f_carma%f_do_coag) then
       call setupckern(cstate%f_carma, cstate, rc)
       if (rc < 0) return
     end if
-    
+
     return
   end subroutine CARMASTATE_CreateFromReference
 
@@ -468,7 +468,7 @@ contains
   subroutine CARMASTATE_Allocate(cstate, rc)
     type(carmastate_type), intent(inout)  :: cstate
     integer, intent(out)                  :: rc
-    
+
     ! Local Variables
     integer                               :: ier
     integer                               :: NZ
@@ -478,16 +478,16 @@ contains
     integer                               :: NBIN
     integer                               :: NGAS
     integer                               :: NWAVE
-    
+
     ! Assume success.
     rc = RC_OK
 
     ! Check to see if the arrays are already allocated. If so, just reuse the
     ! existing allocations.
-    
+
     ! Allocate the variables needed for setupatm.
     if (.not. (allocated(cstate%f_xmet))) then
-    
+
       NZ      = cstate%f_NZ
       NZP1    = cstate%f_NZP1
       NGROUP  = cstate%f_carma%f_NGROUP
@@ -495,7 +495,7 @@ contains
       NBIN    = cstate%f_carma%f_NBIN
       NGAS    = cstate%f_carma%f_NGAS
       NWAVE   = cstate%f_carma%f_NWAVE
-    
+
       allocate( &
         cstate%f_xmet(NZ), &
         cstate%f_ymet(NZ), &
@@ -535,6 +535,7 @@ contains
         cstate%f_dpc_sed(NBIN,NELEM), &
         cstate%f_pconmax(NZ,NGROUP), &
         cstate%f_pcl(NZ,NBIN,NELEM), &
+        cstate%f_kappahygro(NZ,NBIN,NGROUP), &
         stat=ier)
       if (ier /= 0) then
         if (cstate%f_carma%f_do_print) then
@@ -544,7 +545,7 @@ contains
         rc = RC_ERROR
         return
       end if
-      
+
       cstate%f_relhum(:)      = 0._f
       cstate%f_pc(:,:,:)      = 0._f
       cstate%f_pcd(:,:,:)     = 0._f
@@ -552,7 +553,7 @@ contains
       cstate%f_sedimentationflux(:,:)   = 0._f
       cstate%f_cldfrc(:)      = 1._f
       cstate%f_rhcrit(:)      = 1._f
-      
+
       ! Allocate the last fields if they are needed for substepping.
       if (cstate%f_carma%f_do_substep) then
         allocate( &
@@ -570,7 +571,7 @@ contains
           rc = RC_ERROR
           return
         endif
-      
+
         ! Initialize
         cstate%f_gcl(:,:)     = 0._f
         cstate%f_d_gc(:,:)    = 0._f
@@ -587,7 +588,7 @@ contains
         cstate%f_nretry       = 0._f
       endif
 
-      
+
       ! Allocate the variables needed for setupvf.
       !
       ! NOTE: Coagulation and dry deposition also need bpm, vf and re.
@@ -624,9 +625,9 @@ contains
         cstate%f_pc_botbnd(:,:) = 0._f
         cstate%f_vd(:, :) = 0._f
       end if
-      
-      
-      
+
+
+
       if (cstate%f_carma%f_NGAS > 0) then
         allocate( &
           cstate%f_pvapl(NZ,NGAS), &
@@ -645,8 +646,8 @@ contains
           return
         endif
       end if
- 
-      
+
+
       if (cstate%f_carma%f_do_grow) then
         allocate( &
           cstate%f_diffus(NZ,NGAS), &
@@ -687,10 +688,10 @@ contains
           rc = RC_ERROR
           return
         endif
-        
+
         cstate%f_radint(:,:) = 0._f
       end if
-      
+
       if (cstate%f_carma%f_do_coag) then
         allocate( &
           cstate%f_coaglg(NZ,NBIN,NGROUP), &
@@ -712,13 +713,13 @@ contains
         cstate%f_ckernel(:,:,:,:,:) = 0._f
       end if
     end if
-    
+
     return
   end subroutine CARMASTATE_Allocate
-    
+
 
   !! The routine should be called when the carma state object is no longer needed.
-  !! It deallocates any memory allocations made by CARMA during CARMASTATE_Create(), 
+  !! It deallocates any memory allocations made by CARMA during CARMASTATE_Create(),
   !! and failure to call this routine could result in memory leaks.
   !!
   !! @author Chuck Bardeen
@@ -727,10 +728,10 @@ contains
   subroutine CARMASTATE_Destroy(cstate, rc)
     type(carmastate_type), intent(inout)    :: cstate
     integer, intent(out)                    :: rc
-    
+
     ! Local variables
     integer   :: ier
-    
+
     ! Assume success.
     rc = RC_OK
 
@@ -738,7 +739,7 @@ contains
 
     ! Allocate the variables needed for setupatm.
     if (allocated(cstate%f_xmet)) then
-    
+
       deallocate( &
         cstate%f_xmet, &
         cstate%f_ymet, &
@@ -778,6 +779,7 @@ contains
         cstate%f_dpc_sed, &
         cstate%f_pconmax, &
         cstate%f_pcl, &
+        cstate%f_kappahygro, &
         stat=ier)
       if (ier /= 0) then
         if (cstate%f_carma%f_do_print) then
@@ -787,7 +789,7 @@ contains
         rc = RC_ERROR
         return
       end if
-      
+
       ! Allocate the last fields if they are needed for substepping stepping.
       if (allocated(cstate%f_gcl)) then
         deallocate( &
@@ -806,7 +808,7 @@ contains
           return
         endif
       endif
-      
+
       ! Allocate the variables needed for setupvf.
       !
       ! NOTE: Coagulation also needs bpm, vf and re.
@@ -831,7 +833,7 @@ contains
           return
         endif
       end if
-      
+
       if (allocated(cstate%f_diffus)) then
         deallocate( &
           cstate%f_diffus, &
@@ -873,7 +875,7 @@ contains
           return
         endif
       end if
-      
+
       if (allocated(cstate%f_pvapl)) then
         deallocate( &
           cstate%f_pvapl, &
@@ -892,7 +894,7 @@ contains
           return
         endif
       end if
-      
+
       if (allocated(cstate%f_coaglg)) then
         deallocate( &
           cstate%f_coaglg, &
@@ -909,7 +911,7 @@ contains
         end if
       end if
     end if
-    
+
     return
   end subroutine CARMASTATE_Destroy
 
@@ -940,7 +942,6 @@ contains
     real(kind=f), intent(in), optional    :: ocnfrac              !! ocn fraction
     real(kind=f), intent(in), optional    :: icefrac              !! ice fraction
 
-    
     integer                               :: iz     ! vertical index
     integer                               :: igas   ! gas index
     integer                               :: ielem
@@ -948,17 +949,17 @@ contains
     integer                               :: igroup
     logical                               :: swelling   ! Do any groups undergo partcile swelling?
     integer                               :: i1, i2, j1, j2
-  
+
     ! Assume success.
     rc = RC_OK
-    
+
     ! Store the cloud fraction if specified
     cstate%f_cldfrc(:) = 1._f
     cstate%f_rhcrit(:) = 1._f
-    
+
     if (present(cldfrc)) cstate%f_cldfrc(:) = cldfrc(:)
     if (present(rhcrit)) cstate%f_rhcrit(:) = rhcrit(:)
-    
+
     ! Determine the gas supersaturations.
     do iz = 1, cstate%f_NZ
       do igas = 1, cstate%f_carma%f_NGAS
@@ -967,10 +968,19 @@ contains
       end do
     end do
 
+    do iz = 1, cstate%f_NZ
+      call coremasscheck( cstate%f_carma, cstate, iz, .true.,.false.,.false., "BeforeRhopart", rc )
+      if (rc < 0) return
+    end do
+
     ! Determine the particle densities.
     call rhopart(cstate%f_carma, cstate, rc)
     if (rc < 0) return
-    
+
+    do iz = 1, cstate%f_NZ
+      call coremasscheck( cstate%f_carma, cstate, iz, .false.,.true.,.true., "AfterRhopart", rc )
+      if (rc < 0) return
+    end do
 
     ! We have to hold off initialization until now, because the particle density
     ! (rhop) can not be determined until the particle masses are known (i.e. after
@@ -989,7 +999,7 @@ contains
     ! the fixed initialization.
     if ((.not. cstate%f_carma%f_do_fixedinit) .or. &
         (cstate%f_carma%f_do_partialinit)) then
-    
+
       ! Initialize the vertical transport.
       if (cstate%f_carma%f_do_vtran .or. cstate%f_carma%f_do_coag .or. cstate%f_carma%f_do_grow) then
         call setupvf(cstate%f_carma, cstate, rc)
@@ -999,18 +1009,18 @@ contains
         end if
       end if
 
-      ! Initialize the nucleation, growth and evaporation.      
+      ! Initialize the nucleation, growth and evaporation.
       if (cstate%f_carma%f_do_grow)  then
         call setupgrow(cstate%f_carma, cstate, rc)
         if (rc < RC_OK) return
-  
+
         call setupgkern(cstate%f_carma, cstate, rc)
         if (rc < RC_OK) return
-        
+
          call setupnuc(cstate%f_carma, cstate, rc)
         if (rc < RC_OK) return
       end if
-      
+
       ! Initialize the coagulation.
       if (cstate%f_carma%f_do_coag .and. &
           (.not. cstate%f_carma%f_do_fixedinit)) then
@@ -1018,16 +1028,16 @@ contains
         if (rc < RC_OK) return
       end if
     end if
-      
+
     ! Initialize the dry deposition
-    ! 
+    !
     ! NOTE: This is tied to the surface fields that vary from column to column,
-    ! so it needs to get calculated here whether using fixed or full initialization. 
+    ! so it needs to get calculated here whether using fixed or full initialization.
     if (cstate%f_carma%f_do_drydep) then
       if (present(lndfv) .and. present(lndram) .and. present(lndfrac) .and. &
           present(ocnfv) .and. present(ocnram) .and. present(ocnfrac) .and. &
           present(icefv) .and. present(iceram) .and. present(icefrac)) then
-      
+
         ! NOTE: Need to convert surfric and ram from mks to cgs units.
         call setupvdry(cstate%f_carma, cstate, &
           lndfv * 100._f, ocnfv * 100._f, icefv * 100._f, &
@@ -1042,9 +1052,19 @@ contains
         return
       end if
     end if
-       
+
+    do iz = 1, cstate%f_NZ
+      call coremasscheck( cstate%f_carma, cstate, iz, .true.,.false.,.false., "BeforeStep", rc )
+      if (rc < 0) return
+    end do
+
     ! Calculate the impact of microphysics upon the state.
     call step(cstate%f_carma, cstate, rc)
+
+    do iz = 1, cstate%f_NZ
+      call coremasscheck( cstate%f_carma, cstate, iz, .false.,.true.,.true., "AfterStep", rc )
+      if (rc < 0) return
+    end do
 
     return
   end subroutine CARMASTATE_Step
@@ -1059,7 +1079,7 @@ contains
   !! @version Feb-2009
   !! @see CARMA_AddGas
   !! @see CARMA_GetGas
-  !! @see CARMA_Step 
+  !! @see CARMA_Step
   !! @see CARMASTATE_SetGas
   subroutine CARMASTATE_Get(cstate, rc, max_nsubstep, max_nretry, nstep, nsubstep, nretry, zsubsteps, lat, lon)
     type(carmastate_type), intent(in)     :: cstate            !! the carma state object
@@ -1072,7 +1092,7 @@ contains
     real(kind=f), optional, intent(out)   :: zsubsteps(cstate%f_NZ) !! number of substeps taken per vertical grid point
     real(kind=f), optional, intent(out)   :: lat               !! grid center latitude [deg]
     real(kind=f), optional, intent(out)   :: lon               !! grid center longitude [deg]
-    
+
     ! Assume success.
     rc = RC_OK
 
@@ -1084,10 +1104,10 @@ contains
     if (present(zsubsteps))    zsubsteps    = cstate%f_zsubsteps
     if (present(lat))          lat          = cstate%f_lat
     if (present(lon))          lon          = cstate%f_lon
-    
+
     return
   end subroutine CARMASTATE_Get
-  
+
 
   !! Gets the mass of the bins (ibin) for each particle element (ielem). After the
   !! CARMA_Step() call, new particle concentrations are determined. The number density
@@ -1098,34 +1118,36 @@ contains
   !! @version Feb-2009
   !! @see CARMA_AddElement
   !! @see CARMA_AddGroup
-  !! @see CARMA_Step 
+  !! @see CARMA_Step
   !! @see CARMASTATE_SetBin
   subroutine CARMASTATE_GetBin(cstate, ielem, ibin, mmr, rc, &
-                               nmr, numberDensity, nucleationRate, r_wet, rhop_wet, &
-                               surface, sedimentationflux, vf, vd, dtpart)
+                               nmr, numberDensity, nucleationRate, r_wet, rhop_wet, rhop_dry, &
+                               surface, sedimentationflux, vf, vd, dtpart, kappa)
     type(carmastate_type), intent(in)     :: cstate         !! the carma state object
     integer, intent(in)                   :: ielem          !! the element index
     integer, intent(in)                   :: ibin           !! the bin index
-    real(kind=f), intent(out)             :: mmr(cstate%f_NZ) !! the bin mass mixing ratio [kg/kg]
-    integer, intent(out)                  :: rc             !! return code negative indicates failure
-    real(kind=f), optional, intent(out)   :: nmr(cstate%f_NZ) !! number mixing ratio [#/kg]
+    real(kind=f), intent(out)             :: mmr(cstate%f_NZ)    !! the bin mass mixing ratio [kg/kg]
+    integer, intent(out)                  :: rc                  !! return code negative indicates failure
+    real(kind=f), optional, intent(out)   :: nmr(cstate%f_NZ)    !! number mixing ratio [#/kg]
     real(kind=f), optional, intent(out)   :: numberDensity(cstate%f_NZ)  !! number density [#/cm3]
     real(kind=f), optional, intent(out)   :: nucleationRate(cstate%f_NZ) !! nucleation rate [1/cm3/s]
     real(kind=f), optional, intent(out)   :: r_wet(cstate%f_NZ)          !! wet particle radius [cm]
     real(kind=f), optional, intent(out)   :: rhop_wet(cstate%f_NZ)       !! wet particle density [g/cm3]
-    real(kind=f), optional, intent(out)   :: surface        !! particle mass on the surface [kg/m2]
-    real(kind=f), optional, intent(out)   :: sedimentationflux         !! particle sedimentation mass flux to surface [kg/m2/s]
-    real(kind=f), optional, intent(out)   :: vf(cstate%f_NZ+1) !! fall velocity [cm/s]
-    real(kind=f), optional, intent(out)   :: vd             !! deposition velocity [cm/s]
+    real(kind=f), optional, intent(out)   :: rhop_dry(cstate%f_NZ)       !! dry particle density [g/cm3]
+    real(kind=f), optional, intent(out)   :: surface             !! particle mass on the surface [kg/m2]
+    real(kind=f), optional, intent(out)   :: sedimentationflux   !! particle sedimentation mass flux to surface [kg/m2/s]
+    real(kind=f), optional, intent(out)   :: vf(cstate%f_NZ+1)   !! fall velocity [cm/s]
+    real(kind=f), optional, intent(out)   :: vd                  !! deposition velocity [cm/s]
     real(kind=f), optional, intent(out)   :: dtpart(cstate%f_NZ) !! delta particle temperature [K]
-    
+    real(kind=f), optional, intent(out)   :: kappa(cstate%f_NZ)  !! hygroscopicity parameter
+
     integer                               :: ienconc        !! index of element that is the particle concentration for the group
     integer                               :: igroup         ! Group containing this bin
 
     ! Assume success.
     rc = RC_OK
-    
-    ! Determine the particle group for the bin.    
+
+    ! Determine the particle group for the bin.
     igroup = cstate%f_carma%f_element(ielem)%f_igroup
 
     ! Make sure there are enough elements allocated.
@@ -1135,7 +1157,7 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     ! Make sure there are enough bins allocated.
     if (ibin > cstate%f_carma%f_NBIN) then
       if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMA_SetBin:: ERROR - The specifed bin (", &
@@ -1144,7 +1166,7 @@ contains
       return
     end if
 
-    
+
     ! Use the specified mass mixing ratio and the air density to determine the mass
     ! of the particles in g/x/y/z.
     mmr(:) = cstate%f_pc(:, ibin, ielem) / cstate%f_rhoa_wet(:)
@@ -1157,7 +1179,7 @@ contains
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       mmr(:) = mmr(:) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     end if
-    
+
     ! If the number of particles in the group is less than the minimum value represented
     ! by CARMA, then return and mmr of 0.0 for all elements.
     ienconc = cstate%f_carma%f_group(igroup)%f_ienconc
@@ -1166,7 +1188,7 @@ contains
 
     ! Do they also want the mass concentration of particles at the surface?
     if (present(surface)) then
-      
+
       ! Convert from g/cm2 to kg/m2
       surface = cstate%f_pc_surf(ibin, ielem) * 1e4_f / 1e3_f
 
@@ -1178,10 +1200,10 @@ contains
         surface = surface / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       end if
     end if
-    
+
     ! Do they also want the mass flux of particles that sediment to the surface?
     if (present(sedimentationflux)) then
-      
+
       ! Convert from g/cm2 to kg/m2
       sedimentationflux = cstate%f_sedimentationflux(ibin, ielem) * 1e4_f / 1e3_f
 
@@ -1193,7 +1215,13 @@ contains
         sedimentationflux = sedimentationflux / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       end if
     end if
-    
+
+    ! Is the hygroscopicity parameter requested?
+    if (present(kappa)) then
+      kappa = cstate%f_kappahygro(:, ibin, igroup)
+    end if
+
+
     ! If this is the partcile # element, then determine some other statistics.
     if (ienconc == ielem) then
       if (present(nmr))           nmr(:)             = (cstate%f_pc(:, ibin, ielem) / cstate%f_rhoa_wet(:)) * 1000._f
@@ -1201,13 +1229,14 @@ contains
            (cstate%f_xmet(:)*cstate%f_ymet(:)*cstate%f_zmet(:))
       if (present(r_wet))         r_wet(:)           = cstate%f_r_wet(:, ibin, igroup)
       if (present(rhop_wet))      rhop_wet(:)        = cstate%f_rhop_wet(:, ibin, igroup)
+      if (present(rhop_dry))      rhop_dry(:)        = cstate%f_rhop(:, ibin, igroup)
 
       if (cstate%f_carma%f_do_vtran) then
         if (present(vf))            vf(:)              = cstate%f_vf(:, ibin, igroup) * cstate%f_zmetl(:)
       else
         if (present(vf))            vf(:)              = CAM_FILL
       end if
-      
+
       if (cstate%f_carma%f_do_drydep) then
         if (present(vd)) then
           if (cstate%f_igridv .eq. I_CART) then
@@ -1216,7 +1245,7 @@ contains
             vd                 = cstate%f_vd(ibin, igroup) * cstate%f_zmetl(cstate%f_NZP1)
           end if
         end if
-      else 
+      else
         if (present(vd))          vd                 = CAM_FILL
       end if
 
@@ -1238,14 +1267,15 @@ contains
       if (present(nucleationRate)) nucleationRate(:)  = CAM_FILL
       if (present(r_wet))          r_wet(:)           = CAM_FILL
       if (present(rhop_wet))       rhop_wet(:)        = CAM_FILL
+      if (present(rhop_dry))       rhop_dry(:)        = CAM_FILL
       if (present(dtpart))         dtpart(:)          = CAM_FILL
       if (present(vf))             vf(:)              = CAM_FILL
       if (present(vd))             vd                 = CAM_FILL
     end if
-   
+
     return
   end subroutine CARMASTATE_GetBin
-  
+
 
   !! Gets the mass of the detrained condensate for the bins (ibin) for each particle
   !! element (ielem) in the grid.
@@ -1255,7 +1285,7 @@ contains
   !! @version Feb-2009
   !! @see CARMA_AddElement
   !! @see CARMA_AddGroup
-  !! @see CARMA_Step 
+  !! @see CARMA_Step
   !! @see CARMASTATE_SetDetrain
   subroutine CARMASTATE_GetDetrain(cstate, ielem, ibin, mmr, rc, nmr, numberDensity, r_wet, rhop_wet)
     type(carmastate_type), intent(in)     :: cstate         !! the carma state object
@@ -1267,14 +1297,14 @@ contains
     real(kind=f), optional, intent(out)   :: numberDensity(cstate%f_NZ)  !! number density [#/cm3]
     real(kind=f), optional, intent(out)   :: r_wet(cstate%f_NZ)          !! wet particle radius [cm]
     real(kind=f), optional, intent(out)   :: rhop_wet(cstate%f_NZ)       !! wet particle density [g/cm3]
-    
+
     integer                               :: ienconc        !! index of element that is the particle concentration for the group
     integer                               :: igroup         ! Group containing this bin
 
     ! Assume success.
     rc = RC_OK
-    
-    ! Determine the particle group for the bin.    
+
+    ! Determine the particle group for the bin.
     igroup = cstate%f_carma%f_element(ielem)%f_igroup
 
     ! Make sure there are enough elements allocated.
@@ -1284,7 +1314,7 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     ! Make sure there are enough bins allocated.
     if (ibin > cstate%f_carma%f_NBIN) then
       if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMA_SetDetrainin:: ERROR - The specifed bin (", &
@@ -1293,7 +1323,7 @@ contains
       return
     end if
 
-    
+
     ! Use the specified mass mixing ratio and the air density to determine the mass
     ! of the particles in g/x/y/z.
     mmr(:) = cstate%f_pcd(:, ibin, ielem) / cstate%f_rhoa_wet(:)
@@ -1306,7 +1336,7 @@ contains
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       mmr(:) = mmr(:) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     end if
-       
+
     ! If this is the partcile # element, then determine some other statistics.
     ienconc = cstate%f_carma%f_group(igroup)%f_ienconc
     if (ienconc == ielem) then
@@ -1319,10 +1349,10 @@ contains
       if (present(nmr))            nmr(:)             = CAM_FILL
       if (present(numberDensity))  numberDensity(:)   = CAM_FILL
     end if
-    
+
    return
   end subroutine CARMASTATE_GetDetrain
-  
+
 
   !! Gets the mass mixing ratio for the gas (igas). After a call to CARMA_Step(),
   !! the new mass mixing ratio of the gas can be retrieved.
@@ -1331,7 +1361,7 @@ contains
   !! @version Feb-2009
   !! @see CARMA_AddGas
   !! @see CARMA_GetGas
-  !! @see CARMA_Step 
+  !! @see CARMA_Step
   !! @see CARMASTATE_SetGas
   subroutine CARMASTATE_GetGas(cstate, igas, mmr, rc, satice, satliq, eqice, eqliq, wtpct)
     type(carmastate_type), intent(in)     :: cstate            !! the carma state object
@@ -1354,7 +1384,7 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     ! Use the specified mass mixing ratio and the air density to determine the mass
     ! of the gas in g/x/y/z.
     mmr(:) = cstate%f_gc(:, igas) / cstate%f_rhoa_wet(:)
@@ -1364,17 +1394,17 @@ contains
     if (present(eqice))  eqice(:)  = cstate%f_pvapi(:, igas) / cstate%f_p(:)
     if (present(eqliq))  eqliq(:)  = cstate%f_pvapl(:, igas) / cstate%f_p(:)
     if (present(wtpct))  wtpct(:)  = cstate%f_wtpct(:)
-    
+
     return
   end subroutine CARMASTATE_GetGas
-  
+
 
   !! Gets information about the state of the atmosphere. After the CARMA_Step() call,
   !! a new atmospheric state is determined.
   !!
   !! @author Chuck Bardeen
   !! @version Feb-2009
-  !! @see CARMA_Step 
+  !! @see CARMA_Step
   !! @see CARMASTATE_Create
   subroutine CARMASTATE_GetState(cstate, rc, t, p, rhoa_wet, rlheat)
     type(carmastate_type), intent(in)     :: cstate                !! the carma state object
@@ -1383,25 +1413,25 @@ contains
     real(kind=f), optional, intent(out)   :: p(cstate%f_NZ)        !! the air pressure [Pa]
     real(kind=f), optional, intent(out)   :: rhoa_wet(cstate%f_NZ) !! air density [kg m-3]
     real(kind=f), optional, intent(out)   :: rlheat(cstate%f_NZ)   !! latent heat [K/s]
-    
+
     ! Assume success.
     rc = RC_OK
 
     ! Return the temperature, pressure, and/or density.
     if (present(t))         t(:) = cstate%f_t(:)
-    
+
     ! DYNE -> Pa
     if (present(p))         p(:) = cstate%f_p(:) / RPA2CGS
-    
+
     ! Convert rhoa from the scaled units to mks.
     if (present(rhoa_wet))  rhoa_wet(:) = (cstate%f_rhoa_wet(:) / &
          (cstate%f_zmet(:)*cstate%f_xmet(:)*cstate%f_ymet(:))) * 1e6_f / 1e3_f
-    
+
     if (present(rlheat))    rlheat(:) = cstate%f_rlheat(:)
 
     return
   end subroutine CARMASTATE_GetState
-  
+
 
   !! Sets the mass of the bins (ibin) for each particle element (ielem) in the grid.
   !! This call should be made after CARMASTATE_Create() and before CARMA_Step().
@@ -1409,7 +1439,7 @@ contains
   !! @author Chuck Bardeen
   !! @version Feb-2009
   !! @see CARMA_AddBin
-  !! @see CARMA_Step 
+  !! @see CARMA_Step
   !! @see CARMASTATE_GetBin
   subroutine CARMASTATE_SetBin(cstate, ielem, ibin, mmr, rc, surface)
     type(carmastate_type), intent(inout)  :: cstate         !! the carma state object
@@ -1418,13 +1448,13 @@ contains
     real(kind=f), intent(in)              :: mmr(cstate%f_NZ) !! the bin mass mixing ratio [kg/kg]
     integer, intent(out)                  :: rc             !! return code, negative indicates failure
     real(kind=f), optional, intent(in)    :: surface        !! particles mass on the surface [kg/m2]
-    
+
     integer                               :: igroup         ! Group containing this bin
 
     ! Assume success.
     rc = RC_OK
-    
-    ! Determine the particle group for the bin.    
+
+    ! Determine the particle group for the bin.
     igroup = cstate%f_carma%f_element(ielem)%f_igroup
 
     ! Make sure there are enough elements allocated.
@@ -1434,7 +1464,7 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     ! Make sure there are enough bins allocated.
     if (ibin > cstate%f_carma%f_NBIN) then
       if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_SetBin:: ERROR - The specifed bin (", &
@@ -1442,11 +1472,11 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     ! Use the specified mass mixing ratio and the air density to determine the mass
     ! of the particles in g/x/y/z.
     cstate%f_pc(:, ibin, ielem) = mmr(:) * cstate%f_rhoa_wet(:)
-    
+
     ! Handle the special cases for different types of elements ...
     if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
          (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
@@ -1454,11 +1484,11 @@ contains
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       cstate%f_pc(:, ibin, ielem) = cstate%f_pc(:, ibin, ielem) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     end if
-    
+
     ! If they specified an initial mass of particles on the surface, then use that
     ! value.
     if (present(surface)) then
-      
+
       ! Convert from g/cm2 to kg/m2
       cstate%f_pc_surf(ibin, ielem) = surface / 1e4_f * 1e3_f
 
@@ -1472,10 +1502,10 @@ contains
     else
       cstate%f_pc_surf(ibin, ielem) = 0.0_f
     end if
-        
+
     return
   end subroutine CARMASTATE_SetBin
-  
+
 
   !! Sets the mass of the detrained condensate for the bins (ibin) for each particle
   !! element (ielem) in the grid. This call should be made after CARMASTATE_Create()
@@ -1484,7 +1514,7 @@ contains
   !! @author Chuck Bardeen
   !! @version May-2010
   !! @see CARMA_AddBin
-  !! @see CARMA_Step 
+  !! @see CARMA_Step
   !! @see CARMASTATE_GetDetrain
   subroutine CARMASTATE_SetDetrain(cstate, ielem, ibin, mmr, rc)
     type(carmastate_type), intent(inout)  :: cstate         !! the carma state object
@@ -1492,13 +1522,13 @@ contains
     integer, intent(in)                   :: ibin           !! the bin index
     real(kind=f), intent(in)              :: mmr(cstate%f_NZ) !! the bin mass mixing ratio [kg/kg]
     integer, intent(out)                  :: rc             !! return code, negative indicates failure
-    
+
     integer                               :: igroup         ! Group containing this bin
 
     ! Assume success.
     rc = RC_OK
-    
-    ! Determine the particle group for the bin.    
+
+    ! Determine the particle group for the bin.
     igroup = cstate%f_carma%f_element(ielem)%f_igroup
 
     ! Make sure there are enough elements allocated.
@@ -1508,7 +1538,7 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     ! Make sure there are enough bins allocated.
     if (ibin > cstate%f_carma%f_NBIN) then
       if (cstate%f_carma%f_do_print) write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_SetDetrain:: ERROR - The specifed bin (", &
@@ -1516,11 +1546,11 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     ! Use the specified mass mixing ratio and the air density to determine the mass
     ! of the particles in g/x/y/z.
     cstate%f_pcd(:, ibin, ielem) = mmr(:) * cstate%f_rhoa_wet(:)
-    
+
     ! Handle the special cases for different types of elements ...
     if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
          (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
@@ -1528,10 +1558,10 @@ contains
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       cstate%f_pcd(:, ibin, ielem) = cstate%f_pcd(:, ibin, ielem) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     end if
-        
+
     return
   end subroutine CARMASTATE_SetDetrain
-  
+
 
 
   !! Sets the mass of the gas (igas) in the grid. This call should be made after
@@ -1541,8 +1571,8 @@ contains
   !! @version Feb-2009
   !! @see CARMA_AddGas
   !! @see CARMA_GetGas
-  !! @see CARMA_InitializeStep 
-  !! @see CARMA_Step 
+  !! @see CARMA_InitializeStep
+  !! @see CARMA_Step
   subroutine CARMASTATE_SetGas(cstate, igas, mmr, rc, mmr_old, satice_old, satliq_old)
     type(carmastate_type), intent(inout)  :: cstate         !! the carma object
     integer, intent(in)                   :: igas           !! the gas index
@@ -1551,11 +1581,11 @@ contains
     real(kind=f), intent(in), optional    :: mmr_old(cstate%f_NZ) !! the previous gas mass mixing ratio [kg/kg]
     real(kind=f), intent(inout), optional :: satice_old(cstate%f_NZ) !! the previous gas saturation wrt ice, calculates if -1
     real(kind=f), intent(inout), optional :: satliq_old(cstate%f_NZ) !! the previous gas saturation wrt liquid, calculates if -1
-    
+
     real(kind=f)                          :: tnew(cstate%f_NZ)
     integer                               :: iz
     logical                               :: calculateOld
-    
+
     ! Assume success.
     rc = RC_OK
 
@@ -1566,7 +1596,7 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     if (cstate%f_carma%f_do_substep) then
       if (.not. present(mmr_old)) then
         if (cstate%f_carma%f_do_print) then
@@ -1574,12 +1604,12 @@ contains
                 &Error - Need to specify mmr_old, satic_old, satliq_old when substepping."
         end if
         rc = RC_ERROR
-        
+
         return
-        
+
       else
         cstate%f_gcl(:, igas) = mmr_old(:) * cstate%f_rhoa_wet(:) * cstate%f_t(:) / cstate%f_told(:)
-      
+
         ! A value of -1 for the saturation ratio means that it needs to be calculated from the old temperature
         ! and the old gc.
         !
@@ -1587,26 +1617,26 @@ contains
         calculateOld = .false.
         if (present(satice_old) .and. present(satliq_old)) then
           if (any(satice_old(:) == -1._f) .or. any(satliq_old(:) == -1._f)) calculateOld = .true.
-        else 
+        else
           calculateOld = .true.
         end if
-        
+
         if (calculateOld) then
-          
+
           ! This is a bit of a hack, because of the way CARMA has the vapor pressure and saturation
           ! routines implemented.
-          
+
           ! Temporarily set the temperature and gc of to the old state
-          
+
           tnew(:)      = cstate%f_t(:)
           cstate%f_t(:)  = cstate%f_told(:)
-       
+
           cstate%f_gc(:, igas) = mmr_old(:) * cstate%f_rhoa_wet(:)
-          
+
           do iz = 1, cstate%f_NZ
             call supersat(cstate%f_carma, cstate, iz, igas, rc)
             if (rc < RC_OK) return
-          
+
             if (present(satice_old)) then
               if (satice_old(iz) == -1._f) then
                 cstate%f_supsatiold(iz, igas) = cstate%f_supsati(iz, igas)
@@ -1616,7 +1646,7 @@ contains
             else
               cstate%f_supsatiold(iz, igas) = cstate%f_supsati(iz, igas)
             end if
-            
+
             if (present(satliq_old)) then
               if (satliq_old(iz) == -1._f) then
                 cstate%f_supsatlold(iz, igas) = cstate%f_supsatl(iz, igas)
@@ -1627,9 +1657,9 @@ contains
               cstate%f_supsatlold(iz, igas) = cstate%f_supsatl(iz, igas)
             end if
           end do
-          
+
           cstate%f_t(:) = tnew(:)
-        
+
         else
           cstate%f_supsatiold(:, igas) = satice_old(:) - 1._f
           cstate%f_supsatlold(:, igas) = satliq_old(:) - 1._f
@@ -1640,33 +1670,33 @@ contains
     ! Use the specified mass mixing ratio and the air density to determine the mass
     ! of the gas in g/x/y/z.
     cstate%f_gc(:, igas)  = mmr(:) * cstate%f_rhoa_wet(:)
-    
+
     return
   end subroutine CARMASTATE_SetGas
-  
-  
+
+
   !! Sets information about the state of the atmosphere.
   !!
   !! @author Chuck Bardeen
   !! @version Feb-2009
-  !! @see CARMA_Step 
+  !! @see CARMA_Step
   !! @see CARMASTATE_Create
   subroutine CARMASTATE_SetState(cstate, rc, t, rhoa_wet)
     type(carmastate_type), intent(inout)  :: cstate              !! the carma state object
     integer, intent(out)                  :: rc                  !! return code, negative indicates failure
     real(kind=f), optional, intent(in)    :: t(cstate%f_NZ)        !! the air temperature [K]
     real(kind=f), optional, intent(in)    :: rhoa_wet(cstate%f_NZ) !! air density [kg m-3]
-    
+
     ! Assume success.
     rc = RC_OK
 
     ! Return the temperature or density.
     if (present(t))         cstate%f_t(:) = t(:)
-    
+
     ! Convert rhoa from mks to the scaled units.
     if (present(rhoa_wet))  cstate%f_rhoa_wet(:) = (rhoa_wet(:) * &
          (cstate%f_zmet(:)*cstate%f_xmet(:)*cstate%f_ymet(:))) / 1e6_f * 1e3_f
-    
+
     return
   end subroutine CARMASTATE_SetState
 end module

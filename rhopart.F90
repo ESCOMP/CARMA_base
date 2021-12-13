@@ -49,54 +49,57 @@ subroutine rhopart(carma, cstate, rc)
   1 format(/,'rhopart::WARNING - core mass > total mass, truncating : iz=',i4,',igroup=',&
               i4,',ibin=',i4,',total mass=',e10.3,',core mass=',e10.3,',using rhop=',f9.4)
 
+  ! Calculate hygroscopicity parameter, kappa, for mixed aerosols (Yu et al., JAMES, 2015)
+  call hygroscopicity(carma, cstate, rc)
+
   ! Calculate average particle mass density for each group
   do igroup = 1,NGROUP
 
     ! Define particle # concentration element index for current group
-    iepart = ienconc(igroup)     ! element of particle number concentration 
-    
+    iepart = ienconc(igroup)     ! element of particle number concentration
+
     do iz = 1, NZ
-    
+
       ! If there are no cores, than the density of the particle is just the density
       ! of the element.
       if (ncore(igroup) < 1) then
         rhop(iz,:,igroup) = rhoelem(:,iepart)
-      
+
       ! Otherwise, the density changes depending on the amount of core and volatile
       ! components.
-      else
+      else ! ncore(igroup) >= 1
 
         ! Calculate volume of cores and the mass of shell material
         ! <vcore> is the volume of core material and <rmshell> is the
         ! mass of shell material.
         vcore(:) = 0._f
         mcore(:) = 0._f
-  
+
         do jcore = 1,ncore(igroup)
           iecore = icorelem(jcore,igroup)    ! core element
-  
+
           mcore(:) = mcore(:) + pc(iz,:,iecore)
           vcore(:) = vcore(:) + pc(iz,:,iecore) / rhoelem(:,iecore)
-        enddo
-      
+        end do ! jcore = 1,ncore(igroup)
+
         ! Calculate average density
         do ibin = 1,NBIN
-                  
+
           ! If there is no core, the the density is that of the volatile element.
           if (mcore(ibin) == 0._f) then
             rhop(iz,ibin,igroup) = rhoelem(ibin,iepart)
-          else
-          
+          else! mcore(ibin) /= 0._f
+
             ! Since core mass and particle number (i.e. total mass) are advected separately,
             ! numerical diffusion during advection can cause problems where the core mass
             ! becomes greater than the total mass. To prevent adevction errors from making the
             ! group inconsistent, we will truncate core mass if it is larger than the total
             ! mass.
             if (mcore(ibin) > (rmass(ibin,igroup) * pc(iz,ibin,iepart))) then
-            
+
               ! Calculate the density.
               rhop(iz,ibin,igroup) = mcore(ibin) / vcore(ibin)
-              
+
               ! NOTE: This error happens a lot, so this error message is commented out
               ! by default.
 !              if (do_print) write(LUNOPRT,1) iz, igroup, ibin, pc(iz,ibin,iepart)*rmass(ibin,igroup), &
@@ -105,67 +108,87 @@ subroutine rhopart(carma, cstate, rc)
 
               ! Repair total mass.
               pc(iz,ibin,iepart) = mcore(ibin) / rmass(ibin,igroup)
-            else 
+            else
               rhop(iz,ibin,igroup) = (rmass(ibin,igroup) * pc(iz,ibin,iepart)) / &
               ((pc(iz,ibin,iepart)*rmass(ibin,igroup) - mcore(ibin))/rhoelem(ibin,iepart) + vcore(ibin))
-            end if
-          end if
-        enddo
-      endif
-    
+            end if ! mcore(ibin) > (rmass(ibin,igroup) * pc(iz,ibin,iepart))
+          end if ! mcore(ibin) == 0._f
+        end do ! ibin = 1,NBIN
+      end if ! ncore(igroup) < 1
+
       ! If these particles are hygroscopic and grow in response to the relative
       ! humidity, then caclulate a wet radius and wet density. Otherwise the wet
       ! and dry radius are the same.
-    
+
       ! Determine the weight percent of sulfate, and store it for later use.
-      if (irhswell(igroup) == I_WTPCT_H2SO4) then
+      if (irhswell(igroup) == I_WTPCT_H2SO4 .or. irhswell(igroup) == I_PETTERS) then
         h2o_mass     = gc(iz, igash2o) / (xmet(iz) * ymet(iz) * zmet(iz))
       end if
-          
+
       ! Loop over particle size bins.
       do ibin = 1,NBIN
-      
-        ! If humidity affects the particle, then determine the equilbirium
-        ! radius and density based upon the relative humidity.
-        if (irhswell(igroup) == I_WTPCT_H2SO4) then
-        
-          ! rlow
-          call getwetr(carma, igroup, relhum(iz), rlow(ibin,igroup), rlow_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, h2o_mass=h2o_mass, &
-            h2o_vp=pvapl(iz, igash2o), temp=t(iz))
-          if (rc < 0) return
 
-          ! rup
-          call getwetr(carma, igroup, relhum(iz), rup(ibin,igroup), rup_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, h2o_mass=h2o_mass, &
-            h2o_vp=pvapl(iz, igash2o), temp=t(iz))
-          if (rc < 0) return
+         ! If humidity affects the particle, then determine the equilbirium
+         ! radius and density based upon the relative humidity.
+         if (irhswell(igroup) == I_WTPCT_H2SO4) then
 
-          ! r
-          call getwetr(carma, igroup, relhum(iz), r(ibin,igroup), r_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, h2o_mass=h2o_mass, &
-            h2o_vp=pvapl(iz, igash2o), temp=t(iz))
-          if (rc < 0) return
+            ! rlow
+            call getwetr(carma, igroup, relhum(iz), rlow(ibin,igroup), rlow_wet(iz,ibin,igroup), &
+                         rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, h2o_mass=h2o_mass, &
+                         h2o_vp=pvapl(iz, igash2o), temp=t(iz))
+            if (rc < 0) return
 
-        else
-          ! rlow
-          call getwetr(carma, igroup, relhum(iz), rlow(ibin,igroup), rlow_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
-          if (rc < 0) return
+            ! rup
+            call getwetr(carma, igroup, relhum(iz), rup(ibin,igroup), rup_wet(iz,ibin,igroup), &
+                         rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, h2o_mass=h2o_mass, &
+                         h2o_vp=pvapl(iz, igash2o), temp=t(iz))
+            if (rc < 0) return
 
-          ! rup
-          call getwetr(carma, igroup, relhum(iz), rup(ibin,igroup), rup_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
-          if (rc < 0) return
+            ! r
+            call getwetr(carma, igroup, relhum(iz), r(ibin,igroup), r_wet(iz,ibin,igroup), &
+                         rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, h2o_mass=h2o_mass, &
+                         h2o_vp=pvapl(iz, igash2o), temp=t(iz))
+            if (rc < 0) return
 
-          ! r
-          call getwetr(carma, igroup, relhum(iz), r(ibin,igroup), r_wet(iz,ibin,igroup), &
-            rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
-          if (rc < 0) return
-        end if
-      end do
-    end do
-  enddo
+        else if (irhswell(igroup) == I_PETTERS) then
+
+            call getwetr(carma, igroup, relhum(iz), rlow(ibin,igroup), rlow_wet(iz,ibin,igroup), &
+                         rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc,h2o_mass=h2o_mass, &
+                         h2o_vp=pvapl(iz, igash2o), temp=t(iz), kappa=kappahygro(iz,ibin,igroup),cstate=cstate, iz=iz)
+            if (rc < 0) return
+
+            ! rup
+            call getwetr(carma, igroup, relhum(iz), rup(ibin,igroup), rup_wet(iz,ibin,igroup), &
+                         rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, h2o_mass=h2o_mass, &
+                         h2o_vp=pvapl(iz, igash2o),temp=t(iz), kappa=kappahygro(iz,ibin,igroup),cstate=cstate, iz=iz)
+            if (rc < 0) return
+
+            ! r
+            call getwetr(carma, igroup, relhum(iz), r(ibin,igroup), r_wet(iz,ibin,igroup), &
+                        rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, h2o_mass=h2o_mass, &
+                        h2o_vp=pvapl(iz, igash2o),temp=t(iz), kappa=kappahygro(iz,ibin,igroup),cstate=cstate, iz=iz)
+            if (rc < 0) return
+
+         else ! I_GERBER and I_FITZGERALD
+
+            call getwetr(carma, igroup, relhum(iz), rlow(ibin,igroup), rlow_wet(iz,ibin,igroup), &
+                         rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
+            if (rc < 0) return
+
+            ! rup
+            call getwetr(carma, igroup, relhum(iz), rup(ibin,igroup), rup_wet(iz,ibin,igroup), &
+                         rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
+            if (rc < 0) return
+
+            ! r
+            call getwetr(carma, igroup, relhum(iz), r(ibin,igroup), r_wet(iz,ibin,igroup), &
+                         rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc)
+            if (rc < 0) return
+
+         end if
+      end do ! ibin = 1,NBIN
+    end do ! iz = 1, NZ
+  end do ! igroup = 1,NGROUP
 
   !  Return to caller with new particle number densities.
   return

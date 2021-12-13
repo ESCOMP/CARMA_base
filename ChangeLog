@@ -1,3 +1,17 @@
+===============================================================
+Tag name: carma4_00
+Originator(s): Mike Mills, Yunquian Zha
+Date: 13 Dec 2021
+
+One-line Summary:
+
+Changes to support CARMA trop_strat model
+
+Purpose of changes:
+
+ Add hygroscopicity subroutines.
+ Add core mass check to ensure the first element of the group doesn't go negative.
+ Add the option that particle neutralization is controlled by the ambiance gas.
 
 ===============================================================
 Tag name:

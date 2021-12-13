@@ -11,8 +11,8 @@
 !! errors during compiling. By making the field member name different, the recursion
 !! problems should be avoided.
 !!
-!! @version July-2009 
-!! @author  Chuck Bardeen 
+!! @version July-2009
+!! @author  Chuck Bardeen
 module carma_types_mod
   use carma_precision_mod
   use carma_constants_mod
@@ -25,7 +25,7 @@ module carma_types_mod
   !!    - Allocate the variable in the appropriate create or initialization routine.
   !!    - Deallocate the variable in the approprate finalize and destroy routines.
   !!  - Add an alias for the variable to carma_globaer.h and associate it with the variable
-  !!     in this typedef.  
+  !!     in this typedef.
   !!
   !! NOTE: While the carmaelement_type is public, routines outside of the CARMA module should not look
   !! at or manuipulate fields of this structure directly. There should be CARMAELEMENT_XXX methods
@@ -36,7 +36,7 @@ module carma_types_mod
   !! they are part of the model and are the only routines outside of this module that should
   !! access fields of this structure directly.
   type, public :: carmaelement_type
-  
+
     !   name          Name of the element
     !   shortname     Short name of the element
     !   rho           Mass density of particle element [g/cm^3]
@@ -47,6 +47,7 @@ module carma_types_mod
     !
     character(len=CARMA_NAME_LEN)               :: f_name
     character(len=CARMA_SHORT_NAME_LEN)         :: f_shortname
+    real(kind=f)                                :: f_kappa
     real(kind=f), allocatable, dimension(:)     :: f_rho          ! (NBIN)
     integer                                     :: f_igroup
     integer                                     :: f_itype
@@ -63,7 +64,7 @@ module carma_types_mod
   !!    - Allocate the variable in the appropriate create or initialization routine.
   !!    - Deallocate the variable in the approprate finalize and destroy routines.
   !!  - Add an alias for the variable to carma_globaer.h and associate it with the variable
-  !!     in this typedef.  
+  !!     in this typedef.
   !!
   !! NOTE: While the carmagas_type is public, routines outside of the CARMA module should not look
   !! at or manuipulate fields of this structure directly. There should be CARMAGAS_XXX methods
@@ -74,7 +75,7 @@ module carma_types_mod
   !! they are part of the model and are the only routines outside of this module that should
   !! access fields of this structure directly.
   type, public :: carmagas_type
-  
+
     !   name          Name of the gas
     !   shortname     Short name of the gas
     !   wtmol         Molecular weight for the gas [g/mol]
@@ -100,7 +101,7 @@ module carma_types_mod
   !!    - Allocate the variable in the appropriate create or initialization routine.
   !!    - Deallocate the variable in the approprate finalize and destroy routines.
   !!  - Add an alias for the variable to carma_globaer.h and associate it with the variable
-  !!     in this typedef.  
+  !!     in this typedef.
   !!
   !! NOTE: While the carmagroup_type is public, routines outside of the CARMA module should not look
   !! at or manuipulate fields of this structure directly. There should be CARMAGROUP_XXX methods
@@ -111,26 +112,26 @@ module carma_types_mod
   !! they are part of the model and are the only routines outside of this module that should
   !! access fields of this structure directly.
   type, public :: carmagroup_type
-  
+
     !   name        Name of the particle
     !   shortname   Short name of the particle
     !   cnsttype    constituent type [I_CNSTTYPE_PROGNOSTIC | I_CNSTTYPE_DIAGNOSTIC]
     !   maxbin      the last prognostic bin in the group
-    !   nelem       Number of elements in group           
-    !   ncore       Number of core elements (itype = 2) in group           
+    !   nelem       Number of elements in group
+    !   ncore       Number of core elements (itype = 2) in group
     !   ishape      Describes particle shape for group
     !   ienconc     Particle number conc. element for group
     !   imomelem    Scondary moment element for group
-    !   icorelem    Core elements (itype = 2) in group           
+    !   icorelem    Core elements (itype = 2) in group
     !   solfac      Solubility factor for wet deposition
     !   is_fractal  If .true. then particle is fractal
-    !   is_ice      If .true. then ice particle 
+    !   is_ice      If .true. then ice particle
     !   is_cloud    If .true. then cloud particle
     !   is_sulfate  If .true. then sulfate particle
-    !   do_mie      If .true. then do mie calculations 
-    !   do_wetdep   If .true. then do wet deposition 
-    !   grp_do_drydep If .true. then do dry deposition 
-    !   grp_do_vtran If .true. then do sedimentation 
+    !   do_mie      If .true. then do mie calculations
+    !   do_wetdep   If .true. then do wet deposition
+    !   grp_do_drydep If .true. then do dry deposition
+    !   grp_do_vtran If .true. then do sedimentation
     !   scavcoef    Scavenging coefficient for wet deopistion (1/mm)
     !   if_sec_mom  If .true. then core second moment (itype = 3) used    {setupgrow}
     !   irhswell    Indicates method for swelling particles from RH
@@ -138,7 +139,7 @@ module carma_types_mod
     !   rmin        Radius of particle in first bin [cm]
     !   rmassmin    Mass of particle in first bin [g]
     !   rmrat       Ratio of masses of particles in consecutive bins
-    !   eshape      Ratio of particle length / diameter 
+    !   eshape      Ratio of particle length / diameter
     !   r           Radius bins [cm]
     !   rmass       Mass bins [g]
     !   rrat        Ratio of maximum diameter to diameter of equivalent sphere
@@ -214,8 +215,8 @@ module carma_types_mod
     real(kind=f)                                :: f_falpha
     real(kind=f)                                :: f_neutral_volfrc
   end type carmagroup_type
-  
-  
+
+
   !! The CARMASOLUTE data type represents a gas.
   !!
   !! The procedure for adding a variable to the CARMASOLUTE data type is:
@@ -224,7 +225,7 @@ module carma_types_mod
   !!    - Allocate the variable in the appropriate create or initialization routine.
   !!    - Deallocate the variable in the approprate finalize and destroy routines.
   !!  - Add an alias for the variable to carma_globaer.h and associate it with the variable
-  !!     in this typedef.  
+  !!     in this typedef.
   !!
   !! NOTE: While the carmagas_type is public, routines outside of the CARMA module should not look
   !! at or manuipulate fields of this structure directly. There should be CARMASOLUTE_XXX methods
@@ -235,7 +236,7 @@ module carma_types_mod
   !! they are part of the model and are the only routines outside of this module that should
   !! access fields of this structure directly.
   type, public :: carmasolute_type
-  
+
     !   name        Name of the solute
     !   shortname   Short name of the solute
     !   ions        Number of ions solute dissociates into
@@ -260,7 +261,7 @@ module carma_types_mod
   !!    - Allocate the variable in the appropriate create or initialization routine.
   !!    - Deallocate the variable in the approprate finalize and destroy routines.
   !!  - Add an alias for the variable to carma_globaer.h and associate it with the variable
-  !!     in this typedef.  
+  !!     in this typedef.
   !!
   !! NOTE: While the carmatype is public, routines outside of the CARMA module should not look
   !! at or manuipulate fields of this structure directly. There should be CARMA_XXX methods
@@ -271,7 +272,7 @@ module carma_types_mod
   !! they are part of the model and are the only routines outside of this module that should
   !! access fields of this structure directly.
   type, public :: carma_type
-  
+
     ! Model Dimensions
     !
     !  NGROUP   number of particle groups
@@ -301,8 +302,8 @@ module carma_types_mod
     !   do_print  .t. if print output is desired
     !
     logical            :: f_do_print
-    
-    
+
+
     ! Configuration Objects
     !
     ! These are all other objects that are parts of the CARMA model. This is
@@ -310,10 +311,10 @@ module carma_types_mod
     ! the structure of CARMA so the code is easier to understand and to
     ! maintain.
     !
-    !   element     Particle component    
-    !   gas         Gas   
-    !   group       Particle    
-    !   solute      Element solute    
+    !   element     Particle component
+    !   gas         Gas
+    !   group       Particle
+    !   solute      Element solute
     !
     ! NOTE: In the future, it may make sense to create objects that represent
     ! the CARMA processes. This would encapsulate all the variables related to
@@ -329,7 +330,7 @@ module carma_types_mod
 
     ! Model option & control variables
     !
-    !   conmax      Minumum relative concentration to consider in varstep   {prestep}   
+    !   conmax      Minumum relative concentration to consider in varstep   {prestep}
     !   icoag       Coagulation mapping array                           {setupcoag}
     !   icoagelem   Coagulation element mapping array                   {setupcoag}
     !   icoagelem_cm Coagulation element mapping array for second mom   {setupcoag}
@@ -384,6 +385,7 @@ module carma_types_mod
     logical                                       :: f_do_detrain
     logical                                       :: f_do_fixedinit
     logical                                       :: f_do_grow
+    logical                                       :: f_do_coremasscheck
     logical                                       :: f_do_clearsky
     logical                                       :: f_do_incloud
     logical                                       :: f_do_vtran
@@ -401,9 +403,9 @@ module carma_types_mod
     integer                                       :: f_igash2o
     integer                                       :: f_igash2so4
     integer                                       :: f_igasso2
-    integer                                       :: f_maxsubsteps 
-    integer                                       :: f_minsubsteps 
-    integer                                       :: f_maxretries 
+    integer                                       :: f_maxsubsteps
+    integer                                       :: f_minsubsteps
+    integer                                       :: f_maxretries
     integer                                       :: f_ifall
     integer                                       :: f_icoagop
     integer                                       :: f_icollec
@@ -429,7 +431,7 @@ module carma_types_mod
     real(kind=f)                                  :: f_gsticki
     real(kind=f)                                  :: f_gstickl
     real(kind=f)                                  :: f_cstick
-  
+
 
     ! Particle bin structure
     !
@@ -498,7 +500,7 @@ module carma_types_mod
     real(kind=f), allocatable, dimension(:,:,:)      :: f_prat       ! (4,NBIN,NGROUP)
     real(kind=f), allocatable, dimension(:,:)        :: f_pden1      ! (NBIN,NGROUP)
     real(kind=f), allocatable, dimension(:,:)        :: f_palr       ! (4,NGROUP)
-    
+
     ! Optical Properties
     !   wave      Bin-center wavelengths [cm]
     !   dwave     width of radiation bands [cm]
@@ -507,9 +509,9 @@ module carma_types_mod
     real(kind=f), allocatable, dimension(:)          :: f_wave       ! (NWAVE)
     real(kind=f), allocatable, dimension(:)          :: f_dwave      ! (NWAVE)
     logical, allocatable, dimension(:)               :: f_do_wave_emit  ! (NWAVE)
-  end type carma_type  
- 
- 
+  end type carma_type
+
+
   !! The cstate data type replaces portions of the common blocks that were used
   !! in the F77 version of CARMA. This allows the code to be written to allow for
   !! multiple threads to call CARMA routines simulataneously. This thread safety is
@@ -521,7 +523,7 @@ module carma_types_mod
   !!    - Allocate the variable in the create routine.
   !!    - Deallocate the variable in the destroy routines.
   !!  - Add an alias for the variable to cstate.h and associate it with the
-  !!      variable in this typedef.  
+  !!      variable in this typedef.
   !!
   !! NOTE: While the carmastate_type is public, routines outside of the CARMA module
   !! should not look at or manuipulate fields of this structure directly. There should
@@ -533,7 +535,7 @@ module carma_types_mod
   !! only routines outside of this module that should access fields of this structure
   !! directly.
   type, public :: carmastate_type
-  
+
     ! Parent CARMA object
     type(carma_type), pointer                   :: f_carma
 
@@ -548,7 +550,7 @@ module carma_types_mod
     !
     integer :: f_NZ
     integer :: f_NZP1
-    
+
     ! Model option & control variables
     !
     !   time        Simulation time at end of current timestep [s]
@@ -569,7 +571,7 @@ module carma_types_mod
     real(kind=f)                                  :: f_nstep
     integer                                       :: f_nsubstep
     real(kind=f)                                  :: f_nretry
-    
+
     real(kind=f), allocatable, dimension(:)       :: f_zsubsteps   ! (NZ)
 
 
@@ -656,14 +658,14 @@ module carma_types_mod
     !   d_t        Change in temperature due to transport
     !   dpc_sed     Change in particle concentration due to sedimentation
     !   coaglg      Total particle loss rate due to coagulation for group
-    !   coagpe      Particle production due to coagulation 
+    !   coagpe      Particle production due to coagulation
     !   rnuclg      Total particle loss rate due to nucleation for group
-    !   rnucpe      Particle production due to nucleation 
-    !   rhompe      Particle production due to homogeneous nucleation 
+    !   rnucpe      Particle production due to nucleation
+    !   rhompe      Particle production due to homogeneous nucleation
     !   pc_nucl     Particles produced due to nucleation (for the whole step, not just the substep)
     !   growlg      Total particle loss rate due to growth for group
-    !   growle      Partial particle loss rate due to growth for element 
-    !   growpe      Particle production due to growth 
+    !   growle      Partial particle loss rate due to growth for element
+    !   growpe      Particle production due to growth
     !   evaplg      Total particle loss rate due to evaporation for group
     !   evapls      Partial particle loss rate due to evaporation for element
     !   evappe      Particle production due to evaporation
@@ -672,17 +674,18 @@ module carma_types_mod
     !   evdrop      Particle production of droplet number
     !   evcore      Particle production of core elements
     !   gasprod     Gas production term
-    !   rlheat      Latent heating rate (per step) [deg_K/s]   
+    !   rlheat      Latent heating rate (per step) [deg_K/s]
     !   ftoppart    Downward particle flux across top boundary of model
     !   fbotpart    Upward flux particle across bottom boundary of model
     !   pc_topbnd   Particle concentration assumed just above the top boundary
     !   pc_botbnd   Particle concentration assumed just below the bottom boundary
-    !   cmf         Core mass fraction in a droplet 
+    !   cmf         Core mass fraction in a droplet
     !   totevap     .true. if droplets are totally evaporating to CN
     !   too_small   .true. if cores are smaller than smallest CN
     !   too_big     .true. if cores are larger than largest CN
     !   nuc_small   .true. if cores are smaller than smallest nucleated CN
     !   rlprod      Latent heat production (per substep) (K/s)
+    !   kappahygro  Hygroscopicity parameter
     !
     real(kind=f), allocatable, dimension(:,:,:)   :: f_pcl        ! (NZ,NBIN,NELEM
     real(kind=f), allocatable, dimension(:,:)     :: f_gcl        ! (NZ,NGAS)
@@ -716,6 +719,7 @@ module carma_types_mod
     logical                                       :: f_too_big
     logical                                       :: f_nuc_small
     real(kind=f)                                  :: f_rlprod
+    real(kind=f), allocatable, dimension(:,:,:)   :: f_kappahygro      ! (NZ,NBIN,NGROUP)
 
     !  Coagulation kernels and bin pair mapping
     !
@@ -736,7 +740,7 @@ module carma_types_mod
     real(kind=f), allocatable, dimension(:,:,:)     :: f_re         ! (NZ,NBIN,NGROUP)
     real(kind=f), allocatable, dimension(:,:,:)     :: f_dkz        ! (NZP1,NBIN,NGROUP)
     real(kind=f), allocatable, dimension(:,:)       :: f_vd         ! (NBIN,NGROUP)
-    
+
     ! Atmospheric Structure
     !
     !  rhoa      Air density at layer mid-pt [g/x_units/y_units/z_units]  {initatm}
@@ -772,8 +776,8 @@ module carma_types_mod
     !   diffus    Diffusivity of gas in air [cm^2/s]                  {setupgrow}
     !   rlhe      Latent heat of evaporation for gas [cm^2/s^2]       {setupgrow}
     !   rlhm      Latent heat of ice melting for gas [cm^2/s^2]       {setupgrow}
-    !   pvapl     Saturation vapor pressure over water [dyne/cm^2]    {vaporp}   
-    !   pvapi     Saturation vapor pressure over ice [dyne/cm^2]      {vaporp}   
+    !   pvapl     Saturation vapor pressure over water [dyne/cm^2]    {vaporp}
+    !   pvapi     Saturation vapor pressure over ice [dyne/cm^2]      {vaporp}
     !   surfctwa  Surface tension of water-air interface              {setupgkern}
     !   surfctiw  Surface tension of water-ice interface              {setupgkern}
     !   surfctia  Surface tension of ice-air interface                {setupgkern}
@@ -784,7 +788,7 @@ module carma_types_mod
     !   gro1      Growth kernel conduction term [UNITS?]              {setupgkern}
     !   gro2      Growth kernel radiation term [UNITS?]               {setupgkern}
     !   supsatl   Supersaturation of vapor w.r.t. liquid water [dimless]
-    !   supsati   Supersaturation of vapor w.r.t. ice [dimless]                  
+    !   supsati   Supersaturation of vapor w.r.t. ice [dimless]
     !   supsatlold Supersaturation (liquid) before time-step    {prestep}
     !   supsatiold Supersaturation (ice) before time-step    {prestep}
     !   scrit     Critical supersaturation for nucleation [dimless]   {setupnuc}
@@ -816,5 +820,5 @@ module carma_types_mod
     real(kind=f), allocatable, dimension(:)      :: f_partheat   ! (NZ)
     real(kind=f), allocatable, dimension(:,:,:)  :: f_dtpart     ! (NZ,NBIN,NGROUP)
     real(kind=f)                                 :: f_phprod
-   end type carmastate_type   
+   end type carmastate_type
 end module

@@ -64,6 +64,7 @@
 #define itype(ielem)          carma%f_element(ielem)%f_itype
 #define icomp(ielem)          carma%f_element(ielem)%f_icomposition
 #define isolelem(ielem)       carma%f_element(ielem)%f_isolute
+#define kappaelem(ielem)      carma%f_element(ielem)%f_kappa
 
 ! Gas object
 #define gasname(igas)         carma%f_gas(igas)%f_name
@@ -131,6 +132,7 @@
 #define do_wave_emit  carma%f_do_wave_emit
 
 !  Model option & control variables
+#define do_coremasscheck carma%f_do_coremasscheck
 #define do_clearsky   carma%f_do_clearsky
 #define do_cnst_rlh   carma%f_do_cnst_rlh
 #define do_coag       carma%f_do_coag
@@ -262,6 +264,7 @@
 #define nuc_small     cstate%f_nuc_small
 #define rlprod        cstate%f_rlprod
 #define phprod        cstate%f_phprod
+#define kappahygro    cstate%f_kappahygro
 
 !  Coagulation kernels and bin pair mapping
 #define ck0           carma%f_ck0

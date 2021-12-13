@@ -75,7 +75,7 @@ subroutine setupnuc(carma, cstate, rc)
     endif
   enddo
 
-#ifdef DEBUG
+#ifdef CARMA_DEBUG
   if (do_print_init) then
     do isol = 1,NSOLUTE
   
