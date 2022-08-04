@@ -43,15 +43,9 @@
 !  Gridding Information
 #define igridv        cstate%f_igridv
 #define igridh        cstate%f_igridh
-#define xmet          cstate%f_xmet
-#define ymet          cstate%f_ymet
 #define zmet          cstate%f_zmet
 #define zmetl         cstate%f_zmetl
-#define xc            cstate%f_xc
-#define yc            cstate%f_yc
 #define zc            cstate%f_zc
-#define dx            cstate%f_dx
-#define dy            cstate%f_dy
 #define dz            cstate%f_dz
 #define zl            cstate%f_zl
 #define lon           cstate%f_lon
@@ -95,7 +89,7 @@
 #define rmrat(igroup)           carma%f_group(igroup)%f_rmrat
 #define eshape(igroup)          carma%f_group(igroup)%f_eshape
 #define r(ibin,igroup)          carma%f_group(igroup)%f_r(ibin)
-#define rmass(ibin,igroup)      carma%f_group(igroup)%f_rmass(ibin) 
+#define rmass(ibin,igroup)      carma%f_group(igroup)%f_rmass(ibin)
 #define vol(ibin,igroup)        carma%f_group(igroup)%f_vol(ibin)
 #define dr(ibin,igroup)         carma%f_group(igroup)%f_dr(ibin)
 #define dm(ibin,igroup)         carma%f_group(igroup)%f_dm(ibin)
@@ -106,9 +100,9 @@
 #define rlow(ibin,igroup)       carma%f_group(igroup)%f_rlow(ibin)
 #define icorelem(icore,igroup)  carma%f_group(igroup)%f_icorelem(icore)
 #define ifallrtn(igroup)        carma%f_group(igroup)%f_ifallrtn
-#define arat(ibin,igroup)       carma%f_group(igroup)%f_arat(ibin) 
-#define rrat(ibin,igroup)       carma%f_group(igroup)%f_rrat(ibin) 
-#define rprat(ibin,igroup)      carma%f_group(igroup)%f_rprat(ibin) 
+#define arat(ibin,igroup)       carma%f_group(igroup)%f_arat(ibin)
+#define rrat(ibin,igroup)       carma%f_group(igroup)%f_rrat(ibin)
+#define rprat(ibin,igroup)      carma%f_group(igroup)%f_rprat(ibin)
 #define qext(iwave,ibin,igroup) carma%f_group(igroup)%f_qext(iwave,ibin)
 #define ssa(iwave,ibin,igroup)  carma%f_group(igroup)%f_ssa(iwave,ibin)
 #define do_mie(igroup)          carma%f_group(igroup)%f_do_mie
@@ -194,7 +188,7 @@
 #define nsubstep      cstate%f_nsubstep
 #define nretry        cstate%f_nretry
 #define zsubsteps     cstate%f_zsubsteps
-  
+
 !  Particle grid structure
 #define diffmass      carma%f_diffmass
 #define rhop          cstate%f_rhop

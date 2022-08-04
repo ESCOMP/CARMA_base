@@ -13,7 +13,7 @@
 !! based upon the formulation of Schmitt and Heymsfield [JAS, 2009].
 !!
 !! @author  Chuck Bardeen
-!! @version Mar-2010 
+!! @version Mar-2010
 subroutine setupvf_heymsfield2010(carma, cstate, j, rc)
 
   ! types
@@ -36,15 +36,15 @@ subroutine setupvf_heymsfield2010(carma, cstate, j, rc)
   real(kind=f)             :: rhoa_cgs, vg, rmfp, rkn, expon, x
   real(kind=f), parameter  :: c0      = 0.35_f
   real(kind=f), parameter  :: delta0  = 8.0_f
-  
+
   real(kind=f)             :: dmax                ! maximum diameter
-  
-  
+
+
   ! Loop over all atltitudes.
   do k = 1, NZ
 
     ! This is <rhoa> in cartesian coordinates (good old cgs units)
-    rhoa_cgs = rhoa(k) / (xmet(k)*ymet(k)*zmet(k))
+    rhoa_cgs = rhoa(k) / zmet(k)
 
     ! <vg> is mean thermal velocity of air molecules [cm/s]
     vg = sqrt(8._f / PI * R_AIR * t(k))
@@ -54,10 +54,10 @@ subroutine setupvf_heymsfield2010(carma, cstate, j, rc)
 
     ! Loop over particle size bins.
     do i = 1,NBIN
-    
+
       ! <rkn> is knudsen number
-!      rkn = rmfp / r(i,j) 
-      rkn = rmfp / (r_wet(k,i,j) * rrat(i,j)) 
+!      rkn = rmfp / r(i,j)
+      rkn = rmfp / (r_wet(k,i,j) * rrat(i,j))
 
       ! <bpm> is the slip correction factor, the correction term for
       ! non-continuum effects.  Also used to calculate coagulation kernels
@@ -67,24 +67,24 @@ subroutine setupvf_heymsfield2010(carma, cstate, j, rc)
       bpm(k,i,j) = 1._f + (1.246_f*rkn + 0.42_f*rkn*exp(expon))
 
       dmax = 2._f * r_wet(k,i,j) * rrat(i,j)
-      
+
       x = (rhoa_cgs / (rmu(k)**2)) * &
            ((8._f * rmass(i,j) * GRAV) / (PI * (arat(i,j)**0.5_f)))
-      
+
       ! Apply the slip correction factor. This is not included in the formulation
       ! from Heymsfield and Westbrook [2010].
       !
       ! NOTE: This is applied according to eq 8.46 and surrounding discussion in
       ! Seinfeld and Pandis [1998].
       x = x * bpm(k,i,j)
-      
+
       re(k,i,j) = ((delta0**2) / 4._f) * (sqrt(1._f + (4._f * sqrt(x) / (delta0**2 * sqrt(c0)))) - 1._f)**2
-      
-      
+
+
       vf(k,i,j) = rmu(k) * re(k,i,j) / (rhoa_cgs * dmax)
     enddo      ! <i=1,NBIN>
   enddo      ! <k=1,NZ>
-  
+
   ! Return to caller with particle fall velocities evaluated.
   return
 end

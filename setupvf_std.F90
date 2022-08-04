@@ -7,12 +7,12 @@
 !! indices correspond to vertical level <k>, bin index <i>, and aerosol
 !! group <j>.
 !!
-!! Method: first use Stokes flow (with Fuchs' size corrections, 
+!! Method: first use Stokes flow (with Fuchs' size corrections,
 !! valid only for Stokes flow) to estimate fall velocity, then calculate
 !! Reynolds' number (Re) (for spheres, Stokes drag coefficient is 24/Re).
 !! Then for Re > 1, correct drag coefficient (Cd) for turbulent boundary
-!! layer through standard trick to solving the drag problem: 
-!! fit y = log( Re ) as a function of x = log( Cd Re^2 ).  
+!! layer through standard trick to solving the drag problem:
+!! fit y = log( Re ) as a function of x = log( Cd Re^2 ).
 !! We use the data for rigid spheres taken from Figure 10-6 of
 !! Pruppacher and Klett (1978):
 !!
@@ -25,11 +25,11 @@
 !!
 !! Note that we ignore the "drag crisis" at Re > 200,000
 !! (as discussed on p. 341 and shown in Fig 10-36 of P&K 1978), where
-!! Cd drops dramatically to 0.2 for smooth, rigid spheres, and instead 
+!! Cd drops dramatically to 0.2 for smooth, rigid spheres, and instead
 !! assume Cd = 0.45 for Re > 1,000
 !!
 !! Note that we also ignore hydrodynamic deformation of liquid droplets
-!! as well as any breakup due to Rayleigh-Taylor instability.  
+!! as well as any breakup due to Rayleigh-Taylor instability.
 !!
 !! This routine requires that vertical profiles of temperature <t>,
 !! air density <rhoa>, and viscosity <rmu> are defined (i.e., initatm.f
@@ -44,10 +44,10 @@
 !! humidity according to the parameterizations of Gerber [1995] and
 !! Fitzgerald [1975]. The fall velocity is then based upon the wet radius
 !! rather than the dry radius. For particles that are not subject to
-!! swelling, the wet and dry radii are the same. 
+!! swelling, the wet and dry radii are the same.
 !!
 !! @author  Chuck Bardeen, Pete Colarco from Andy Ackerman
-!! @version Mar-2010 from Nov-2000 
+!! @version Mar-2010 from Nov-2000
 subroutine setupvf_std(carma, cstate, j, rc)
 
   ! types
@@ -69,7 +69,7 @@ subroutine setupvf_std(carma, cstate, j, rc)
   integer                 :: i, k
   real(kind=f)            :: x, y, cdrag
   real(kind=f)            :: rhoa_cgs, vg, rmfp, rkn, expon
-                                   
+
   ! Define formats
   1 format(/,'Non-spherical particles specified for group ',i3, &
       ' (ishape=',i3,') but spheres assumed in I_FALLRTN_STD.', &
@@ -79,12 +79,12 @@ subroutine setupvf_std(carma, cstate, j, rc)
   if( ishape(j) .ne. 1 )then
     if (do_print) write(LUNOPRT,1) j, ishape(j)
   endif
-  
+
   ! Loop over all atltitudes.
   do k = 1, NZ
 
     ! This is <rhoa> in cartesian coordinates (good old cgs units)
-    rhoa_cgs = rhoa(k) / (xmet(k)*ymet(k)*zmet(k))
+    rhoa_cgs = rhoa(k) / zmet(k)
 
     ! <vg> is mean thermal velocity of air molecules [cm/s]
     vg = sqrt(8._f / PI * R_AIR * t(k))
@@ -94,7 +94,7 @@ subroutine setupvf_std(carma, cstate, j, rc)
 
     ! Loop over particle size bins.
     do i = 1,NBIN
-    
+
       ! <rkn> is knudsen number
       rkn = rmfp / (r_wet(k,i,j) * rrat(i,j))
 
@@ -111,7 +111,7 @@ subroutine setupvf_std(carma, cstate, j, rc)
 
       if (re(k,i,j) .ge. 1._f) then
 
-        ! Correct drag coefficient for turbulence 
+        ! Correct drag coefficient for turbulence
         x = log(re(k,i,j) / bpm(k,i,j))
         y = x*(0.83_f - 0.013_f*x)
 
@@ -122,9 +122,9 @@ subroutine setupvf_std(carma, cstate, j, rc)
           ! drag coefficient from quadratic fit y(x) when Re < 1,000
           vf(k,i,j) = re(k,i,j) * rmu(k) / (2._f * r_wet(k,i,j) * rprat(i,j) * rhoa_cgs)
         else
-        
+
           ! drag coefficient = 0.45 independent of Reynolds number when Re > 1,000
-          cdrag = 0.45_f 
+          cdrag = 0.45_f
           vf(k,i,j) = bpm(k,i,j) * &
                       sqrt( 8._f * rhop_wet(k,i,j) * r_wet(k,i,j) * GRAV / &
                       (3._f * cdrag * rhoa_cgs * rprat(i,j)**2.) )

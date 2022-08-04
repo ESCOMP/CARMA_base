@@ -122,7 +122,7 @@ subroutine rhopart(carma, cstate, rc)
 
       ! Determine the weight percent of sulfate, and store it for later use.
       if (irhswell(igroup) == I_WTPCT_H2SO4 .or. irhswell(igroup) == I_PETTERS) then
-        h2o_mass     = gc(iz, igash2o) / (xmet(iz) * ymet(iz) * zmet(iz))
+        h2o_mass     = gc(iz, igash2o) / zmet(iz)
       end if
 
       ! Loop over particle size bins.
