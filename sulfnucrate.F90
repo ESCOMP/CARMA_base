@@ -112,6 +112,7 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
                   mass_cluster_dry, radius_cluster )
     end if
   case default
+    write(LUNOPRT,*)'sulfnucrate: '//trim(nucl_method)//' nucleation method no recognized'
     rc = RC_ERROR
     return
   end select
@@ -129,10 +130,6 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
     ! Scale to #/x/y/z/s
     nucrate = nucrate_cgs * zmet(iz) * xmet(iz) * ymet(iz)
   endif
-
-!  write(LUNOPRT,*)'nucbin,nucrate,mass_cluster_dry:',nucbin,nucrate
-!  write(LUNOPRT,*)'mass_cluster_dry,rmassup:',mass_cluster_dry,rmassup(1,igroup)
-!  write(LUNOPRT,*)'igroup,rmrat:',igroup,rmrat(igroup)
 
   return
 end subroutine sulfnucrate
@@ -182,8 +179,6 @@ subroutine binary_nuc_vehk2002( carma, temp, rh, h2so4,   &
 
 ! executable
 
-!  write(LUNOPRT,*)'temp,rh,h2so4:',temp,rh,h2so4
-
 ! calc sulfuric acid mole fraction in critical cluster
   crit_x = 0.740997_f - 0.00266379_f * temp   &
          - 0.00349998_f * log (h2so4)   &
@@ -195,76 +190,54 @@ subroutine binary_nuc_vehk2002( carma, temp, rh, h2so4,   &
          + 0.000184403_f * (log (rh)) ** 3.0_f   &
          - 1.50345e-6_f * temp * (log (rh)) ** 3.0_f
 
-!  write(LUNOPRT,*)'crit_x=',crit_x
-
 ! calc nucleation rate
   acoe    = 0.14309_f+2.21956_f*temp   &
           - 0.0273911_f * temp**2.0_f   &
           + 0.0000722811_f * temp**3.0_f + 5.91822_f/crit_x
 
-!  write(LUNOPRT,*)'197 acoe=',acoe
-
   bcoe    = 0.117489_f + 0.462532_f *temp   &
           - 0.0118059_f * temp**2.0_f   &
           + 0.0000404196_f * temp**3.0_f + 15.7963_f/crit_x
-
-!  write(LUNOPRT,*)'203 bcoe=',bcoe
 
   ccoe    = -0.215554_f-0.0810269_f * temp   &
           + 0.00143581_f * temp**2.0_f   &
           - 4.7758e-6_f * temp**3.0_f   &
           - 2.91297_f/crit_x
 
-!  write(LUNOPRT,*)'210 ccoe=',ccoe
-
   dcoe    = -3.58856_f+0.049508_f * temp   &
           - 0.00021382_f * temp**2.0_f   &
           + 3.10801e-7_f * temp**3.0_f   &
           - 0.0293333_f/crit_x
-
-!  write(LUNOPRT,*)'217 dcoe=',dcoe
 
   ecoe    = 1.14598_f - 0.600796_f * temp   &
           + 0.00864245_f * temp**2.0_f   &
           - 0.0000228947_f * temp**3.0_f   &
           - 8.44985_f/crit_x
 
-!  write(LUNOPRT,*)'224 ecoe=',ecoe
-
   fcoe    = 2.15855_f + 0.0808121_f * temp   &
           -0.000407382_f * temp**2.0_f   &
           -4.01957e-7_f * temp**3.0_f   &
           + 0.721326_f/crit_x
-
-!  write(LUNOPRT,*)'231 fcoe=',fcoe
 
   gcoe    = 1.6241_f - 0.0160106_f * temp   &
           + 0.0000377124_f * temp**2.0_f   &
           + 3.21794e-8_f * temp**3.0_f   &
           - 0.0113255_f/crit_x
 
-!  write(LUNOPRT,*)'238 gcoe=',gcoe
-
   hcoe    = 9.71682_f - 0.115048_f * temp   &
           + 0.000157098_f * temp**2.0_f   &
           + 4.00914e-7_f * temp**3.0_f   &
           + 0.71186_f/crit_x
-
-!  write(LUNOPRT,*)'245 hcoe=',hcoe
 
   icoe    = -1.05611_f + 0.00903378_f * temp   &
           - 0.0000198417_f * temp**2.0_f   &
           + 2.46048e-8_f  * temp**3.0_f   &
           - 0.0579087_f/crit_x
 
-!  write(LUNOPRT,*)'252 icoe=',icoe
-
   jcoe    = -0.148712_f + 0.00283508_f * temp   &
           - 9.24619e-6_f  * temp**2.0_f   &
           + 5.00427e-9_f * temp**3.0_f   &
           - 0.0127081_f/crit_x
-
-!  write(LUNOPRT,*)'259 jcoe=',jcoe
 
   tmpa     =     (   &
             acoe   &
@@ -281,15 +254,8 @@ subroutine binary_nuc_vehk2002( carma, temp, rh, h2so4,   &
           + jcoe * (log (h2so4)) **3.0_f   &
           )
 
-!  write(LUNOPRT,*)'tmpa=',tmpa
-!        rateloge = tmpa
   tmpa = min( tmpa, log(1.0e38_f) )
   nucrate_cgs = exp ( tmpa )
-
-!  write(LUNOPRT,*)'281 nucrate_cgs=',nucrate_cgs
-!       write(*,*) 'tmpa, nucrate_cgs =', tmpa, nucrate_cgs
-
-
 
 ! calc number of molecules in critical cluster
   acoe    = -0.00295413_f - 0.0976834_f*temp   &
@@ -302,63 +268,45 @@ subroutine binary_nuc_vehk2002( carma, temp, rh, h2so4,   &
           + 0.000192654_f * temp**2.0_f   &
           - 6.7043e-7_f * temp**3.0_f - 0.255774_f/crit_x
 
-!  write(LUNOPRT,*)'297 bcoe=',bcoe
-
   ccoe    = +0.00322308_f + 0.000852637_f * temp   &
           - 0.0000154757_f * temp**2.0_f   &
           + 5.66661e-8_f * temp**3.0_f   &
           + 0.0338444_f/crit_x
-
-!  write(LUNOPRT,*)'304 ccoe=',ccoe
 
   dcoe    = +0.0474323_f - 0.000625104_f * temp   &
           + 2.65066e-6_f * temp**2.0_f   &
           - 3.67471e-9_f * temp**3.0_f   &
           - 0.000267251_f/crit_x
 
-!  write(LUNOPRT,*)'311 dcoe=',dcoe
-
   ecoe    = -0.0125211_f + 0.00580655_f * temp   &
           - 0.000101674_f * temp**2.0_f   &
           + 2.88195e-7_f * temp**3.0_f   &
           + 0.0942243_f/crit_x
-
-!  write(LUNOPRT,*)'318 ecoe=',ecoe
 
   fcoe    = -0.038546_f - 0.000672316_f * temp   &
           + 2.60288e-6_f * temp**2.0_f   &
           + 1.19416e-8_f * temp**3.0_f   &
           - 0.00851515_f/crit_x
 
-!  write(LUNOPRT,*)'325 fcoe=',fcoe
-
   gcoe    = -0.0183749_f + 0.000172072_f * temp   &
           - 3.71766e-7_f * temp**2.0_f   &
           - 5.14875e-10_f * temp**3.0_f   &
           + 0.00026866_f/crit_x
-
-!  write(LUNOPRT,*)'332 gcoe=',gcoe
 
   hcoe    = -0.0619974_f + 0.000906958_f * temp   &
           - 9.11728e-7_f * temp**2.0_f   &
           - 5.36796e-9_f * temp**3.0_f   &
           - 0.00774234_f/crit_x
 
-!  write(LUNOPRT,*)'339 hcoe=',hcoe
-
   icoe    = +0.0121827_f - 0.00010665_f * temp   &
           + 2.5346e-7_f * temp**2.0_f   &
           - 3.63519e-10_f * temp**3.0_f   &
           + 0.000610065_f/crit_x
 
-!  write(LUNOPRT,*)'346 icoe=',icoe
-
   jcoe    = +0.000320184_f - 0.0000174762_f * temp   &
           + 6.06504e-8_f * temp**2.0_f   &
           - 1.4177e-11_f * temp**3.0_f   &
           + 0.000135751_f/crit_x
-
-!  write(LUNOPRT,*)'353 jcoe=',jcoe
 
   cnum_tot = acoe + bcoe * log (rh)
 
@@ -377,25 +325,15 @@ subroutine binary_nuc_vehk2002( carma, temp, rh, h2so4,   &
           + jcoe * (log (h2so4)) **3.0_f   &
           )
 
-!  write(LUNOPRT,*)'cnum_tot=',cnum_tot
-
   cnum_h2so4 = cnum_tot * crit_x
-
-!  write(LUNOPRT,*)'cnum_h2so4=',cnum_h2so4
 
 !   calc radius (nm) of critical cluster
   radius_cluster = exp( -1.6524245_f + 0.42316402_f*crit_x   &
                         + 0.3346648_f*log(cnum_tot) )
 
-!  write(LUNOPRT,*)'radius_cluster (nm)=',radius_cluster
-
   radius_cluster = radius_cluster * 1e-7_f ! nm -> cm
 
-!  write(LUNOPRT,*)'radius_cluster (cm)=',radius_cluster
-
   mass_cluster_dry = cnum_h2so4 * gwtmol(igash2so4) / AVG ! cluster dry mass in g
-
-!  write(LUNOPRT,*)'mass_cluster_dry=',mass_cluster_dry
 
   return
 end subroutine binary_nuc_vehk2002
