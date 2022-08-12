@@ -509,6 +509,18 @@ module carma_types_mod
     real(kind=f), allocatable, dimension(:)          :: f_wave       ! (NWAVE)
     real(kind=f), allocatable, dimension(:)          :: f_dwave      ! (NWAVE)
     logical, allocatable, dimension(:)               :: f_do_wave_emit  ! (NWAVE)
+
+    !  Nucleation methods:
+    !  'ZhaoTurco'
+    !        Zhao & Turco, JAS, V.26, No.5, 1995.
+    !  'Vehkamaki'
+    !        Vehkamaki, H., M. Kulmala, I. Napari, K.E.J. Lehtinen,
+    !        C. Timmreck, M. Noppel and A. Laaksonen, 2002,
+    !        An improved parameterization for sulfuric acid-water nucleation
+    !        rates for tropospheric and stratospheric conditions,
+    !        J. Geophys. Res., 107, 4622, doi:10.1029/2002jd002184
+    character(len=10) :: nucl_method = 'ZhaoTurco'
+
   end type carma_type
 
 

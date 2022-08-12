@@ -97,11 +97,12 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
   ! Compute relative humidity of water wrt liquid water
   rh = (supsatl(iz, igash2o) + 1._f) !* 100._f
 
-!  write(LUNOPRT,*)'iz,igash2o:',iz,igash2o
-!  write(LUNOPRT,*)'supsatl,rh,h2o:',supsatl(iz, igash2o),rh,h2o
-!  write(LUNOPRT,*)'h2o_cgs,gc:',h2o_cgs,gc(iz, igash2o)
-
-  if (newnuc_method_flagaa ==  2) then
+  ! Select nucleation method
+  select case (nucl_method)
+  case('ZhaoTurco')
+    call binary_nuc_zhao1995( carma, cstate, t(iz), wtpct(iz), rh, h2so4, h2so4_cgs, h2o, h2o_cgs, beta1, &
+                  nucrate_cgs, mass_cluster_dry, radius_cluster, ftry, rc )
+  case('Vehkamaki')
     if (h2so4 >= 1.0e4_f) then
       temp_bb = max( 230.0_f, min( 305.0_f, t(iz) ) )
       rh_bb = max( 1.0e-4_f, min( 1.0_f, rh ) )
@@ -110,10 +111,10 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
       call binary_nuc_vehk2002( carma, temp_bb, rh_bb, h2so4_bb, nucrate_cgs, &
                   mass_cluster_dry, radius_cluster )
     end if
-  else
-    call binary_nuc_zhao1995( carma, cstate, t(iz), wtpct(iz), rh, h2so4, h2so4_cgs, h2o, h2o_cgs, beta1, &
-                  nucrate_cgs, mass_cluster_dry, radius_cluster, ftry, rc )
-  end if
+  case default
+    rc = RC_ERROR
+    return
+  end select
 
   !   Calc bin # of crit nucleus
   if (mass_cluster_dry.lt.rmassup(1,igroup)) then
