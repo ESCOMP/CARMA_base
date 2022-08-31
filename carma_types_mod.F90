@@ -400,9 +400,9 @@ module carma_types_mod
     logical                                       :: f_do_cnst_rlh
     logical, allocatable, dimension(:,:)          :: f_if_nuc       !(NELEM,NELEM)
     real(kind=f)                                  :: f_conmax
-    integer                                       :: f_igash2o = 0
-    integer                                       :: f_igash2so4 = 0
-    integer                                       :: f_igasso2 = 0
+    integer                                       :: f_igash2o
+    integer                                       :: f_igash2so4
+    integer                                       :: f_igasso2
     integer                                       :: f_maxsubsteps
     integer                                       :: f_minsubsteps
     integer                                       :: f_maxretries
@@ -580,6 +580,8 @@ module carma_types_mod
     !  igridv     flag to specify desired vertical grid coord system    {initatm}
     !  zmet       Vertical ds/dz (ds is metric distance)                {initatm}
     !  zmetl      Vertical ds/dz at edges (ds is metric distance)       {initatm}
+    !  xc         Horizontal position at center of box                  {initatm}
+    !  yc         Horizontal position at center of box                  {initatm}
     !  zc         Altitude at layer mid-point                           {initatm}
     !  dz         Thickness of vertical layers                          {initatm}
     !  zl         Altitude at top of layer                              {initatm}
@@ -589,11 +591,11 @@ module carma_types_mod
     integer :: f_igridv
     real(kind=f), allocatable, dimension(:)     :: f_zmet   ! (NZ)
     real(kind=f), allocatable, dimension(:)     :: f_zmetl  ! (NZP1)
+    real(kind=f)                                :: f_xc
+    real(kind=f)                                :: f_yc
     real(kind=f), allocatable, dimension(:)     :: f_zc     ! (NZ)
     real(kind=f), allocatable, dimension(:)     :: f_dz     ! (NZ)
     real(kind=f), allocatable, dimension(:)     :: f_zl     ! (NZP1)
-    real(kind=f)                                :: f_lon
-    real(kind=f)                                :: f_lat
 
     ! Particle bin structure
     !

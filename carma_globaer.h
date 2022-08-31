@@ -45,11 +45,11 @@
 #define igridh        cstate%f_igridh
 #define zmet          cstate%f_zmet
 #define zmetl         cstate%f_zmetl
+#define xc            cstate%f_xc
+#define yc            cstate%f_yc
 #define zc            cstate%f_zc
 #define dz            cstate%f_dz
 #define zl            cstate%f_zl
-#define lon           cstate%f_lon
-#define lat           cstate%f_lat
 
 ! Element object
 #define elemname(ielem)       carma%f_element(ielem)%f_name

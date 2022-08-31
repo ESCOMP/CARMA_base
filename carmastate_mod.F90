@@ -84,15 +84,15 @@ contains
   !! @see CARMA_Initialize
   !! @see CARMASTATE_Destroy
   subroutine CARMASTATE_Create(cstate, carma_ptr, time, dtime, NZ, igridv,   &
-      lat, lon, zc, zl, p, pl, t, rc, qh2o, relhum, told, radint)
+      xc, yc, zc, zl, p, pl, t, rc, qh2o, relhum, told, radint)
     type(carmastate_type), intent(inout)    :: cstate      !! the carma state object
     type(carma_type), pointer, intent(in)   :: carma_ptr   !! (in) the carma object
     real(kind=f), intent(in)                :: time        !! the model time [s]
     real(kind=f), intent(in)                :: dtime       !! the timestep size [s]
     integer, intent(in)                     :: NZ          !! the number of vertical grid points
     integer, intent(in)                     :: igridv      !! vertical grid type
-    real(kind=f), intent(in)                :: lat         !! latitude at center [degrees north]
-    real(kind=f), intent(in)                :: lon         !! longitude at center [degrees east]
+    real(kind=f), intent(in)                :: xc          !! x at center
+    real(kind=f), intent(in)                :: yc          !! y at center
     real(kind=f), intent(in)                :: zc(NZ)      !! z at center
     real(kind=f), intent(in)                :: zl(NZ+1)    !! z at edge
     real(kind=f), intent(in)                :: p(NZ)       !! pressure at center [Pa]
@@ -130,8 +130,8 @@ contains
     cstate%f_igridv = igridv
 
     ! Store away the grid location information.
-    cstate%f_lat  = lat
-    cstate%f_lon  = lon
+    cstate%f_yc  = yc
+    cstate%f_xc  = yc
 
     ! Allocate all the dynamic variables related to state.
     call CARMASTATE_Allocate(cstate, rc)
@@ -240,15 +240,15 @@ contains
   !! @see CARMA_Initialize
   !! @see CARMASTATE_Destroy
   subroutine CARMASTATE_CreateFromReference(cstate, carma_ptr, time, dtime, NZ, igridv, &
-      lat, lon, zc, zl, p, pl, t, rc, qh2o, relhum, qh2so4)
+      xc, yc, zc, zl, p, pl, t, rc, qh2o, relhum, qh2so4)
     type(carmastate_type), intent(inout)    :: cstate      !! the carma state object
     type(carma_type), pointer, intent(in)   :: carma_ptr   !! (in) the carma object
     real(kind=f), intent(in)                :: time        !! the model time [s]
     real(kind=f), intent(in)                :: dtime       !! the timestep size [s]
     integer, intent(in)                     :: NZ          !! the number of vertical grid points
     integer, intent(in)                     :: igridv      !! vertical grid type
-    real(kind=f), intent(in)                :: lat         !! latitude at center [degrees north]
-    real(kind=f), intent(in)                :: lon         !! longitude at center [degrees east]
+    real(kind=f), intent(in)                :: xc          !! x at center
+    real(kind=f), intent(in)                :: yc          !! y at center
     real(kind=f), intent(in)                :: zc(NZ)      !! z at center
     real(kind=f), intent(in)                :: zl(NZ+1)    !! z at edge
     real(kind=f), intent(in)                :: p(NZ)       !! pressure at center [Pa]
@@ -286,8 +286,8 @@ contains
     cstate%f_igridv = igridv
 
     ! Store away the grid location information.
-    cstate%f_lat  = lat
-    cstate%f_lon  = lon
+    cstate%f_xc  = xc
+    cstate%f_yc  = yc
 
     ! Allocate all the dynamic variables related to state.
     call CARMASTATE_Allocate(cstate, rc)
@@ -1026,7 +1026,7 @@ contains
   !! @see CARMA_GetGas
   !! @see CARMA_Step
   !! @see CARMASTATE_SetGas
-  subroutine CARMASTATE_Get(cstate, rc, max_nsubstep, max_nretry, nstep, nsubstep, nretry, zsubsteps, lat, lon)
+  subroutine CARMASTATE_Get(cstate, rc, max_nsubstep, max_nretry, nstep, nsubstep, nretry, zsubsteps, xc, yc)
     type(carmastate_type), intent(in)     :: cstate            !! the carma state object
     integer, intent(out)                  :: rc                !! return code, negative indicates failure
     integer, optional, intent(out)        :: max_nsubstep      !! maximum number of substeps in a step
@@ -1035,8 +1035,8 @@ contains
     integer, optional, intent(out)        :: nsubstep          !! total number of substeps taken
     real(kind=f), optional, intent(out)   :: nretry            !! total number of retries taken
     real(kind=f), optional, intent(out)   :: zsubsteps(cstate%f_NZ) !! number of substeps taken per vertical grid point
-    real(kind=f), optional, intent(out)   :: lat               !! grid center latitude [deg]
-    real(kind=f), optional, intent(out)   :: lon               !! grid center longitude [deg]
+    real(kind=f), optional, intent(out)   :: xc                !! x location at center
+    real(kind=f), optional, intent(out)   :: yc                !! y location at center
 
     ! Assume success.
     rc = RC_OK
@@ -1047,8 +1047,8 @@ contains
     if (present(nsubstep))     nsubstep     = cstate%f_nsubstep
     if (present(nretry))       nretry       = cstate%f_nretry
     if (present(zsubsteps))    zsubsteps    = cstate%f_zsubsteps
-    if (present(lat))          lat          = cstate%f_lat
-    if (present(lon))          lon          = cstate%f_lon
+    if (present(xc))           xc           = cstate%f_xc
+    if (present(yc))           yc           = cstate%f_yc
 
     return
   end subroutine CARMASTATE_Get

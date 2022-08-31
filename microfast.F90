@@ -39,13 +39,13 @@ subroutine microfast(carma, cstate, iz, scale_threshold, rc)
   real(kind=f)                         :: srat2
   real(kind=f)                         :: s_threshold
 
-  1 format(/,'microfast::ERROR - excessive change in supersaturation for ',a,' : iz=',i4,',lat=', &
-              f7.2,',lon=',f7.2,',srat=',e10.3,',supsatiold=',e10.3,',supsatlold=',e10.3,',supsati=',e10.3, &
+  1 format(/,'microfast::ERROR - excessive change in supersaturation for ',a,' : iz=',i4,',xc=', &
+              f7.2,',yc=',f7.2,',srat=',e10.3,',supsatiold=',e10.3,',supsatlold=',e10.3,',supsati=',e10.3, &
               ',supsatl=',e10.3,',t=',f6.2)
   2 format('microfast::ERROR - conditions at beginning of the step : gc=',e10.3,',supsati=',e17.10, &
               ',supsatl=',e17.10,',t=',f6.2,',d_gc=',e10.3,',d_t=',f6.2)
-  3 format(/,'microfast::ERROR - excessive change in supersaturation for ',a,' : iz=',i4,',lat=', &
-              f7.2,',lon=',f7.2,',supsatiold=',e10.3,',supsatlold=',e10.3,',supsati=',e10.3, &
+  3 format(/,'microfast::ERROR - excessive change in supersaturation for ',a,' : iz=',i4,',xc=', &
+              f7.2,',yc=',f7.2,',supsatiold=',e10.3,',supsatlold=',e10.3,',supsati=',e10.3, &
               ',supsatl=',e10.3,',t=',f6.2)
 
    ! Set production and loss rates to zero.
@@ -217,7 +217,7 @@ subroutine microfast(carma, cstate, iz, scale_threshold, rc)
             if (do_substep) then
               if (nretries == maxretries) then
                 if (do_print) write(LUNOPRT,1) trim(gasname(igas)), iz, &
-                     lat, lon, srat, previous_supsati(igas), previous_supsatl(igas), &
+                     xc, yc, srat, previous_supsati(igas), previous_supsatl(igas), &
                      supsati(iz, igas), supsatl(iz,igas), t(iz)
                 if (do_print) write(LUNOPRT,2) gcl(iz,igas), supsatiold(iz, igas), &
                      supsatlold(iz,igas), told(iz), d_gc(iz, igas), d_t(iz)
@@ -225,7 +225,7 @@ subroutine microfast(carma, cstate, iz, scale_threshold, rc)
 
               rc = RC_WARNING_RETRY
             else
-              if (do_print) write(LUNOPRT,1) trim(gasname(igas)), iz, lat, lon, &
+              if (do_print) write(LUNOPRT,1) trim(gasname(igas)), iz, xc, yc, &
                    srat, previous_supsati(igas), previous_supsatl(igas), &
                    supsati(iz, igas), supsatl(iz,igas), t(iz)
             end if
@@ -264,14 +264,14 @@ subroutine microfast(carma, cstate, iz, scale_threshold, rc)
           if (do_substep) then
             if (nretries == maxretries) then
               if (do_print) write(LUNOPRT,3) trim(gasname(igas)), iz, &
-                   lat, lon, previous_supsati(igas), previous_supsatl(igas), &
+                   xc, yc, previous_supsati(igas), previous_supsatl(igas), &
                    supsati(iz, igas), supsatl(iz,igas), t(iz)
               if (do_print) write(LUNOPRT,2) gcl(iz,igas), supsatiold(iz, igas), &
                    supsatlold(iz,igas), told(iz), d_gc(iz, igas), d_t(iz)
             end if
           else
             if (do_print) write(LUNOPRT,3) trim(gasname(igas)), iz, &
-                 lat, lon, previous_supsati(igas), previous_supsatl(igas), &
+                 xc, yc, previous_supsati(igas), previous_supsatl(igas), &
                  supsati(iz, igas), supsatl(iz,igas), t(iz)
           end if
 

@@ -65,7 +65,7 @@ subroutine calcrs(carma, cstate, ustar, tmp, radi, cc, vfall, rs, landidx, rc)
 
   ! Unit conversion
   rhoadry = rhoa(ibot) / zmet(ibot)    ! [g/cm3]
-  eta = rmu(ibot) / rhoadry                                     ! rmu, aerodynamic viscosity of air [g/cm/s]
+  eta = rmu(ibot) / rhoadry            ! rmu, aerodynamic viscosity of air [g/cm/s]
 
   if (landidx .eq. 1)  then
     lam = 2._f / 3._f
