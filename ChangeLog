@@ -1,4 +1,16 @@
 ===============================================================
+Tag name: carma4_01
+Originator(s): Francis Vitt
+Date: 12 Oct 2022
+
+One-line Summary: Changes needed for unstructured grids
+
+Purpose of changes:
+ . remove igridh, and xmet, ymet, scaling factors
+ . replace lat lon coordinates used in the error messages with
+   general xc yc coordinates
+
+===============================================================
 Tag name: carma4_00
 Originator(s): Mike Mills, Yunquian Zha
 Date: 13 Dec 2021
