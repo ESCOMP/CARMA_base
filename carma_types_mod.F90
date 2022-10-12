@@ -578,36 +578,24 @@ module carma_types_mod
     ! Model Grid
     !
     !  igridv     flag to specify desired vertical grid coord system    {initatm}
-    !  igridh     flag to specify desired horizontal grid coord system  {initatm}
-    !  xmet       Horizontal ds/dx (ds is metric distance)              {initatm}
-    !  ymet       Horizontal ds/dy (ds is metric distance)              {initatm}
     !  zmet       Vertical ds/dz (ds is metric distance)                {initatm}
     !  zmetl      Vertical ds/dz at edges (ds is metric distance)       {initatm}
     !  xc         Horizontal position at center of box                  {initatm}
     !  yc         Horizontal position at center of box                  {initatm}
     !  zc         Altitude at layer mid-point                           {initatm}
-    !  dx         Horizontal grid spacing                               {initatm}
-    !  dy         Horizontal grid spacing                               {initatm}
     !  dz         Thickness of vertical layers                          {initatm}
     !  zl         Altitude at top of layer                              {initatm}
     !  lon        Longitude [deg] at xc, yc                             {initatm}
     !  lat        Latitude [deg] at xc, yc                              {initatm}
     !
     integer :: f_igridv
-    integer :: f_igridh
-    real(kind=f), allocatable, dimension(:)     :: f_xmet   ! (NZ)
-    real(kind=f), allocatable, dimension(:)     :: f_ymet   ! (NZ)
     real(kind=f), allocatable, dimension(:)     :: f_zmet   ! (NZ)
     real(kind=f), allocatable, dimension(:)     :: f_zmetl  ! (NZP1)
-    real(kind=f), allocatable, dimension(:)     :: f_xc     ! (NZ)
-    real(kind=f), allocatable, dimension(:)     :: f_yc     ! (NZ)
+    real(kind=f)                                :: f_xc
+    real(kind=f)                                :: f_yc
     real(kind=f), allocatable, dimension(:)     :: f_zc     ! (NZ)
-    real(kind=f), allocatable, dimension(:)     :: f_dx     ! (NZ)
-    real(kind=f), allocatable, dimension(:)     :: f_dy     ! (NZ)
     real(kind=f), allocatable, dimension(:)     :: f_dz     ! (NZ)
     real(kind=f), allocatable, dimension(:)     :: f_zl     ! (NZP1)
-    real(kind=f)                                :: f_lon
-    real(kind=f)                                :: f_lat
 
     ! Particle bin structure
     !

@@ -11,10 +11,10 @@
 !! matrix equation      A * x = b      to solve for vector x.
 !! 
 !!                                                                     
-!! First, call LUDCMPC(A,N,NP,INDX,D). The original Matrix A is lost   
+!! First, call LUDCMPC(A,N,numP,INDX,D). The original Matrix A is lost   
 !! and substituted by its LU decomposition.                            
 !!                                                                     
-!! Second, call LUBKSBC(A,N,NP,INDX,B). The original right-hand-side   
+!! Second, call LUBKSBC(A,N,numP,INDX,B). The original right-hand-side   
 !! vector ib in B is lost and replaced/returned as the solution        
 !! vector x  ( x(i) = B(i) ).                                          
 !! Use same kind of call to solve for successive right-hand-sides.     
@@ -24,7 +24,7 @@
 !!   1) Initialize matrix AINV(i,j) to be equal to the                 
 !!      identity matrix (AINV(i,j)=1 for i=j; =0 otherwise)            
 !!   2) DO jj=1,n                                                      
-!!         CALL LUBKSBC(A,N,NP,INDX,AINV(1,jj))                        
+!!         CALL LUBKSBC(A,N,numP,INDX,AINV(1,jj))                        
 !!      END DO                                                         
 !! (see textbook for further details).                                 
 !! ****************************************************************** 
@@ -48,7 +48,7 @@ module lusolvec_mod
   contains
 
   !!
-  !! SUBROUTINE LUDCMPC(A,N,NP,INDX,D)                                   
+  !! SUBROUTINE LUDCMPC(A,N,numP,INDX,D)                                   
   !!
   !! Given a general complex matrix A, this routine replaces it by its   
   !! LU decomposition of a rowwise permutation of itself.                
@@ -70,10 +70,10 @@ module lusolvec_mod
   !! ******************************************************************  
   !! Version: 28.08.2000                                                 
   !! ******************************************************************
-  SUBROUTINE LUDCMPC(A,N,NP,INDX,D)
+  SUBROUTINE LUDCMPC(A,N,numP,INDX,D)
 
-    INTEGER :: NP
-    COMPLEX(kind=f) :: A(NP,NP)
+    INTEGER :: numP
+    COMPLEX(kind=f) :: A(numP,numP)
     INTEGER :: N
     INTEGER :: INDX(N)
     REAL(kind=f) :: D
@@ -147,7 +147,7 @@ module lusolvec_mod
   END SUBROUTINE LUDCMPC
 
   !!
-  !! SUBROUTINE LUBKSBC(A,N,NP,INDX,B)
+  !! SUBROUTINE LUBKSBC(A,N,numP,INDX,B)
   !!
   !! Solution of the set of linear equations A' * x = b where 
   !! A is input not as the original matrix, but as a LU decomposition 
@@ -168,10 +168,10 @@ module lusolvec_mod
   !! ******************************************************************
   !! Version: 28.08.2000
   !! ******************************************************************
-  SUBROUTINE LUBKSBC(A,N,NP,INDX,B)
+  SUBROUTINE LUBKSBC(A,N,numP,INDX,B)
 
-    INTEGER :: NP
-    COMPLEX(kind=f) :: A(NP,NP)
+    INTEGER :: numP
+    COMPLEX(kind=f) :: A(numP,numP)
     INTEGER :: N
     INTEGER :: INDX(N)
     COMPLEX(kind=f) :: B(N)

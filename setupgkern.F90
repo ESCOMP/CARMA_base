@@ -4,8 +4,8 @@
 
 !! This routine defines radius-dependent but time-independent parameters
 !! used to calculate condensational growth of particles.  Growth rates
-!! are calculated at bin boundaries: the parameters calculated here 
-!! ( <gro>, <gro1>, <gro2>, and <akelvin> ) 
+!! are calculated at bin boundaries: the parameters calculated here
+!! ( <gro>, <gro1>, <gro2>, and <akelvin> )
 !! are defined at lower bin boundaries through the growth rate expression
 !! (for one particle) used in growevapl.f:
 !!>
@@ -13,7 +13,7 @@
 !!   --   -------------------------------------------
 !!   dt               1 + gro*gro1*pvap
 !!
-!!  where 
+!!  where
 !!
 !!  S    = supersaturation
 !!  Ak   = exp(akelvin/r)
@@ -45,7 +45,7 @@ subroutine setupgkern(carma, cstate, rc)
   type(carma_type), intent(in)         :: carma   !! the carma object
   type(carmastate_type), intent(inout) :: cstate  !! the carma state object
   integer, intent(inout)               :: rc       !! return code, negative indicates failure
-  
+
   ! Local declarations
   integer                        :: igas     !! gas index
   integer                        :: ielem    !! element index
@@ -76,20 +76,20 @@ subroutine setupgkern(carma, cstate, rc)
   real(kind=f)                   :: fv
   real(kind=f)                   :: surf_tens  ! surface tension of H2SO4 particle
   real(kind=f)                   :: rho_H2SO4  ! wet density of H2SO4 particle
-  
+
 
   ! Calculate gas properties for all of the gases. Better to do them all once, than to
   ! repeat this for multiple groups.
   do igas = 1, NGAS
- 
+
     ! Radius-independent parameters for condensing gas
     !
     ! This is <rhoa> in cgs units.
     !
-    rhoa_cgs(:, igas) = rhoa(:) / (xmet(:)*ymet(:)*zmet(:))
+    rhoa_cgs(:, igas) = rhoa(:) / zmet(:)
 
     if (igas .eq. igash2o) then
-        
+
       ! Condensing gas is water vapor
       !
       ! <surfctwa> is surface tension of water-air interface (valid from 0 to 40 C)
@@ -108,23 +108,23 @@ subroutine setupgkern(carma, cstate, rc)
       akelvin(:,igas) = 2._f*gwtmol(igas)*surfctwa(:) &
                         / ( t(:)*RHO_W*RGAS )
 
-      akelvini(:,igas) = 2._f*gwtmol(igas)*surfctia(:) & 
+      akelvini(:,igas) = 2._f*gwtmol(igas)*surfctia(:) &
                         / ( t(:)*RHO_W*RGAS )
-                        
-    ! condensing gas is H2SO4                    
+
+    ! condensing gas is H2SO4
     else if (igas .eq. igash2so4) then
-    
+
       ! Calculate Kelvin curvature factor for H2SO4 interactively with temperature:
-      do k = 1, NZ  
+      do k = 1, NZ
         surf_tens = sulfate_surf_tens(carma, wtpct(k), t(k), rc)
         rho_H2SO4 = sulfate_density(carma, wtpct(k), t(k), rc)
         akelvin(k, igas) = 2._f * gwtmol(igas) * surf_tens / (t(k) * rho_H2SO4 * RGAS)
-        
+
         ! Not doing condensation of h2So4 on ice, so just set it to the value
         ! for water vapor.
         akelvini(k, igas) = akelvini(k, igash2o)
-      end do   
-    else 
+      end do
+    else
 
       ! Condensing gas is not yet configured.
       if (do_print) write(LUNOPRT,*) 'setupgkern::ERROR - invalid igas'
@@ -132,7 +132,7 @@ subroutine setupgkern(carma, cstate, rc)
       return
     endif
 
-    ! Molecular free path of condensing gas 
+    ! Molecular free path of condensing gas
     freep(:,igas)  = 3._f*diffus(:,igas) &
              * sqrt( ( PI*gwtmol(igas) ) / ( 8._f*RGAS*t(:) ) )
 
@@ -141,7 +141,7 @@ subroutine setupgkern(carma, cstate, rc)
                ( diffus(:,igas) * rhoa_cgs(:, igas) &
              * ( CP - RGAS/( 2._f*WTMOL_AIR ) ) )
   end do
-  
+
 
   ! Loop over aerosol groups only (no radius, gas, or spatial dependence).
   do igroup = 1, NGROUP
@@ -159,10 +159,10 @@ subroutine setupgkern(carma, cstate, rc)
       !   Spheres
       cor = 1._f
       phish = 1._f
-    else 
+    else
 
       if( ishape(igroup) .eq. I_HEXAGON )then
-        
+
         ! Hexagons
         phish = 6._f/PI*tan(PI/6._f)*( eshape(igroup) + 0.5_f ) &
                * ( PI / ( 9._f*eshape(igroup)*tan(PI/6._f) ) )**(2._f/3._f)
@@ -180,7 +180,7 @@ subroutine setupgkern(carma, cstate, rc)
         esh1 = 1._f / eshape(igroup)
         a1 = sqrt(esh1**2 - 1._f)
         cor = a1 / asin( a1 / esh1 ) / esh1**(2._f/3._f)
-      else 
+      else
 
         ! Prolate spheroids
         a1 = sqrt( eshape(igroup)**2 - 1._f )
@@ -192,10 +192,10 @@ subroutine setupgkern(carma, cstate, rc)
     ! Evaluate growth terms only for particle elements that grow.
     ! particle number concentration element
     ielem = ienconc(igroup)
-    
+
     ! condensing gas is <igas>
     igas = igrowgas(ielem)
-    
+
     ! If the group doesn't grow, but is involved in aerosol
     ! freezing, then the gas properties still need to be calculated.
     if( igas .eq. 0 ) igas = inucgas(igroup)
@@ -204,14 +204,14 @@ subroutine setupgkern(carma, cstate, rc)
 
       do k = 1, NZ
 
-        ! Latent heat of condensing gas 
+        ! Latent heat of condensing gas
         if( is_grp_ice(igroup) )then
           rlh = rlhe(k,igas) + rlhm(k,igas)
         else
           rlh = rlhe(k,igas)
         endif
 
-        ! Radius-dependent parameters 
+        ! Radius-dependent parameters
         do i = 1, NBIN
 
           br = rlow_wet(k,i,igroup)     ! particle bin Boundary Radius
@@ -234,7 +234,7 @@ subroutine setupgkern(carma, cstate, rc)
 
           ! Save the modified thermal conductivity off so it can be used in pheat.
           thcondnc(k,i,igroup) = thcond1
-          
+
           ! Reynolds' number based on particle shape <reyn_shape>
           if( ishape(igroup) .eq. I_SPHERE )then
             reyn_shape = re(k,i,igroup)
@@ -272,7 +272,7 @@ subroutine setupgkern(carma, cstate, rc)
               ft(k,i,igroup) = 0.86_f + 0.28_f*x2
             endif
           else
-          
+
             ! Liquid water drops
             if( x1 .le. 1.4_f  )then
               fv = 1._f   + 0.108_f*x1**2
@@ -292,24 +292,24 @@ subroutine setupgkern(carma, cstate, rc)
           gro(k,i,igroup) = 4._f*PI*br &
                         * diffus1*fv*gwtmol(igas) &
                         / ( BK*t(k)*AVG )
-  
+
           ! Coefficient for conduction term in growth kernel [s/g]
           gro1(k,i,igroup) = gwtmol(igas)*rlh**2 &
                 / ( RGAS*t(k)**2*ft(k,i,igroup)*thcond1 ) &
                 / ( 4._f*PI*br )
-  
+
           ! Coefficient for radiation term in growth kernel [g/erg]
           ! (note: no radial dependence).
           if( i .eq. 1 )then
             gro2(k,igroup) = 1._f / rlh
           endif
- 
+
         enddo   ! i=1,NBIN
       enddo    ! k=1,NZ
     endif     ! igas ne 0
   enddo       ! igroup=1,NGROUP
 
-  ! Return to caller with time-independent particle growth 
+  ! Return to caller with time-independent particle growth
   ! parameters initialized.
   return
 end

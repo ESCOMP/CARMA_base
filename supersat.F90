@@ -35,7 +35,7 @@ subroutine supersat(carma, cstate, iz, igas, rc)
   ! Define gas constant for this gas
   rvap = RGAS / gwtmol(igas)
 
-  gc_cgs = gc(iz,igas) / (zmet(iz)*xmet(iz)*ymet(iz))
+  gc_cgs = gc(iz,igas) / zmet(iz)
 
   supsatl(iz,igas) = (gc_cgs * rvap * t(iz) - pvapl(iz,igas)) / pvapl(iz,igas)
   supsati(iz,igas) = (gc_cgs * rvap * t(iz) - pvapi(iz,igas)) / pvapi(iz,igas)
@@ -48,13 +48,13 @@ subroutine supersat(carma, cstate, iz, igas, rc)
   ! NOTE: This assumes that the cloud is an ice cloud.
   if (do_incloud) then
     alpha = rhcrit(iz) * (1._f - cldfrc(iz)) + cldfrc(iz)
-    
+
     supsatl(iz,igas) = (gc_cgs * rvap * t(iz) - alpha * pvapl(iz,igas)) / pvapl(iz,igas)
     supsati(iz,igas) = (gc_cgs * rvap * t(iz) - alpha * pvapi(iz,igas)) / pvapi(iz,igas)
-    
+
     ! Limit supersaturation to liquid saturation.
     supsatl(iz,igas) = min(supsatl(iz,igas), 0._f)
-    supsati(iz,igas) = min(supsati(iz,igas), (pvapl(iz,igas) - alpha * pvapi(iz,igas)) / pvapi(iz,igas))        
+    supsati(iz,igas) = min(supsati(iz,igas), (pvapl(iz,igas) - alpha * pvapi(iz,igas)) / pvapi(iz,igas))
   end if
 
   return
@@ -98,7 +98,7 @@ subroutine supersat_nocldf(carma, cstate, iz, igas, ssi, ssl, rc)
   ! Define gas constant for this gas
   rvap = RGAS / gwtmol(igas)
 
-  gc_cgs = gc(iz,igas) / (zmet(iz)*xmet(iz)*ymet(iz))
+  gc_cgs = gc(iz,igas) / zmet(iz)
 
   ssl = (gc_cgs * rvap * t(iz) - pvapl(iz,igas)) / pvapl(iz,igas)
   ssi = (gc_cgs * rvap * t(iz) - pvapi(iz,igas)) / pvapi(iz,igas)

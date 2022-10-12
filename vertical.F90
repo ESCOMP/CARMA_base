@@ -38,21 +38,21 @@ subroutine vertical(carma, cstate, rc)
   real(kind=f)   :: vertdifd(NZP1)
   real(kind=f)   :: vtrans(NZP1)
   real(kind=f)   :: old_pc(NZ)
-  
+
   rc = RC_OK
-  
+
   do ielem = 1,NELEM          ! Loop over particle elements
     ig = igelem(ielem)        ! particle group
-    
+
     ! Should this group participate in sedimentation?
     if (grp_do_vtran(ig)) then
-    
+
       ! Are there enough particles in the column to bother?
       if (maxval(pconmax(:,ig)) .gt. FEW_PC) then
 
-        do ibin = 1,NBIN          ! Loop over particle mass bins          
+        do ibin = 1,NBIN          ! Loop over particle mass bins
           vtrans(:) = -vf(:,ibin,ig)
-    
+
           ! If dry deposition is enabled for this group, then set
           ! the deposition velocity at the surface.
           if (grp_do_drydep(ig)) then
@@ -62,22 +62,22 @@ subroutine vertical(carma, cstate, rc)
               vtrans(NZP1) = -vd(ibin, ig)
             end if
           end if
-          
+
           !  Calculate particle transport rates due to vertical advection
           !  and vertical diffusion, and solve for concentrations at end of time step.
           call vertadv(carma, cstate, vtrans, pc(:,ibin,ielem), itbnd_pc, ibbnd_pc, &
             pc_topbnd(ibin,ielem), pc_botbnd(ibin,ielem), vertadvu, vertadvd, rc)
           if (rc < RC_OK) return
-            
+
           call vertdif(carma, cstate, ig, ibin, itbnd_pc, ibbnd_pc, vertdifu, vertdifd, rc)
           if (rc < RC_OK) return
-   
+
           old_pc(:) = pc(:,ibin,ielem)
-          
+
           ! There are 2 different solvers, versol with uses a PPM scheme and versub
           ! which using an explicit substepping approach.
           if (do_explised) then
-            call versub(carma, cstate, pconmax(:,ig)*xmet(:)*ymet(:)*zmet(:), pc(:,ibin,ielem), itbnd_pc, ibbnd_pc, &
+            call versub(carma, cstate, pconmax(:,ig)*zmet(:), pc(:,ibin,ielem), itbnd_pc, ibbnd_pc, &
               ftoppart(ibin,ielem), fbotpart(ibin,ielem), &
               pc_topbnd(ibin,ielem), pc_botbnd(ibin,ielem), &
               vertadvu, vertadvd, vertdifu, vertdifd, rc)
@@ -89,17 +89,17 @@ subroutine vertical(carma, cstate, rc)
               vertadvu, vertadvd, vertdifu, vertdifd, rc)
             if (rc < RC_OK) return
           end if
-          
+
           ! A clunky way to get the mass flux to the surface and to conserve mass
           ! is to determine the total before and after. Anything lost went to the
           ! surface.
           !
           ! NOTE: This only works if you assume nothing is lost out the top. It would be
           ! better to figure out how to get this directly from versol.
-          pc_surf(ibin,ielem) = pc_surf(ibin, ielem) + sum(old_pc(:) * dz(:) / xmet(:) / ymet(:)) - &
-            sum(pc(:,ibin,ielem) * dz(:) / xmet(:) / ymet(:))
-          sedimentationflux(ibin,ielem) = ( sum(old_pc(:) * dz(:) / xmet(:) / ymet(:)) - &
-            sum(pc(:,ibin,ielem) * dz(:) / xmet(:) / ymet(:)) ) / dtime
+          pc_surf(ibin,ielem) = pc_surf(ibin, ielem) + sum(old_pc(:) * dz(:)) - &
+                                sum(pc(:,ibin,ielem) * dz(:))
+          sedimentationflux(ibin,ielem) = ( sum(old_pc(:) * dz(:)) - &
+                                          sum(pc(:,ibin,ielem) * dz(:)) ) / dtime
         enddo  ! ibin
       endif
     endif

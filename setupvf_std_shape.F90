@@ -9,9 +9,9 @@
 !!
 !!  Non-spherical particles are treated through shape factors <ishape>
 !!  and <eshape>.
-!!  
+!!
 !!  General method is to first use Stokes' flow to estimate fall
-!!!  velocity, then calculate reynolds' number, then use "y function" 
+!!!  velocity, then calculate reynolds' number, then use "y function"
 !!  (defined in Pruppacher and Klett) to reevaluate reynolds' number,
 !!  from which the fall velocity is finally obtained.
 !!
@@ -51,7 +51,7 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
 
 
   ! First evaluate factors that depend upon particle shape (used in correction
-  ! factor <bpm> below).  
+  ! factor <bpm> below).
   if (ishape(j) .eq. I_SPHERE) then
 
     ! Spheres
@@ -61,7 +61,7 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
   else if (ishape(j) .eq. I_HEXAGON) then
 
     ! Hexagons: taken from Turco et al (Planet. Space Sci. Rev. 30, 1147-1181, 1982)
-    ! with diffuse reflection of air molecules assumed 
+    ! with diffuse reflection of air molecules assumed
     f2 = (PI / 9._f / tan(PI / 6._f))**(ONE/3._f) * eshape(j)**(ONE/6._f)
 
   else if (ishape(j) .eq. I_CYLINDER)then
@@ -101,7 +101,7 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
   do k = 1,NZ
 
     ! This is <rhoa> in cartesian coordinates (good old cgs units)
-    rhoa_cgs = rhoa(k) / (xmet(k)*ymet(k)*zmet(k))
+    rhoa_cgs = rhoa(k) / zmet(k)
 
     ! <vg> is mean thermal velocity of air molecules [cm/s]
     vg = sqrt(8._f / PI * R_AIR * t(k))
@@ -135,7 +135,7 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
       expon = max(-POWMAX, expon)
       bpm(k,i,j) = 1._f + f1*f2*(1.246_f*rkn + 0.42_f*rkn*exp(expon))
 
-      ! These are first guesses for fall velocity and Reynolds' number, 
+      ! These are first guesses for fall velocity and Reynolds' number,
       ! valid for Reynolds' number < 0.01
       !
       ! This is "regime 1" in Pruppacher and Klett (chap. 10, pg 416).
@@ -149,7 +149,7 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
       if ((re(k,i,j) .ge. 0.01_f) .and. (re(k,i,j) .le. 300._f)) then
 
         ! This is "regime 2" in Pruppacher and Klett (chap. 10, pg 417).
-        ! 
+        !
         ! NOTE: This sphere case is not the same solution used when
         ! interpolating other shape factors. This seems potentially inconsistent.
         if (ishape(j) .eq. I_SPHERE) then
@@ -157,11 +157,11 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
           x = log(24._f * re(k,i,j) / bpm(k,i,j))
           y = -0.3318657e1_f + x * 0.992696_f - x**2 * 0.153193e-2_f - &
               x**3 * 0.987059e-3_f - x**4 * 0.578878e-3_f + &
-              x**5 * 0.855176E-04_f - x**6 * 0.327815E-05_f 
-              
+              x**5 * 0.855176E-04_f - x**6 * 0.327815E-05_f
+
           if (y .lt. -675._f) y = -675._f
           if (y .ge.  741._f) y =  741._f
-          
+
           re(k,i,j) = exp(y) * bpm(k,i,j)
 
         else if (eshape(j) .le. 1._f) then
@@ -174,7 +174,7 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
           endif
 
           if (eshape(j) .le. 0.2_f) then
-            
+
             ! P&K, page 424-427
             b0 = -1.33_f
             bb1 = 1.0217_f
@@ -191,7 +191,7 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
             bb2 = -0.049018_f + ex * (-0.047556_f + 0.049018_f)
             bb3 =               ex * (-0.002327_f)
           else
-          
+
             ! Extrapolating to cylinder cases on 436.
             ex = (eshape(j) - 0.5_f) / 0.5_f
             b0 = -1.3247_f    + ex * (-1.310_f    + 1.3247_f)
@@ -210,7 +210,7 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
           if (ishape(j) .eq. I_CYLINDER) then
             x = log10(8._f * rfix / PI)
           endif
-          
+
           ! P&K pg 430
           if( eshape(j) .le. 2._f )then
             ex = eshape(j) - 1._f
@@ -225,7 +225,7 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
             bb2 = -0.058810_f + ex * (-0.059312_f + 0.058810_f)
             bb3 = 0.002159_f  + ex * (0.0029941_f - 0.002159_f)
           else
-          
+
             ! This is interpolating to a solution for an infinite
             ! cylinder, so it may not be the greatest estimate.
             ex = 10._f / eshape(j)
@@ -234,7 +234,7 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
             bb2 = -0.030528_f + ex * (-0.059312_f + 0.030528_f)
             bb3 =               ex * (0.0029941_f)
           endif
-          
+
           y = b0 + x * bb1 + x**2 * bb2 + x**3 * bb3
           re(k,i,j) = 10._f**y * bpm(k,i,j)
 
@@ -253,13 +253,13 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
 !          if ((do_print) .and. (ishape(j) .ne. I_SPHERE)) write(LUNOPRT,*) "setupvfall:", j, i, k, re(k,i,j)
 !          rc = RC_ERROR
 !          return
-        
+
         z  = ((1.e6_f * rhoa_cgs**2) / (GRAV * rhop_wet(k,i,j) * rmu(k)**4))**(ONE/6._f)
         b0 = (24._f * vf(k,i,j) * rmu(k)) / 100._f
         x  = log(z * b0)
         y  = -5.00015_f + x * (5.23778_f   - x * (2.04914_f - x * (0.475294_f - &
                 x * (0.0542819_f - x * 0.00238449_f))))
-        
+
         if (y .lt. -675._f) y = -675.0_f
         if (y .ge.  741._f) y =  741.0_f
 
@@ -271,7 +271,7 @@ subroutine setupvf_std_shape(carma, cstate, j, rc)
         ! Figure 10-25 of Pruppacher and Klett, 1997)
         ilast = max(1,i-1)
         if ((vf(k,i,j) .lt.  vf(k,ilast,j)) .or. (re(k,i,j) .gt. 4000._f)) then
-          vf(k,i,j) = vf(k,ilast,j) 
+          vf(k,i,j) = vf(k,ilast,j)
         endif
       endif
     enddo    ! <i=1,NBIN>

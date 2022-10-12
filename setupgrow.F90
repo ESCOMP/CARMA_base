@@ -5,7 +5,7 @@
 !! This routine defines time-independent parameters used to calculate
 !! condensational growth/evaporation.
 !!
-!! The parameters defined for each gas are 
+!! The parameters defined for each gas are
 !1>
 !!   gwtmol:   molecular weight [g/mol]
 !!   diffus:   diffusivity      [cm^2/s]
@@ -35,7 +35,7 @@ subroutine setupgrow(carma, cstate, rc)
   type(carma_type), intent(in)         :: carma   !! the carma object
   type(carmastate_type), intent(inout) :: cstate  !! the carma state object
   integer, intent(inout)               :: rc       !! return code, negative indicates failure
-  
+
   ! Local Variable
   integer                        :: ielem    !! element index
   integer                        :: k        !! z index
@@ -63,22 +63,22 @@ subroutine setupgrow(carma, cstate, rc)
 
     ! Diffusivity of water vapor in air from Pruppacher & Klett (eq. 13-3);
     ! units are [cm^2/s].
-    if (igash2o /= 0) then 
+    if (igash2o /= 0) then
       diffus(k, igash2o) = 0.211_f * (1.01325e+6_f / p(k)) * (t(k) / 273.15_f )**1.94_f
-  
+
       ! Latent heat of evaporation for water; units are [cm^2/s^2]
       if (do_cnst_rlh) then
         rlhe(k, igash2o) = RLHE_CNST
       else
         ! from Stull
-        rlhe(k, igash2o) = (2.5_f - .00239_f * (t(k) - 273.16_f)) * 1.e10_f      
+        rlhe(k, igash2o) = (2.5_f - .00239_f * (t(k) - 273.16_f)) * 1.e10_f
       end if
-  
+
       ! Latent heat of ice melting; units are [cm^2/s^2]
       if (do_cnst_rlh) then
         rlhm(k, igash2o) = RLHM_CNST
       else
-  
+
         ! from Pruppacher & Klett (eq. 4-85b)
         !
         ! NOTE: This expression yields negative values for rlmh at mesospheric
@@ -91,15 +91,15 @@ subroutine setupgrow(carma, cstate, rc)
     ! Properties for H2SO4
     if (igash2so4 /= 0) then
       ! Diffusivity
-      rhoa_cgs = rhoa(k) / (xmet(k) * ymet(k) * zmet(k))
+      rhoa_cgs = rhoa(k) / zmet(k)
       aden     = rhoa_cgs * AVG / WTMOL_AIR
       diffus(k,igash2so4) = 1.76575e+17_f * sqrt(t(k)) / aden
-  
+
       ! HACK: make H2SO4 latent heats same as water
       rlhe(k,igash2so4) = rlhe(k, igash2o)
       rlhm(k,igash2so4) = rlhe(k, igash2o)
     end if
-    
+
   enddo
 
 #ifdef CARMA_DEBUG

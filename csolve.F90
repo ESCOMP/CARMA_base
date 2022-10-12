@@ -34,7 +34,6 @@ subroutine csolve(carma, cstate, ibin, ielem, rc)
 
   ! Local Variables
   integer                        :: igroup
-  real(kind=f)                   :: xyzmet(NZ)
   real(kind=f)                   :: ppd(NZ)
   real(kind=f)                   :: pls(NZ)
 
@@ -42,14 +41,11 @@ subroutine csolve(carma, cstate, ibin, ielem, rc)
   ! Define current group & particle number concentration element indices
   igroup = igelem(ielem)         ! particle group
 
-  ! Metric scaling factor
-  xyzmet = xmet(:) * ymet(:) * zmet(:)
-
   ! Compute total production rate due to coagulation
-  ppd = coagpe(:,ibin,ielem) / xyzmet(:)
+  ppd = coagpe(:,ibin,ielem) / zmet(:)
 
   ! Compute total loss rate due to coagulation
-  pls = coaglg(:,ibin,igroup) / xyzmet(:)
+  pls = coaglg(:,ibin,igroup) / zmet(:)
 
   ! Update net particle number concentration during current timestep
   ! due to production and loss rates for coagulation
