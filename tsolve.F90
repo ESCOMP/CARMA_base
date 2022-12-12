@@ -2,7 +2,7 @@
 ! reference the CARMA structure.
 #include "carma_globaer.h"
 
-!! This routine calculates new potential temperature concentration 
+!! This routine calculates new potential temperature concentration
 !! (and updates temperature) due to microphysical and radiative forcings.
 !! The equation solved (the first law of thermodynamics in flux form) is
 !!
@@ -40,20 +40,20 @@ subroutine tsolve(carma, cstate, iz, scale_threshold, rc)
   integer, intent(in)                  :: iz      !! z index
   real(kind=f)                         :: scale_threshold !! Scaling factor for convergence thresholds
   integer, intent(inout)               :: rc      !! return code, negative indicates failure
-  
-  1 format(/,'tsolve::ERROR - negative temperature for : iz=',i4,',lat=',&
-              f7.2,',lon=',f7.2,',T=',e10.3,',dT=',e10.3,',t_old=',e10.3,',d_gc=',e10.3,',dT_adv=',e10.3)
-  2 format(/,'tsolve::ERROR - temperature change to large for : iz=',i4,',lat=',&
-              f7.2,',lon=',f7.2,',T=',e10.3,',dT_rlh=',e10.3,',dT_pth=',e10.3,',t_old=',e10.3,',d_gc=',e10.3,',dT_adv=',e10.3)
-  3 format(/,'tsolve::ERROR - temperature change to large for : iz=',i4,',lat=',&
-              f7.2,',lon=',f7.2,',T=',e10.3,',dT_rlh=',e10.3,',dT_pth=',e10.3,',t_old=',e10.3)
-  4 format(/,'tsolve::ERROR - negative temperature for : iz=',i4,',lat=',&
-              f7.2,',lon=',f7.2,',T=',e10.3,',dT=',e10.3,',t_old=',e10.3)
-      
+
+  1 format(/,'tsolve::ERROR - negative temperature for : iz=',i4,',xc=',&
+              f7.2,',yc=',f7.2,',T=',e10.3,',dT=',e10.3,',t_old=',e10.3,',d_gc=',e10.3,',dT_adv=',e10.3)
+  2 format(/,'tsolve::ERROR - temperature change to large for : iz=',i4,',xc=',&
+              f7.2,',yc=',f7.2,',T=',e10.3,',dT_rlh=',e10.3,',dT_pth=',e10.3,',t_old=',e10.3,',d_gc=',e10.3,',dT_adv=',e10.3)
+  3 format(/,'tsolve::ERROR - temperature change to large for : iz=',i4,',xc=',&
+              f7.2,',yc=',f7.2,',T=',e10.3,',dT_rlh=',e10.3,',dT_pth=',e10.3,',t_old=',e10.3)
+  4 format(/,'tsolve::ERROR - negative temperature for : iz=',i4,',xc=',&
+              f7.2,',yc=',f7.2,',T=',e10.3,',dT=',e10.3,',t_old=',e10.3)
+
   real(kind=f)      :: dt           ! delta temperature
   real(kind=f)      :: threshold    ! convergence threshold
-  
-      
+
+
   ! Solve for the new <t> due to latent heat exchange and radiative heating.
   ! Latent and radiative heating rates are in units of [deg_K/s].
   !
@@ -63,8 +63,8 @@ subroutine tsolve(carma, cstate, iz, scale_threshold, rc)
   ! NOTE: Radiative heating by the particles is handled by the parent model, so
   ! that term does not need to be added here.
   dt         = dtime * rlprod
-  rlheat(iz) = rlheat(iz) + rlprod * dtime   
-  
+  rlheat(iz) = rlheat(iz) + rlprod * dtime
+
   ! With particle heating, you must also include the impact of heat
   ! conduction from the particle
   !
@@ -74,20 +74,20 @@ subroutine tsolve(carma, cstate, iz, scale_threshold, rc)
     dt           = dt + dtime * phprod
     partheat(iz) = partheat(iz) + phprod * dtime
   end if
-  
+
   t(iz) = t(iz) + dt
- 
-  
+
+
   ! Don't let the temperature go negative.
   if (t(iz) < 0._f) then
     if (do_substep) then
-      if (nretries == maxretries) then 
-        if (do_print) write(LUNOPRT,1) iz, lat, lon, t(iz), dt, told(iz), d_gc(iz, 1), d_t(iz)
+      if (nretries == maxretries) then
+        if (do_print) write(LUNOPRT,1) iz, xc, yc, t(iz), dt, told(iz), d_gc(iz, 1), d_t(iz)
       end if
     else
-      if (do_print) write(LUNOPRT,4) iz, lat, lon, t(iz), dt, told(iz)
+      if (do_print) write(LUNOPRT,4) iz, xc, yc, t(iz), dt, told(iz)
     end if
-    
+
     rc = RC_WARNING_RETRY
   end if
 
@@ -95,17 +95,17 @@ subroutine tsolve(carma, cstate, iz, scale_threshold, rc)
   ! to prevent overshooting that doesn't result in negative gas concentrations, but
   ! does result in excessive temperature swings.
   threshold = dt_threshold / scale_threshold
-  
+
   if (threshold /= 0._f) then
     if (abs(abs(dt)) > threshold) then
       if (do_substep) then
-        if (nretries == maxretries) then 
-          if (do_print) write(LUNOPRT,2) iz, lat, lon, t(iz), rlprod*dtime, dtime*partheat(iz), told(iz), d_gc(iz, 1), d_t(iz)
+        if (nretries == maxretries) then
+          if (do_print) write(LUNOPRT,2) iz, xc, yc, t(iz), rlprod*dtime, dtime*partheat(iz), told(iz), d_gc(iz, 1), d_t(iz)
         end if
       else
-        if (do_print) write(LUNOPRT,3) iz, lat, lon, t(iz), rlprod*dtime, dtime*partheat(iz), told(iz)
+        if (do_print) write(LUNOPRT,3) iz, xc, yc, t(iz), rlprod*dtime, dtime*partheat(iz), told(iz)
       end if
-  
+
       rc = RC_WARNING_RETRY
     end if
   end if

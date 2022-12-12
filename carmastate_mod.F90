@@ -65,10 +65,6 @@ contains
   !! MKS units which are more commonly used in parent models. The units and grid
   !! orientation depend on the grid type:
   !!
-  !!  - igridh
-  !!    - I_CART   : Cartesian coordinates, units in [m]
-  !!    - I_LL     : Lat/Lon coordinates, units in [degrees]
-  !!
   !!  - igridv
   !!    - I_CART   : Cartesian coordinates, units in [m], bottom at NZ=1
   !!    - I_SIG    : Sigma coordinates, unitless [P/P0], top at NZ=1
@@ -87,21 +83,16 @@ contains
   !! @see CARMA_Create
   !! @see CARMA_Initialize
   !! @see CARMASTATE_Destroy
-  subroutine CARMASTATE_Create(cstate, carma_ptr, time, dtime, NZ, igridv, igridh,  &
-      lat, lon, xc, dx, yc, dy, zc, zl, p, pl, t, rc, qh2o, relhum, told, radint)
+  subroutine CARMASTATE_Create(cstate, carma_ptr, time, dtime, NZ, igridv,   &
+      xc, yc, zc, zl, p, pl, t, rc, qh2o, relhum, told, radint)
     type(carmastate_type), intent(inout)    :: cstate      !! the carma state object
     type(carma_type), pointer, intent(in)   :: carma_ptr   !! (in) the carma object
     real(kind=f), intent(in)                :: time        !! the model time [s]
     real(kind=f), intent(in)                :: dtime       !! the timestep size [s]
     integer, intent(in)                     :: NZ          !! the number of vertical grid points
     integer, intent(in)                     :: igridv      !! vertical grid type
-    integer, intent(in)                     :: igridh      !! horizontal grid type
-    real(kind=f), intent(in)                :: lat         !! latitude at center [degrees north]
-    real(kind=f), intent(in)                :: lon         !! longitude at center [degrees east]
-    real(kind=f), intent(in)                :: xc(NZ)      !! x at center
-    real(kind=f), intent(in)                :: dx(NZ)      !! ix width
-    real(kind=f), intent(in)                :: yc(NZ)      !! y at center
-    real(kind=f), intent(in)                :: dy(NZ)      !! y width
+    real(kind=f), intent(in)                :: xc          !! x at center
+    real(kind=f), intent(in)                :: yc          !! y at center
     real(kind=f), intent(in)                :: zc(NZ)      !! z at center
     real(kind=f), intent(in)                :: zl(NZ+1)    !! z at edge
     real(kind=f), intent(in)                :: p(NZ)       !! pressure at center [Pa]
@@ -137,20 +128,15 @@ contains
 
     ! Save the grid definition.
     cstate%f_igridv = igridv
-    cstate%f_igridh = igridh
 
     ! Store away the grid location information.
-    cstate%f_lat  = lat
-    cstate%f_lon  = lon
+    cstate%f_yc  = yc
+    cstate%f_xc  = yc
 
     ! Allocate all the dynamic variables related to state.
     call CARMASTATE_Allocate(cstate, rc)
     if (rc < 0) return
 
-    cstate%f_xc(:)  = xc(:)
-    cstate%f_dx(:)  = dx(:)
-    cstate%f_yc(:)  = yc(:)
-    cstate%f_dy(:)  = dy(:)
     cstate%f_zc(:)  = zc(:)
     cstate%f_zl(:)  = zl(:)
 
@@ -175,13 +161,6 @@ contains
     ! Calculate the metrics, ...
     ! if Cartesian coordinates were specifed, then the units need to be converted
     ! from MKS to CGS.
-    if (cstate%f_igridh == I_CART) then
-      cstate%f_xc = cstate%f_xc * RM2CGS
-      cstate%f_dx = cstate%f_dx * RM2CGS
-      cstate%f_yc = cstate%f_yc * RM2CGS
-      cstate%f_dy = cstate%f_dy * RM2CGS
-    end if
-
     if (cstate%f_igridv == I_CART) then
       cstate%f_zc = cstate%f_zc * RM2CGS
       cstate%f_zl = cstate%f_zl * RM2CGS
@@ -205,7 +184,7 @@ contains
         call vaporp_h2o_murphy2005(carma_ptr, cstate, iz, rc, pvap_liq, pvap_ice)
         if (rc < 0) return
 
-        gc_cgs = qh2o(iz)*cstate%f_rhoa_wet(iz) / (cstate%f_zmet(iz)*cstate%f_xmet(iz)*cstate%f_ymet(iz))
+        gc_cgs = qh2o(iz)*cstate%f_rhoa_wet(iz) / cstate%f_zmet(iz)
         cstate%f_relhum(iz) = ( gc_cgs * rvap * t(iz)) / pvap_liq
       enddo
     end if
@@ -260,21 +239,16 @@ contains
   !! @see CARMA_Create
   !! @see CARMA_Initialize
   !! @see CARMASTATE_Destroy
-  subroutine CARMASTATE_CreateFromReference(cstate, carma_ptr, time, dtime, NZ, igridv, igridh,  &
-      lat, lon, xc, dx, yc, dy, zc, zl, p, pl, t, rc, qh2o, relhum, qh2so4)
+  subroutine CARMASTATE_CreateFromReference(cstate, carma_ptr, time, dtime, NZ, igridv, &
+      xc, yc, zc, zl, p, pl, t, rc, qh2o, relhum, qh2so4)
     type(carmastate_type), intent(inout)    :: cstate      !! the carma state object
     type(carma_type), pointer, intent(in)   :: carma_ptr   !! (in) the carma object
     real(kind=f), intent(in)                :: time        !! the model time [s]
     real(kind=f), intent(in)                :: dtime       !! the timestep size [s]
     integer, intent(in)                     :: NZ          !! the number of vertical grid points
     integer, intent(in)                     :: igridv      !! vertical grid type
-    integer, intent(in)                     :: igridh      !! horizontal grid type
-    real(kind=f), intent(in)                :: lat         !! latitude at center [degrees north]
-    real(kind=f), intent(in)                :: lon         !! longitude at center [degrees east]
-    real(kind=f), intent(in)                :: xc(NZ)      !! x at center
-    real(kind=f), intent(in)                :: dx(NZ)      !! ix width
-    real(kind=f), intent(in)                :: yc(NZ)      !! y at center
-    real(kind=f), intent(in)                :: dy(NZ)      !! y width
+    real(kind=f), intent(in)                :: xc          !! x at center
+    real(kind=f), intent(in)                :: yc          !! y at center
     real(kind=f), intent(in)                :: zc(NZ)      !! z at center
     real(kind=f), intent(in)                :: zl(NZ+1)    !! z at edge
     real(kind=f), intent(in)                :: p(NZ)       !! pressure at center [Pa]
@@ -310,20 +284,15 @@ contains
 
     ! Save the grid definition.
     cstate%f_igridv = igridv
-    cstate%f_igridh = igridh
 
     ! Store away the grid location information.
-    cstate%f_lat  = lat
-    cstate%f_lon  = lon
+    cstate%f_xc  = xc
+    cstate%f_yc  = yc
 
     ! Allocate all the dynamic variables related to state.
     call CARMASTATE_Allocate(cstate, rc)
     if (rc < 0) return
 
-    cstate%f_xc(:)  = xc(:)
-    cstate%f_dx(:)  = dx(:)
-    cstate%f_yc(:)  = yc(:)
-    cstate%f_dy(:)  = dy(:)
     cstate%f_zc(:)  = zc(:)
     cstate%f_zl(:)  = zl(:)
 
@@ -337,13 +306,6 @@ contains
     ! Calculate the metrics, ...
     ! if Cartesian coordinates were specifed, then the units need to be converted
     ! from MKS to CGS.
-    if (cstate%f_igridh == I_CART) then
-      cstate%f_xc = cstate%f_xc * RM2CGS
-      cstate%f_dx = cstate%f_dx * RM2CGS
-      cstate%f_yc = cstate%f_yc * RM2CGS
-      cstate%f_dy = cstate%f_dy * RM2CGS
-    end if
-
     if (cstate%f_igridv == I_CART) then
       cstate%f_zc = cstate%f_zc * RM2CGS
       cstate%f_zl = cstate%f_zl * RM2CGS
@@ -368,7 +330,7 @@ contains
           call vaporp_h2o_murphy2005(carma_ptr, cstate, iz, rc, pvap_liq, pvap_ice)
           if (rc < 0) return
 
-          gc_cgs = qh2o(iz) * cstate%f_rhoa_wet(iz) / (cstate%f_zmet(iz)*cstate%f_xmet(iz)*cstate%f_ymet(iz))
+          gc_cgs = qh2o(iz) * cstate%f_rhoa_wet(iz) / cstate%f_zmet(iz)
           cstate%f_relhum(iz) = (gc_cgs * rvap * t(iz)) / pvap_liq
         enddo
 
@@ -385,7 +347,7 @@ contains
 
           gc_cgs = (rvap * t(iz)) / (pvap_liq * relhum(iz))
           cstate%f_gc(iz, carma_ptr%f_igash2o) = gc_cgs * &
-               (cstate%f_zmet(iz)*cstate%f_xmet(iz)*cstate%f_ymet(iz)) / &
+               cstate%f_zmet(iz) / &
                cstate%f_rhoa_wet(iz)
         enddo
       end if
@@ -486,7 +448,7 @@ contains
     ! existing allocations.
 
     ! Allocate the variables needed for setupatm.
-    if (.not. (allocated(cstate%f_xmet))) then
+    if (.not. (allocated(cstate%f_zmet))) then
 
       NZ      = cstate%f_NZ
       NZP1    = cstate%f_NZP1
@@ -497,15 +459,9 @@ contains
       NWAVE   = cstate%f_carma%f_NWAVE
 
       allocate( &
-        cstate%f_xmet(NZ), &
-        cstate%f_ymet(NZ), &
         cstate%f_zmet(NZ), &
         cstate%f_zmetl(NZP1), &
-        cstate%f_xc(NZ), &
-        cstate%f_yc(NZ), &
         cstate%f_zc(NZ), &
-        cstate%f_dx(NZ), &
-        cstate%f_dy(NZ), &
         cstate%f_dz(NZ), &
         cstate%f_zl(NZP1), &
         cstate%f_pc(NZ,NBIN,NELEM), &
@@ -639,8 +595,8 @@ contains
           stat=ier)
         if (ier /= 0) then
           if (cstate%f_carma%f_do_print) then
-             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate::&
-                  ERROR allocating gas arrays, status=", ier
+             write(cstate%f_carma%f_LUNOPRT, *) "CARMASTATE_Allocate:: "&
+                  //"ERROR allocating gas arrays, status=", ier
           end if
           rc = RC_ERROR
           return
@@ -738,18 +694,12 @@ contains
     ! Check to see if the arrays are already allocated. If so, deallocate them.
 
     ! Allocate the variables needed for setupatm.
-    if (allocated(cstate%f_xmet)) then
+    if (allocated(cstate%f_zmet)) then
 
       deallocate( &
-        cstate%f_xmet, &
-        cstate%f_ymet, &
         cstate%f_zmet, &
         cstate%f_zmetl, &
-        cstate%f_xc, &
-        cstate%f_yc, &
         cstate%f_zc, &
-        cstate%f_dx, &
-        cstate%f_dy, &
         cstate%f_dz, &
         cstate%f_zl, &
         cstate%f_pc, &
@@ -944,11 +894,6 @@ contains
 
     integer                               :: iz     ! vertical index
     integer                               :: igas   ! gas index
-    integer                               :: ielem
-    integer                               :: ibin
-    integer                               :: igroup
-    logical                               :: swelling   ! Do any groups undergo partcile swelling?
-    integer                               :: i1, i2, j1, j2
 
     ! Assume success.
     rc = RC_OK
@@ -1081,7 +1026,7 @@ contains
   !! @see CARMA_GetGas
   !! @see CARMA_Step
   !! @see CARMASTATE_SetGas
-  subroutine CARMASTATE_Get(cstate, rc, max_nsubstep, max_nretry, nstep, nsubstep, nretry, zsubsteps, lat, lon)
+  subroutine CARMASTATE_Get(cstate, rc, max_nsubstep, max_nretry, nstep, nsubstep, nretry, zsubsteps, xc, yc)
     type(carmastate_type), intent(in)     :: cstate            !! the carma state object
     integer, intent(out)                  :: rc                !! return code, negative indicates failure
     integer, optional, intent(out)        :: max_nsubstep      !! maximum number of substeps in a step
@@ -1090,8 +1035,8 @@ contains
     integer, optional, intent(out)        :: nsubstep          !! total number of substeps taken
     real(kind=f), optional, intent(out)   :: nretry            !! total number of retries taken
     real(kind=f), optional, intent(out)   :: zsubsteps(cstate%f_NZ) !! number of substeps taken per vertical grid point
-    real(kind=f), optional, intent(out)   :: lat               !! grid center latitude [deg]
-    real(kind=f), optional, intent(out)   :: lon               !! grid center longitude [deg]
+    real(kind=f), optional, intent(out)   :: xc                !! x location at center
+    real(kind=f), optional, intent(out)   :: yc                !! y location at center
 
     ! Assume success.
     rc = RC_OK
@@ -1102,8 +1047,8 @@ contains
     if (present(nsubstep))     nsubstep     = cstate%f_nsubstep
     if (present(nretry))       nretry       = cstate%f_nretry
     if (present(zsubsteps))    zsubsteps    = cstate%f_zsubsteps
-    if (present(lat))          lat          = cstate%f_lat
-    if (present(lon))          lon          = cstate%f_lon
+    if (present(xc))           xc           = cstate%f_xc
+    if (present(yc))           yc           = cstate%f_yc
 
     return
   end subroutine CARMASTATE_Get
@@ -1225,8 +1170,7 @@ contains
     ! If this is the partcile # element, then determine some other statistics.
     if (ienconc == ielem) then
       if (present(nmr))           nmr(:)             = (cstate%f_pc(:, ibin, ielem) / cstate%f_rhoa_wet(:)) * 1000._f
-      if (present(numberDensity)) numberDensity(:)   = cstate%f_pc(:, ibin, ielem) / &
-           (cstate%f_xmet(:)*cstate%f_ymet(:)*cstate%f_zmet(:))
+      if (present(numberDensity)) numberDensity(:)   = cstate%f_pc(:, ibin, ielem) / cstate%f_zmet(:)
       if (present(r_wet))         r_wet(:)           = cstate%f_r_wet(:, ibin, igroup)
       if (present(rhop_wet))      rhop_wet(:)        = cstate%f_rhop_wet(:, ibin, igroup)
       if (present(rhop_dry))      rhop_dry(:)        = cstate%f_rhop(:, ibin, igroup)
@@ -1251,7 +1195,7 @@ contains
 
       if (cstate%f_carma%f_do_grow) then
         if (present(nucleationRate)) nucleationRate(:) = cstate%f_pc_nucl(:, ibin, ielem) / &
-             (cstate%f_xmet(:)*cstate%f_ymet(:)*cstate%f_zmet(:)) / cstate%f_dtime
+                                                         cstate%f_zmet(:) / cstate%f_dtime
       else
         if (present(nucleationRate)) nucleationRate(:) = CAM_FILL
       end if
@@ -1341,8 +1285,7 @@ contains
     ienconc = cstate%f_carma%f_group(igroup)%f_ienconc
     if (ienconc == ielem) then
       if (present(nmr))           nmr(:)             = (cstate%f_pcd(:, ibin, ielem) / cstate%f_rhoa_wet(:)) * 1000._f
-      if (present(numberDensity)) numberDensity(:)   = cstate%f_pcd(:, ibin, ielem) / &
-           (cstate%f_xmet(:)*cstate%f_ymet(:)*cstate%f_zmet(:))
+      if (present(numberDensity)) numberDensity(:)   = cstate%f_pcd(:, ibin, ielem) / cstate%f_zmet(:)
       if (present(r_wet))         r_wet(:)           = cstate%f_r_wet(:, ibin, igroup)
       if (present(rhop_wet))      rhop_wet(:)        = cstate%f_rhop_wet(:, ibin, igroup)
     else
@@ -1424,8 +1367,7 @@ contains
     if (present(p))         p(:) = cstate%f_p(:) / RPA2CGS
 
     ! Convert rhoa from the scaled units to mks.
-    if (present(rhoa_wet))  rhoa_wet(:) = (cstate%f_rhoa_wet(:) / &
-         (cstate%f_zmet(:)*cstate%f_xmet(:)*cstate%f_ymet(:))) * 1e6_f / 1e3_f
+    if (present(rhoa_wet))  rhoa_wet(:) = (cstate%f_rhoa_wet(:) / cstate%f_zmet(:)) * 1e6_f / 1e3_f
 
     if (present(rlheat))    rlheat(:) = cstate%f_rlheat(:)
 
@@ -1694,8 +1636,7 @@ contains
     if (present(t))         cstate%f_t(:) = t(:)
 
     ! Convert rhoa from mks to the scaled units.
-    if (present(rhoa_wet))  cstate%f_rhoa_wet(:) = (rhoa_wet(:) * &
-         (cstate%f_zmet(:)*cstate%f_xmet(:)*cstate%f_ymet(:))) / 1e6_f * 1e3_f
+    if (present(rhoa_wet))  cstate%f_rhoa_wet(:) = (rhoa_wet(:) * cstate%f_zmet(:)) / 1e6_f * 1e3_f
 
     return
   end subroutine CARMASTATE_SetState

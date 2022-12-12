@@ -38,8 +38,6 @@ subroutine maxconc(carma, cstate, iz, rc)
     pconmax(iz,igrp) = maxval(pc(iz,:,iep))
 
     pconmax(iz,igrp) = pconmax(iz,igrp) &
-                            / xmet(iz)        &
-                            / ymet(iz)        &
                             / zmet(iz)
   enddo  ! igrp
 

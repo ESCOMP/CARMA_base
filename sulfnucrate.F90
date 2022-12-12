@@ -54,10 +54,6 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
   real(kind=f)      :: temp_bb          ! bounded value of temperature in Kelvins
   real(kind=f)      :: rh_bb            ! bounded value of relative humidity
 
-  integer, parameter :: newnuc_method_flagaa = 1
-  !  1=Zhao & Turco (1995) binary
-  !  2=vehkamaki et al (2002) binary
-
  5 format(/,'microfast::WARNING - nucleation rate exceeds 5.e1: ie=', i2,', iz=',i4,',lat=', &
               f7.2,',lon=',f7.2, ', rhompe=', e10.3)
 
@@ -83,10 +79,10 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
   !--------------------------------------------------------------
 
   ! Compute H2SO4 densities in g/cm3
-  h2so4_cgs = gc(iz, igash2so4) / (zmet(iz) * xmet(iz) * ymet(iz))
+  h2so4_cgs = gc(iz, igash2so4) / zmet(iz)
 
   ! Compute H2O densities in g/cm3
-  h2o_cgs   = gc(iz, igash2o)   / (zmet(iz) * xmet(iz) * ymet(iz))
+  h2o_cgs   = gc(iz, igash2o)   / zmet(iz)
 
   ! Compute H2SO4 concentrations in molec/cm3
   h2so4 = h2so4_cgs * AVG / gwtmol(igash2so4)
@@ -127,8 +123,8 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
   ! If none of the bins are large enough for the critical radius, then
   ! no nucleation will occur.
   if (nucbin <= NBIN) then
-    ! Scale to #/x/y/z/s
-    nucrate = nucrate_cgs * zmet(iz) * xmet(iz) * ymet(iz)
+    ! Scale to #z/s
+    nucrate = nucrate_cgs * zmet(iz)
   endif
 
   return
