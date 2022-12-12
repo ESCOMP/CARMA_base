@@ -181,7 +181,7 @@
 #define gsticki       carma%f_gsticki
 #define gstickl       carma%f_gstickl
 #define cstick        carma%f_cstick
-#define nucl_method   carma%nucl_method
+#define sulf_nucl_method   carma%sulf_nucl_method
 
 #define max_nsubstep  cstate%f_max_nsubstep
 #define max_nretry    cstate%f_max_nretry

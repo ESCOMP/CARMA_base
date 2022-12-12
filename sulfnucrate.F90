@@ -94,7 +94,7 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
   rh = (supsatl(iz, igash2o) + 1._f) !* 100._f
 
   ! Select nucleation method
-  select case (nucl_method)
+  select case (sulf_nucl_method)
   case('ZhaoTurco')
     call binary_nuc_zhao1995( carma, cstate, t(iz), wtpct(iz), rh, h2so4, h2so4_cgs, h2o, h2o_cgs, beta1, &
                   nucrate_cgs, mass_cluster_dry, radius_cluster, ftry, rc )
@@ -108,7 +108,7 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
                   mass_cluster_dry, radius_cluster )
     end if
   case default
-    write(LUNOPRT,*)'sulfnucrate: '//trim(nucl_method)//' nucleation method no recognized'
+    write(LUNOPRT,*)'sulfnucrate: '//trim(sulf_nucl_method)//' nucleation method no recognized'
     rc = RC_ERROR
     return
   end select
