@@ -63,7 +63,7 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
   nucrate_cgs = 0.0_f
   radius_cluster = 0.0_f
   mass_cluster_dry = 0.0_f
-  ftry = -99999._f
+  ftry = NOTSET
 
   !--------------------------------------------------------------
 
