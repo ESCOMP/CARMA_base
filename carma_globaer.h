@@ -181,7 +181,7 @@
 #define gsticki       carma%f_gsticki
 #define gstickl       carma%f_gstickl
 #define cstick        carma%f_cstick
-#define sulf_nucl_method   carma%sulf_nucl_method
+#define sulfnuclmethod carma%sulfnucl_method
 
 #define max_nsubstep  cstate%f_max_nsubstep
 #define max_nretry    cstate%f_max_nretry
@@ -321,3 +321,4 @@
 #define prat          carma%f_prat
 #define pden1         carma%f_pden1
 #define palr          carma%f_palr
+#define NOTSET        -99999999._f

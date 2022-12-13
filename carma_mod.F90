@@ -336,7 +336,7 @@ contains
       do_grow, do_incloud, do_explised, do_print_init, do_substep, do_thermo, do_vdiff, &
       do_vtran, do_drydep, vf_const, minsubsteps, maxsubsteps, maxretries, conmax, &
       do_pheat, do_pheatatm, dt_threshold, cstick, gsticki, gstickl, tstick, do_clearsky, &
-      do_partialinit, do_coremasscheck, sulf_nucl_method )
+      do_partialinit, do_coremasscheck, sulfnucl_method )
     type(carma_type), intent(inout)     :: carma         !! the carma object
     integer, intent(out)                :: rc            !! return code, negative indicates failure
     logical, intent(in), optional       :: do_cnst_rlh   !! use constant values for latent heats
@@ -369,7 +369,7 @@ contains
     logical, intent(in), optional       :: do_clearsky   !! do clear sky growth and coagulation?
     logical, intent(in), optional       :: do_partialinit !! do initialization of coagulation from reference atm (requires do_fixedinit)?
     logical, intent(in), optional       :: do_coremasscheck
-    character(len=*), intent(in), optional :: sulf_nucl_method
+    character(len=*), intent(in), optional :: sulfnucl_method
 
     ! Assume success.
     rc = RC_OK
@@ -423,7 +423,7 @@ contains
     if (present(do_clearsky))   carma%f_do_clearsky   = do_clearsky
     if (present(do_partialinit))  carma%f_do_partialinit  = do_partialinit
     if (present(do_coremasscheck)) carma%f_do_coremasscheck = do_coremasscheck
-    if (present(sulf_nucl_method))   carma%sulf_nucl_method = trim(sulf_nucl_method)
+    if (present(sulfnucl_method))   carma%sulfnucl_method = trim(sulfnucl_method)
 
     ! Setup the bin structure.
     call setupbins(carma, rc)

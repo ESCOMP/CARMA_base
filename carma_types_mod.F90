@@ -519,7 +519,7 @@ module carma_types_mod
     !        An improved parameterization for sulfuric acid-water nucleation
     !        rates for tropospheric and stratospheric conditions,
     !        J. Geophys. Res., 107, 4622, doi:10.1029/2002jd002184
-    character(len=10) :: sulf_nucl_method = 'NONE'
+    character(len=10) :: sulfnucl_method = 'NONE'
 
   end type carma_type
 

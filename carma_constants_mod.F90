@@ -4,6 +4,8 @@ module carma_constants_mod
 
   implicit none
 
+  public
+
   !--
   ! Physical constants
 
@@ -121,7 +123,4 @@ module carma_constants_mod
   !! Incloud Cloud Fraction Threshold for statistics
   real(kind=f), parameter :: CLDFRC_INCLOUD = 0.10_f
 
-  !! not set value
-  real(kind=f), parameter :: NOTSET = -99999._f
-
-end module
+end module carma_constants_mod
