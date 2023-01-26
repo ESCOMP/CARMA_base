@@ -15,7 +15,7 @@
 !!
 !!  @author Mike Mills, Chuck Bardeen
 !!  @version May-2022
-subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry, radius_cluster, nucbin, nucrate, rc)
+subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, radius_cluster, nucbin, nucrate, rc)
   use carma_precision_mod
   use carma_enums_mod
   use carma_constants_mod
@@ -34,7 +34,6 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
   real(kind=f), intent(out)            :: h2so4          !! H2SO4 concentrations in molec/cm3
   real(kind=f), intent(out)            :: beta1
   real(kind=f), intent(out)            :: beta2
-  real(kind=f), intent(out)            :: ftry
   real(kind=f), intent(out)            :: radius_cluster !! critical radius (cm)
   integer, intent(out)                 :: nucbin         !! bin in which nucleation occurs
   real(kind=f), intent(out)            :: nucrate        !! nucleation rate #/x/y/z/s
@@ -53,6 +52,7 @@ subroutine sulfnucrate(carma, cstate, iz, igroup, h2o, h2so4, beta1, beta2, ftry
   real(kind=f)      :: h2so4_bb         ! bounded value of H2SO4 concentration in molec/cm3
   real(kind=f)      :: temp_bb          ! bounded value of temperature in Kelvins
   real(kind=f)      :: rh_bb            ! bounded value of relative humidity
+  real(kind=f)      :: ftry
 
  5 format(/,'microfast::WARNING - nucleation rate exceeds 5.e1: ie=', i2,', iz=',i4,',lat=', &
               f7.2,',lon=',f7.2, ', rhompe=', e10.3)

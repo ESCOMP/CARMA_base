@@ -9,7 +9,7 @@
 !!
 !!  @author Mike Mills, Chuck Bardeen
 !!  @version Jun-2013
-subroutine sulfhetnucrate(carma, cstate, iz, igroup, nucbin, h2o, h2so4, beta1, beta2, ftry, rstar, nucrate, rc)
+subroutine sulfhetnucrate(carma, cstate, iz, igroup, nucbin, h2o, h2so4, beta1, beta2, nucrate, rc)
   use carma_precision_mod
   use carma_enums_mod
   use carma_constants_mod
@@ -29,8 +29,6 @@ subroutine sulfhetnucrate(carma, cstate, iz, igroup, nucbin, h2o, h2so4, beta1, 
   real(kind=f), intent(in)             :: h2so4       !! H2SO4 concentrations in molec/cm3
   real(kind=f), intent(in)             :: beta1
   real(kind=f), intent(in)             :: beta2
-  real(kind=f), intent(in)             :: ftry
-  real(kind=f), intent(inout)          :: rstar       !! critical radius (cm)
   real(kind=f), intent(out)            :: nucrate     !! nucleation rate #/x/y/z/s
   integer, intent(inout)               :: rc          !! return code, negative indicates failure
 
@@ -48,6 +46,7 @@ subroutine sulfhetnucrate(carma, cstate, iz, igroup, nucbin, h2o, h2so4, beta1, 
   real(kind=f)                         :: fv4
   real(kind=f)                         :: v1
   real(kind=f)                         :: fv1
+  real(kind=f)                         :: ftry
   real(kind=f)                         :: ftry1
   real(kind=f)                         :: rarea
   real(kind=f)                         :: gg
@@ -57,64 +56,61 @@ subroutine sulfhetnucrate(carma, cstate, iz, igroup, nucbin, h2o, h2so4, beta1, 
   real(kind=f)                         :: mass_cluster_dry ! dry mass of the cluster
   real(kind=f)                         :: nucrate_cgs      ! binary nucleation rate, j (# cm-3 s-1)
   real(kind=f)                         :: rh               ! relative humidity (0-1)
+  real(kind=f)                         :: rstar       !! critical radius (cm)
 
   ! Zhao heterogeneous nucleation rate depends on calculations for ftry and rstar made in Zhao homogeneous nucleation.
-  ! Test to see if Zhao homogeneous calculation has been called. If (ftry == NOTSET), then call it.
-  ! Extra arguments needed:
 
-  if (ftry == NOTSET) then
+  ! Compute H2SO4 densities in g/cm3
+  h2so4_cgs = gc(iz, igash2so4) / zmet(iz)
 
-    ! Compute H2SO4 densities in g/cm3
-    h2so4_cgs = gc(iz, igash2so4) / zmet(iz)
+  ! Compute H2O densities in g/cm3
+  h2o_cgs = gc(iz, igash2o) / zmet(iz)
 
-    ! Compute H2O densities in g/cm3
-    h2o_cgs = gc(iz, igash2o) / zmet(iz)
+  ! Compute relative humidity of water wrt liquid water
+  rh = (supsatl(iz, igash2o) + 1._f)
 
-    ! Compute relative humidity of water wrt liquid water
-    rh = (supsatl(iz, igash2o) + 1._f)
+  call binary_nuc_zhao1995( carma, cstate, t(iz), wtpct(iz), rh, h2so4, h2so4_cgs, h2o, h2o_cgs, beta1, &
+                nucrate_cgs, mass_cluster_dry, rstar, ftry, rc )
 
-    call binary_nuc_zhao1995( carma, cstate, t(iz), wtpct(iz), rh, h2so4, h2so4_cgs, h2o, h2o_cgs, beta1, &
-                  nucrate_cgs, mass_cluster_dry, rstar, ftry, rc )
-  end if
+  if (rstar > 0._f) then
+    ! Heterogeneous nucleation which depends on r
+    cnucl = 4._f * PI * rstar**(2._f)
+    chom  = h2so4 * h2o * beta1 * cnucl
+    expc  = 2.4e-16_f * exp(4.51872e+11_f / RGAS / t(iz))
+    chet  = chom * expc * beta2
 
-  ! Heterogeneous nucleation which depends on r
-  cnucl = 4._f * PI * rstar**(2._f)
-  chom  = h2so4 * h2o * beta1 * cnucl
-  expc  = 2.4e-16_f * exp(4.51872e+11_f / RGAS / t(iz))
-  chet  = chom * expc * beta2
+    xm    = r(nucbin, igroup) / rstar
 
-  xm    = r(nucbin, igroup) / rstar
+    if (xm .lt. 1._f) then
+      fxm = sqrt(1._f - 2._f * FM * xm + xm**(2._f))
+      fv2 = (xm - FM) / fxm
+      fu2 = (1._f - xm * FM) / fxm
+      fv3 = (2._f + fv2) * xm**3._f  * (fv2 - 1._f)**(2._f)
+      fv4 = 3._f * FM    * xm**2._f  * (fv2 - 1._f)
+    else
+      xm1 = 1._f / xm
+      fxm = sqrt(1._f - 2._f * FM * xm1 + xm1**2._f)
+      fu2 = (xm1 - FM) / fxm
+      fv2 = (1._f - xm1 * FM) / fxm
+      v1  = (FM**(2._f) - 1._f) / (fv2 + 1._f) / fxm**(2._f)
+      fv3 = (2._f + fv2) * xm1 * v1**2._f
+      fv4 = 3._f * FM * v1
+    endif
 
-  if (xm .lt. 1._f) then
-    fxm = sqrt(1._f - 2._f * FM * xm + xm**(2._f))
-    fv2 = (xm - FM) / fxm
-    fu2 = (1._f - xm * FM) / fxm
-    fv3 = (2._f + fv2) * xm**3._f  * (fv2 - 1._f)**(2._f)
-    fv4 = 3._f * FM    * xm**2._f  * (fv2 - 1._f)
-  else
-    xm1 = 1._f / xm
-    fxm = sqrt(1._f - 2._f * FM * xm1 + xm1**2._f)
-    fu2 = (xm1 - FM) / fxm
-    fv2 = (1._f - xm1 * FM) / fxm
-    v1  = (FM**(2._f) - 1._f) / (fv2 + 1._f) / fxm**(2._f)
-    fv3 = (2._f + fv2) * xm1 * v1**2._f
-    fv4 = 3._f * FM * v1
-  endif
+    fv1   = 0.5_f * (1._f + fu2**3._f + fv3 + fv4)
 
-  fv1   = 0.5_f * (1._f + fu2**3._f + fv3 + fv4)
+    ftry1 = ftry * fv1
+    if (ftry1 .lt. -1000._f) then
+      nucrate = 0._f
+    else
 
-  ftry1 = ftry * fv1
-!  ftry1 = ftry * fh
-  if (ftry1 .lt. -1000._f) then
-    nucrate = 0._f
-  else
+      rarea = 4._f * PI * r(nucbin, igroup)**2._f ! surface area per nucleus
+      gg    = exp(ftry1)
 
-    rarea = 4._f * PI * r(nucbin, igroup)**2._f ! surface area per nucleus
-    gg    = exp(ftry1)
-
-    ! Calculate heterogeneous nucleation rate [embryos/s]
-    ! NOTE: for [embryos/gridpoint/s], multipy rnuclg by pc [nuclei/gridpoint]
-    nucrate = chet * gg * rarea  ! embryos/s
+      ! Calculate heterogeneous nucleation rate [embryos/s]
+      ! NOTE: for [embryos/gridpoint/s], multipy rnuclg by pc [nuclei/gridpoint]
+      nucrate = chet * gg * rarea  ! embryos/s
+    end if
   end if
 
   return

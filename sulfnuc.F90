@@ -38,7 +38,6 @@ subroutine sulfnuc(carma,cstate, iz, rc)
   real(kind=f)      :: h2so4      ! H2SO4 concentrations in molec/cm3
   real(kind=f)      :: beta1
   real(kind=f)      :: beta2
-  real(kind=f)      :: ftry
   real(kind=f)      :: rstar      ! critical radius (cm)
 
   ! Cycle through each group, only proceed if BHN
@@ -57,7 +56,7 @@ subroutine sulfnuc(carma,cstate, iz, rc)
         ! This is where all of the pre calculation needs to go, so that it isn't
         ! done when the model is not configured for homogeneous nucleation of
         ! sulfates.
-        call sulfnucrate(carma, cstate, iz, igroup, h2so4, h2o, beta1, beta2, ftry, rstar, nucbin, nucrate, rc)
+        call sulfnucrate(carma, cstate, iz, igroup, h2so4, h2o, beta1, beta2, rstar, nucbin, nucrate, rc)
         if (rc /= RC_OK) return
         
         ! Do further calculations only if nucleation occurred
@@ -114,7 +113,7 @@ subroutine sulfnuc(carma,cstate, iz, rc)
                 ! This is where all of the pre calculation needs to go, so that it isn't
                 ! done when the model is not configured for homogeneous nucleation of
                 ! sulfates.
-                call sulfhetnucrate(carma, cstate, iz, igroup, ibin, h2so4, h2o, beta1, beta2, ftry, rstar, nucrate, rc)
+                call sulfhetnucrate(carma, cstate, iz, igroup, ibin, h2so4, h2o, beta1, beta2, nucrate, rc)
                 if (rc /= RC_OK) return
                     
                 rnuclg(ibin, igroup, ignucto) = rnuclg(ibin, igroup, ignucto) + nucrate
