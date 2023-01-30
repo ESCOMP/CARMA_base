@@ -1,5 +1,5 @@
 !! The CARMA module contains an interface to the Community Aerosol and Radiation
-!! Model for Atmospheres (CARMA) bin microphysical model [Turco et al. 1979; 
+!! Model for Atmospheres (CARMA) bin microphysical model [Turco et al. 1979;
 !! Toon et al. 1988]. This implementation has been customized to work within
 !! other model frameworks, so although it can be provided with an array of
 !! columns, it does not do horizontal transport and just does independent 1-D
@@ -11,10 +11,10 @@
 !!   ! and there should be a unique CARMA object created for each thread of
 !!   ! execution.
 !!
-!!   ! Create the CARMA object.   
+!!   ! Create the CARMA object.
 !!   call CARMA_Create(carma, ...)
 !!
-!!   ! Define the microphysical components. 
+!!   ! Define the microphysical components.
 !!   call CARMAGROUP_Create(carma, ...)      ! One or more calls
 !!
 !!   call CARMAELEMENT_Create(carma, ...)  ! One or more calls
@@ -23,7 +23,7 @@
 !!
 !!   call CARMAGAS_Create(carma, ...)          ! Zero or more calls
 !!
-!!   ! Define the relationships for the microphysical processes. 
+!!   ! Define the relationships for the microphysical processes.
 !!   call CARMA_AddCoagulation(carma, ...)    ! Zero or more calls
 !!   call CARMA_AddGrowth(carma, ...)         ! Zero or more calls
 !!   call CARMA_AddNucleation(carma, ...)     ! Zero or more calls
@@ -32,7 +32,7 @@
 !!   call CARMA_Initialize(carma, ...)
 !!
 !!   ...
-!!   
+!!
 !!   ! This section of code is within the parent model's timing loop.
 !!   !
 !!   ! NOTE: If using OPEN/MP, then each thread will execute one of
@@ -68,8 +68,8 @@
 !!   call CARMA_Destroy(carma)
 !!<
 !!
-!!  @version Feb-2009 
-!!  @author  Chuck Bardeen, Pete Colarco, Jamie Smith 
+!!  @version Feb-2009
+!!  @author  Chuck Bardeen, Pete Colarco, Jamie Smith
 !
 ! NOTE: Documentation for this code can be generated automatically using f90doc,
 ! which is freely available from:
@@ -88,7 +88,7 @@ module carma_mod
   use carma_constants_mod
   use carma_types_mod
 
-  ! CARMA explicitly declares all variables. 
+  ! CARMA explicitly declares all variables.
   implicit none
 
   ! All CARMA variables and procedures are private except those explicitly declared to be public.
@@ -119,8 +119,8 @@ contains
   !! ready for output. The caller is responsible for closing the LUNOPRT logical unit
   !! after the CARMA object has been destroyed.
   !!
-  !!  @version Feb-2009 
-  !!  @author  Chuck Bardeen 
+  !!  @version Feb-2009
+  !!  @author  Chuck Bardeen
   subroutine CARMA_Create(carma, NBIN, NELEM, NGROUP, NSOLUTE, NGAS, NWAVE, rc, &
     LUNOPRT, wave, dwave, do_wave_emit)
 
@@ -137,25 +137,25 @@ contains
     real(kind=f), intent(in), optional :: dwave(NWAVE) !! wavelength width (cm)
     logical, intent(in), optional      :: do_wave_emit(NWAVE) !! do emission in band?
 
-    ! Local Varaibles      
+    ! Local Varaibles
     integer                            :: ier
-    
+
     ! Assume success.
     rc = RC_OK
-    
+
     ! Save off the logic unit used for output if one was provided. If one was provided,
     ! then assume that CARMA can print output.
-    if (present(LUNOPRT)) then 
+    if (present(LUNOPRT)) then
       carma%f_LUNOPRT = LUNOPRT
       carma%f_do_print = .TRUE.
     end if
-    
+
     ! Save the defintion of the number of comonents involved in the microphysics.
-    carma%f_NGROUP  = NGROUP 
+    carma%f_NGROUP  = NGROUP
     carma%f_NELEM   = NELEM
     carma%f_NBIN    = NBIN
     carma%f_NGAS    = NGAS
-    carma%f_NSOLUTE = NSOLUTE      
+    carma%f_NSOLUTE = NSOLUTE
     carma%f_NWAVE   = NWAVE
 
 
@@ -164,18 +164,18 @@ contains
       carma%f_group(NGROUP), &
       carma%f_icoag(NGROUP, NGROUP), &
       carma%f_inucgas(NGROUP), &
-      stat=ier) 
+      stat=ier)
     if(ier /= 0) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Create: ERROR allocating groups, NGROUP=", &
         carma%f_NGROUP, ", status=", ier
       rc = RC_ERROR
       return
     endif
-    
+
     ! Initialize
     carma%f_icoag(:, :)  = 0
-    carma%f_inucgas(:)   = 0    
-    
+    carma%f_inucgas(:)   = 0
+
     ! Allocate tables for the elements.
     allocate( &
       carma%f_element(NELEM), &
@@ -190,14 +190,14 @@ contains
       carma%f_rlh_nuc(NELEM, NELEM), &
       carma%f_icoagelem(NELEM, NGROUP), &
       carma%f_icoagelem_cm(NELEM, NGROUP), &
-      stat=ier) 
+      stat=ier)
     if(ier /= 0) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Create: ERROR allocating elements, NELEM=", &
         carma%f_NELEM, ", status=", ier
       rc = RC_ERROR
       return
     endif
-    
+
     ! Initialize
     carma%f_igrowgas(:) = 0
     carma%f_inuc2elem(:,:) = 0
@@ -210,8 +210,8 @@ contains
     carma%f_rlh_nuc(:,:) = 0._f
     carma%f_icoagelem(:,:) = 0
     carma%f_icoagelem_cm(:,:) = 0
-    
-    
+
+
     ! Allocate tables for the bins.
     allocate( &
       carma%f_inuc2bin(NBIN,NGROUP,NGROUP), &
@@ -236,14 +236,14 @@ contains
       carma%f_prat(4,NBIN,NGROUP), &
       carma%f_pden1(NBIN,NGROUP), &
       carma%f_palr(4,NGROUP), &
-      stat=ier) 
+      stat=ier)
     if(ier /= 0) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Create: ERROR allocating bins, NBIN=", &
         carma%f_NBIN, ", status=", ier
       rc = RC_ERROR
       return
     endif
-    
+
     ! Initialize
     carma%f_inuc2bin(:,:,:) = 0
     carma%f_ievp2bin(:,:,:) = 0
@@ -267,27 +267,27 @@ contains
     carma%f_prat(:,:,:) = 0._f
     carma%f_pden1(:,:) = 0._f
     carma%f_palr(:,:) = 0._f
-      
+
 
     ! Allocate tables for solutes, if any are needed.
     if (NSOLUTE > 0) then
       allocate( &
         carma%f_solute(NSOLUTE), &
-        stat=ier) 
+        stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Create: ERROR allocating solutes, NSOLUTE=", &
-          carma%f_NSOLUTE, ", status=", ier 
+          carma%f_NSOLUTE, ", status=", ier
         rc = RC_ERROR
         return
       endif
     end if
-    
-   
+
+
     ! Allocate tables for gases, if any are needed.
     if (NGAS > 0) then
       allocate( &
         carma%f_gas(NGAS), &
-        stat=ier) 
+        stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Create: ERROR allocating gases, NGAS=", &
           carma%f_NGAS, ", status=", ier
@@ -295,15 +295,15 @@ contains
         return
       endif
     end if
-    
-    
+
+
     ! Allocate tables for optical properties, if any are needed.
     if (NWAVE > 0) then
       allocate( &
         carma%f_wave(NWAVE), &
         carma%f_dwave(NWAVE), &
         carma%f_do_wave_emit(NWAVE), &
-        stat=ier) 
+        stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Create: ERROR allocating wavelengths, NWAVE=", &
           carma%f_NWAVE, ", status=", ier
@@ -313,12 +313,12 @@ contains
 
       ! Initialize
       carma%f_do_wave_emit(:) = .TRUE.
-      
+
       if (present(wave))  carma%f_wave(:)  = wave(:)
       if (present(dwave)) carma%f_dwave(:) = dwave(:)
       if (present(do_wave_emit)) carma%f_do_wave_emit(:) = do_wave_emit(:)
     end if
-    
+
     return
  end subroutine CARMA_Create
 
@@ -330,13 +330,13 @@ contains
   !! NOTE: After initialization, the structure of the particle size bins is determined, and
   !! the resulting r, dr, rmass and dm can be retrieved with the CARMA_GetGroup() method.
   !!
-  !!  @version Feb-2009 
-  !!  @author  Chuck Bardeen 
+  !!  @version Feb-2009
+  !!  @author  Chuck Bardeen
   subroutine CARMA_Initialize(carma, rc, do_cnst_rlh, do_coag, do_detrain, do_fixedinit, &
       do_grow, do_incloud, do_explised, do_print_init, do_substep, do_thermo, do_vdiff, &
       do_vtran, do_drydep, vf_const, minsubsteps, maxsubsteps, maxretries, conmax, &
       do_pheat, do_pheatatm, dt_threshold, cstick, gsticki, gstickl, tstick, do_clearsky, &
-      do_partialinit, do_coremasscheck)
+      do_partialinit, do_coremasscheck, sulfnucl_method )
     type(carma_type), intent(inout)     :: carma         !! the carma object
     integer, intent(out)                :: rc            !! return code, negative indicates failure
     logical, intent(in), optional       :: do_cnst_rlh   !! use constant values for latent heats
@@ -369,6 +369,7 @@ contains
     logical, intent(in), optional       :: do_clearsky   !! do clear sky growth and coagulation?
     logical, intent(in), optional       :: do_partialinit !! do initialization of coagulation from reference atm (requires do_fixedinit)?
     logical, intent(in), optional       :: do_coremasscheck
+    character(len=*), intent(in), optional :: sulfnucl_method
 
     ! Assume success.
     rc = RC_OK
@@ -412,7 +413,7 @@ contains
     if (present(do_substep))    carma%f_do_substep    = do_substep
     if (present(do_thermo))     carma%f_do_thermo     = do_thermo
     if (present(do_vdiff))      carma%f_do_vdiff      = do_vdiff
-    if (present(do_vtran))      carma%f_do_vtran      = do_vtran 
+    if (present(do_vtran))      carma%f_do_vtran      = do_vtran
     if (present(do_drydep))     carma%f_do_drydep     = do_drydep
     if (present(dt_threshold))  carma%f_dt_threshold  = dt_threshold
     if (present(cstick))        carma%f_cstick        = cstick
@@ -421,25 +422,26 @@ contains
     if (present(tstick))        carma%f_tstick        = tstick
     if (present(do_clearsky))   carma%f_do_clearsky   = do_clearsky
     if (present(do_partialinit))  carma%f_do_partialinit  = do_partialinit
-    if (present(do_coremasscheck)) carma%f_do_coremasscheck = do_coremasscheck 
-    
+    if (present(do_coremasscheck)) carma%f_do_coremasscheck = do_coremasscheck
+    if (present(sulfnucl_method))   carma%sulfnucl_method = trim(sulfnucl_method)
+
     ! Setup the bin structure.
     call setupbins(carma, rc)
     if (rc < 0) return
-    
+
     ! Substepping
     carma%f_minsubsteps = 1         ! minimum number of substeps
     carma%f_maxsubsteps = 1         ! maximum number of substeps
     carma%f_maxretries  = 1         ! maximum number of retries
     carma%f_conmax      = 1.e-1_f
-    
+
     if (present(minsubsteps)) carma%f_minsubsteps = minsubsteps
     if (present(maxsubsteps)) carma%f_maxsubsteps = maxsubsteps
     if (present(maxretries))  carma%f_maxretries  = maxretries
     if (present(conmax))      carma%f_conmax      = conmax
 
     carma%f_do_step = .TRUE.
-    
+
     ! Calculate the Optical Properties
     !
     ! NOTE: This is only needed by CARMA if particle heating is being used. For
@@ -456,22 +458,22 @@ contains
       call CARMA_InitializeVertical(carma, rc, vf_const)
       if (rc < 0) return
     end if
-    
+
     if (carma%f_do_coag) then
       call setupcoag(carma, rc)
       if (rc < 0) return
     end if
-      
+
     if (carma%f_do_grow) then
       call CARMA_InitializeGrowth(carma, rc)
       if (rc < 0) return
     end if
-      
+
     if (carma%f_do_thermo) then
       call CARMA_InitializeThermo(carma, rc)
        if (rc < 0) return
     end if
-   
+
     return
   end subroutine CARMA_Initialize
 
@@ -479,7 +481,7 @@ contains
   subroutine CARMA_InitializeGrowth(carma, rc)
     type(carma_type), intent(inout)    :: carma
     integer, intent(out)             :: rc
-      
+
     ! Local Variables
     integer                            :: i
     logical                            :: bad_grid
@@ -514,8 +516,8 @@ contains
     5 format(/,'Particle nucleation mapping arrays (setupnuc):')
     7 format(/,'Warning: nucleation cannot occur from group',i3, &
                '   bin',i3,'   into group',i3,'   (<inuc2bin> is zero)')
-    
-    
+
+
     ! Assume success.
     rc = RC_OK
 
@@ -558,8 +560,8 @@ contains
              / (carma%f_group(igroup)%f_rmass(carma%f_NBIN)-carma%f_group(igroup)%f_rmass(carma%f_NBIN-1))
       endif
     end do
-    
-    
+
+
     ! Check the nucleation mapping.
     !
     ! NOTE: This code was moved from setupnuc, because it is not dependent on the model's
@@ -573,11 +575,11 @@ contains
     do igfrom = 1,carma%f_NGROUP    ! nucleation source group
       do igto = 1,carma%f_NGROUP        ! nucleation target group
         do ifrom = 1,carma%f_NBIN   ! nucleation source bin
-  
+
           carma%f_inuc2bin(ifrom,igfrom,igto) = 0
-  
+
           do ibto = carma%f_NBIN,1,-1        ! nucleation target bin
-  
+
             if( carma%f_group(igto)%f_rmass(ibto) .ge. carma%f_group(igfrom)%f_rmass(ifrom) )then
               carma%f_inuc2bin(ifrom,igfrom,igto) = ibto
             endif
@@ -586,13 +588,13 @@ contains
       enddo
     enddo
 
-    ! Mappings for nucleation sources: 
+    ! Mappings for nucleation sources:
     !
     !  <nnucelem(ielem)> is the number of particle elements that nucleate to
     !   particle element <ielem>.
     !
     !  <inuc2elem(jefrom,ielem)> are the particle elements that
-    !   nucleate to particle element <ielem>, where 
+    !   nucleate to particle element <ielem>, where
     !   jefrom = 1,nnucelem(ielem).
     !
     !  <if_nuc(iefrom,ieto)> is true if nucleation transfers mass from element
@@ -601,7 +603,7 @@ contains
     !  <nnucbin(igfrom,ibin,igroup)> is the number of particle bins that nucleate
     !   to particles in bin <ibin,igroup> from group <igfrom>.
     !
-    !  <inucbin(jfrom,igfrom,ibin,igto)> are the particle bins 
+    !  <inucbin(jfrom,igfrom,ibin,igto)> are the particle bins
     !   that nucleate to particles in bin <ibin,igto>, where
     !   jfrom = 1,nnucbin(igfrom,ibin,igto).
     !
@@ -613,21 +615,21 @@ contains
         carma%f_if_nuc(iefrom,ieto) = .false.
       enddo
     enddo
-    
+
     do ielem = 1,carma%f_NELEM
       carma%f_nnuc2elem(ielem) = 0
-      
+
       do jefrom = 1,carma%f_NGROUP
         if( carma%f_inuc2elem(jefrom,ielem) .ne. 0 ) then
           carma%f_nnuc2elem(ielem) = carma%f_nnuc2elem(ielem) + 1
           carma%f_if_nuc(ielem,carma%f_inuc2elem(jefrom,ielem)) = .true.
 
-      
+
           ! Also check for cases where neither the source or destinaton don't have cores (e.g.
           ! melting ice to water drops).
           if ((carma%f_group(carma%f_element(ielem)%f_igroup)%f_ncore .eq. 0) .and. &
               (carma%f_group(carma%f_element(carma%f_inuc2elem(jefrom,ielem))%f_igroup)%f_ncore .eq. 0)) then
-      
+
             ! For particle concentration target elements, only count source elements
             ! that are also particle concentrations.
             carma%f_nnucelem(carma%f_inuc2elem(jefrom,ielem)) = carma%f_nnucelem(carma%f_inuc2elem(jefrom,ielem)) + 1
@@ -636,7 +638,7 @@ contains
         endif
       enddo
     enddo
-    
+
     ! Next, enumerate and count elements that nucleate to cores.
     do igroup = 1,carma%f_NGROUP
 
@@ -644,7 +646,7 @@ contains
 
       do jcore = 1,carma%f_group(igroup)%f_ncore
 
-        iecore = carma%f_group(igroup)%f_icorelem(jcore)    ! target core element 
+        iecore = carma%f_group(igroup)%f_icorelem(jcore)    ! target core element
 !        carma%f_nnucelem(iecore) = 0
 
         do iefrom = 1,carma%f_NELEM
@@ -656,7 +658,7 @@ contains
         enddo      ! iefrom=1,NELEM
       enddo        ! jcore=1,ncore
     enddo          ! igroup=1,NGROUP
-    
+
 
     ! Now enumerate and count elements nucleating to particle concentration
     ! (itype=I_INVOLATILE and itype=I_VOLATILE) and core second moment
@@ -664,7 +666,7 @@ contains
     ! nucleation sources for core elements in same group are also sources
     ! for the itype = I_VOLATILE element.
     do igroup = 1,carma%f_NGROUP
-    
+
       ip = carma%f_group(igroup)%f_ienconc    ! target particle number concentration element
       im = carma%f_group(igroup)%f_imomelem   ! target core second moment element
 
@@ -680,7 +682,7 @@ contains
         do jnucelem = 1,carma%f_nnucelem(iecore)  ! elements nucleating to cores
 
           iefrom = carma%f_inucelem(jnucelem,iecore)  ! source
-          
+
           ! For particle concentration target elements, only count source elements
           ! that are also particle concentrations.
           carma%f_nnucelem(ip) = carma%f_nnucelem(ip) + 1
@@ -714,32 +716,32 @@ contains
     enddo   ! igroup=1,NGROUP
 
     if (carma%f_do_print_init) then
-      
+
       !  Report nucleation mapping arrays (should be 'write' stmts, of course)
 
       write(carma%f_LUNOPRT,*) ' '
       write(carma%f_LUNOPRT,*) 'Nucleation mapping arrays (setupnuc):'
       write(carma%f_LUNOPRT,*) ' '
       write(carma%f_LUNOPRT,*) 'Elements mapping:'
-      
+
       do ielem = 1,carma%f_NELEM
         write(carma%f_LUNOPRT,*) 'ielem,nnucelem=',ielem,carma%f_nnucelem(ielem)
-       
+
         if(carma%f_nnucelem(ielem) .gt. 0) then
           do jfrom = 1,carma%f_nnucelem(ielem)
             write(carma%f_LUNOPRT,*) 'jfrom,inucelem=  ',jfrom,carma%f_inucelem(jfrom,ielem)
           enddo
         endif
       enddo
-      
+
       write(carma%f_LUNOPRT,*) ' '
       write(carma%f_LUNOPRT,*) 'Bin mapping:'
-      
+
       do igfrom = 1,carma%f_NGROUP
         do igroup = 1,carma%f_NGROUP
           write(carma%f_LUNOPRT,*) ' '
           write(carma%f_LUNOPRT,*) 'Groups (from, to) = ', igfrom, igroup
-          
+
           do ibin = 1,carma%f_NBIN
             nnucb = carma%f_nnucbin(igfrom,ibin,igroup)
             if(nnucb .eq. 0) write(carma%f_LUNOPRT,*) '  None for bin ',ibin
@@ -826,27 +828,27 @@ contains
     enddo
 
     if (carma%f_do_print_init) then
-    
+
       if( bad_grid )then
         if (carma%f_do_print) write(carma%f_LUNOPRT,*) 'CARMA_InitializeGrowth::Warning - incompatible grids for nucleation'
       endif
-      
+
       ! Report some initialization values!
       write(carma%f_LUNOPRT,5)
       write(carma%f_LUNOPRT,1) 'inucgas  ',(carma%f_inucgas(i),i=1,carma%f_NGROUP)
       write(carma%f_LUNOPRT,1) 'inuc2elem',(carma%f_inuc2elem(1,i),i=1,carma%f_NELEM)
       write(carma%f_LUNOPRT,1) 'ievp2elem',(carma%f_ievp2elem(i),i=1,carma%f_NELEM)
       write(carma%f_LUNOPRT,1) 'isolute ',(carma%f_element(i)%f_isolute,i=1,carma%f_NELEM)
-    
+
       do isol = 1,carma%f_NSOLUTE
         write(carma%f_LUNOPRT,2) 'solute number   ',isol
         write(carma%f_LUNOPRT,3) 'solute name:    ',carma%f_solute(isol)%f_name
         write(carma%f_LUNOPRT,4) 'molecular weight',carma%f_solute(isol)%f_wtmol
-        write(carma%f_LUNOPRT,4) 'mass density    ',carma%f_solute(isol)%f_rho    
+        write(carma%f_LUNOPRT,4) 'mass density    ',carma%f_solute(isol)%f_rho
       enddo
     endif
-    
-    
+
+
     ! Initialize indexes for the gases and check to make sure if H2SO4 is used
     ! that it occurs after H2O. This is necessary for supersaturation calculations.
     carma%f_igash2o   = 0
@@ -862,7 +864,7 @@ contains
         carma%f_igasso2 = igas
       end if
     end do
-    
+
     if ((carma%f_igash2so4 /= 0) .and. (carma%f_igash2o > carma%f_igash2so4)) then
       if (carma%f_do_print) write(carma%f_LUNOPRT,*) 'CARMA_InitializeGrowth::ERROR - H2O gas must come before H2SO4.'
       rc = RC_ERROR
@@ -870,7 +872,7 @@ contains
     end if
 
     return
-  end subroutine CARMA_InitializeGrowth         
+  end subroutine CARMA_InitializeGrowth
 
   !! Calculate the optical properties for each particle bin at each of
   !! the specified wavelengths. The optical properties include the
@@ -885,25 +887,25 @@ contains
   subroutine CARMA_InitializeOptics(carma, rc)
     type(carma_type), intent(inout)    :: carma
     integer, intent(out)               :: rc
-    
+
     integer                            :: igroup      ! group index
     integer                            :: iwave       ! wavelength index
     integer                            :: ibin        ! bin index
     real(kind=f)                       :: Qext
     real(kind=f)                       :: Qsca
     real(kind=f)                       :: asym
-   
-    
+
+
     ! Assume success.
-    rc = RC_OK    
-    
+    rc = RC_OK
+
     ! Were any wavelengths specified?
     do iwave = 1, carma%f_NWAVE
       do igroup = 1, carma%f_NGROUP
-     
+
         ! Should we calculate mie properties for this group?
-        if (carma%f_group(igroup)%f_do_mie) then 
-       
+        if (carma%f_group(igroup)%f_do_mie) then
+
           do ibin = 1, carma%f_NBIN
 
             ! Assume the particle is homogeneous (no core).
@@ -920,7 +922,7 @@ contains
                      carma%f_group(igroup)%f_df(ibin), &
                      carma%f_group(igroup)%f_rmon, &
                      carma%f_group(igroup)%f_falpha, &
-                     carma%f_group(igroup)%f_refidx(iwave), &                   
+                     carma%f_group(igroup)%f_refidx(iwave), &
                      Qext, &
                      Qsca, &
                      asym, &
@@ -942,10 +944,10 @@ contains
           end do
         end if
       end do
-    end do   
-    
+    end do
+
     return
-  end subroutine CARMA_InitializeOptics         
+  end subroutine CARMA_InitializeOptics
 
   !! Perform initialization of variables related to thermodynamical calculations that
   !! are not dependent on the model state.
@@ -955,12 +957,12 @@ contains
   subroutine CARMA_InitializeThermo(carma, rc)
     type(carma_type), intent(inout)    :: carma
     integer, intent(out)               :: rc
-        
+
     ! Assume success.
     rc = RC_OK
 
     return
-  end subroutine CARMA_InitializeThermo         
+  end subroutine CARMA_InitializeThermo
 
   !! Perform initialization of variables related to vertical transport that are not dependent
   !! on the model state.
@@ -971,27 +973,27 @@ contains
     type(carma_type), intent(inout)    :: carma
     integer, intent(out)               :: rc
     real(kind=f), intent(in), optional :: vf_const
-        
+
     ! Assume success.
     rc = RC_OK
 
     ! Was a constant vertical velocity specified?
     carma%f_ifall = 1
     carma%f_vf_const = 0._f
-    
+
     if (present(vf_const)) then
       if (vf_const /= 0._f) then
         carma%f_ifall = 0
         carma%f_vf_const = vf_const
       end if
     end if
-    
+
     ! Specify the boundary conditions for vertical transport.
     carma%f_itbnd_pc  = I_FIXED_CONC
     carma%f_ibbnd_pc  = I_FIXED_CONC
-    
+
     return
-  end subroutine CARMA_InitializeVertical         
+  end subroutine CARMA_InitializeVertical
 
   !! The routine should be called when the carma object is no longer needed. It deallocates
   !! any memory allocations made by CARMA (during CARMA_Create()), and failure to call this
@@ -1009,41 +1011,41 @@ contains
 
     type(carma_type), intent(inout)    :: carma
     integer, intent(out)               :: rc
-    
+
     ! Local variables
     integer   :: ier
     integer   :: igroup
     integer   :: ielem
     integer   :: isolute
     integer   :: igas
-    
+
     ! Assume success.
     rc = RC_OK
-    
+
     ! If allocated, deallocate all the variables that were allocated in the Create() method.
     if (allocated(carma%f_group)) then
       do igroup = 1, carma%f_NGROUP
         call CARMAGROUP_Destroy(carma, igroup, rc)
         if (rc < 0) return
       end do
-      
+
       deallocate( &
         carma%f_group, &
         carma%f_icoag, &
         carma%f_inucgas, &
-        stat=ier) 
+        stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Destroy: ERROR deallocating groups, status=", ier
         rc = RC_ERROR
       endif
     endif
-    
+
     if (allocated(carma%f_element)) then
       do ielem = 1, carma%f_NELEM
         call CARMAELEMENT_Destroy(carma, ielem, rc)
         if (rc < RC_OK) return
       end do
-      
+
       deallocate( &
         carma%f_element, &
         carma%f_igrowgas, &
@@ -1057,13 +1059,13 @@ contains
         carma%f_rlh_nuc, &
         carma%f_icoagelem, &
         carma%f_icoagelem_cm, &
-        stat=ier) 
+        stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Destroy: ERROR deallocating elements, status=", ier
         rc = RC_ERROR
       endif
     endif
-    
+
     if (allocated(carma%f_inuc2bin)) then
       deallocate( &
         carma%f_inuc2bin, &
@@ -1084,54 +1086,54 @@ contains
         carma%f_jgup, &
         carma%f_kbin, &
         carma%f_pkernel, &
-        stat=ier) 
+        stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Destroy: ERROR deallocating bins, status=", ier
         rc = RC_ERROR
       endif
     endif
-    
+
     if (carma%f_NSOLUTE > 0) then
       do isolute = 1, carma%f_NSOLUTE
         call CARMASOLUTE_Destroy(carma, isolute, rc)
         if (rc < RC_OK) return
       end do
-      
+
       if (allocated(carma%f_solute)) then
         deallocate( &
           carma%f_solute, &
-          stat=ier) 
+          stat=ier)
         if(ier /= 0) then
-          if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Destroy: ERROR deallocating solutes, status=", ier 
+          if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Destroy: ERROR deallocating solutes, status=", ier
           rc = RC_ERROR
         endif
       endif
     end if
-     
+
     if (carma%f_NGAS > 0) then
       do igas = 1, carma%f_NGAS
         call CARMAGAS_Destroy(carma, igas, rc)
         if (rc < RC_OK) return
       end do
-      
+
       if (allocated(carma%f_gas)) then
         deallocate( &
           carma%f_gas, &
-          stat=ier) 
+          stat=ier)
         if(ier /= 0) then
           if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Destroy: ERROR deallocating gases, status=", ier
           rc = RC_ERROR
         endif
       endif
-    end if     
-    
+    end if
+
     if (carma%f_NWAVE > 0) then
       if (allocated(carma%f_wave)) then
         deallocate( &
           carma%f_wave, &
           carma%f_dwave, &
           carma%f_do_wave_emit, &
-          stat=ier) 
+          stat=ier)
         if(ier /= 0) then
           if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Destroy: ERROR deallocating wavelengths, status=", ier
           rc = RC_ERROR
@@ -1139,12 +1141,12 @@ contains
         endif
       endif
     endif
-    
+
     return
   end subroutine CARMA_Destroy
 
-  ! Configuration    
-        
+  ! Configuration
+
   !! Add a coagulation process between two groups (<i>igroup1</i> and <i>igroup2</i>), with the resulting
   !! particle being in the destination group (<i>igroup3</i>). If <i>ck0</i> is specifed, then a constant
   !! coagulation kernel will be used.
@@ -1153,12 +1155,12 @@ contains
     integer, intent(in)                :: igroup1       !! first source group
     integer, intent(in)                :: igroup2       !! second source group
     integer, intent(in)                :: igroup3       !! destination group
-    integer, intent(in)                :: icollec       !! collection technique [I_COLLEC_CONST | I_COLLEC_FUCHS | I_COLLEC_DATA] 
+    integer, intent(in)                :: icollec       !! collection technique [I_COLLEC_CONST | I_COLLEC_FUCHS | I_COLLEC_DATA]
     integer, intent(out)               :: rc            !! return code, negative indicates failure
     real(kind=f), intent(in), optional :: ck0           !! if specified, forces a constant coagulation kernel
     real(kind=f), intent(in), optional :: grav_e_coll0  !! if <i>icollec</i> is I_COLLEC_CONST
                                                         !! the constant gravitational collection efficiency
-    
+
     ! Assume success.
     rc = RC_OK
 
@@ -1176,17 +1178,17 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     if (igroup3 > carma%f_NGROUP) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, '(a,i3,a,i3,a)') "CARMA_AddCoagulation:: ERROR - The specifed group (", &
         igroup3, ") is larger than the number of groups (", carma%f_NGROUP, ")."
       rc = RC_ERROR
       return
     end if
-    
+
     ! Indicate that the groups coagulate together.
     carma%f_icoag(igroup1, igroup2) = igroup3
-    
+
     ! If ck0 was specified, then we use a fixed coagulation rate of ck0.
     if (present(ck0)) then
       carma%f_ck0 = ck0
@@ -1194,7 +1196,7 @@ contains
     else
       carma%f_icoagop = I_COAGOP_CALC
     end if
-    
+
     ! What collection technique is specified.
     if (icollec > I_COLLEC_DATA) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, '(a,i3,a)') "CARMA_AddCoagulation:: ERROR - The specifed collection method (", &
@@ -1202,7 +1204,7 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     if (icollec == I_COLLEC_CONST) then
       if (present(grav_e_coll0)) then
         carma%f_grav_e_coll0 = grav_e_coll0
@@ -1216,12 +1218,12 @@ contains
         return
       end if
     end if
-    
+
     carma%f_icollec = icollec
-    
+
     return
   end subroutine CARMA_AddCoagulation
-    
+
   !! Add a growth process between the element (<i>ielem</i>) and gas (<i>igas</i>) specifed. The element
   !! and gas should have already been defined using <i>CARMA_AddElement()</i> and <i>CARMA_AddGas()</i>.
   !!
@@ -1237,10 +1239,10 @@ contains
     integer, intent(in)                :: ielem    !! the element index
     integer, intent(in)                :: igas     !! the gas index
     integer, intent(out)               :: rc       !! return code, negative indicates failure
-    
+
     ! Assume success.
     rc = RC_OK
-    
+
     ! Make sure the element exists.
     if (ielem > carma%f_NELEM) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_AddGrowth:: ERROR - The specifed element (", &
@@ -1256,20 +1258,20 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     ! If not already defined, indicate that the element can grow with the specified gas.
     if (carma%f_igrowgas(ielem) /= 0) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_AddGrowth:: ERROR - The specifed element (", &
         ielem, ") already has gas (", carma%f_igrowgas(ielem), ") condensing on it."
       rc = RC_ERROR
       return
-    else 
+    else
       carma%f_igrowgas(ielem) = igas
     end if
-    
+
     return
   end subroutine CARMA_AddGrowth
-    
+
   !! Add a nucleation process that nucleates one element (<i>elemfrom</i>) to another element (<i>elemto</i>)
   !! using the specified gas (<i>igas</i>). The elements and gas should have already been defined
   !! using <i>CARMA_AddElement()</i> and <i>CARMA_AddGas()</i>. The nucleation scheme is indicated by
@@ -1281,7 +1283,7 @@ contains
   !!   - <i>I_ICEMELT</i>
   !!   - <i>I_HETNUC</i>
   !!   - <i>I_HOMNUC</i>
-  !! 
+  !!
   !! There are multiple parameterizations for I_AERFREEZE, so when that is selected the
   !! particular parameterization needs to be indicated by adding it to I_AERFREEZE. The
   !! specific routines are:
@@ -1294,10 +1296,10 @@ contains
   !! One or more of these routines may be selected, but in general one of the first
   !! three should be selected and then it can optionally be combined with the glassy
   !! aerosols (I_AF_MURRAY_2010).
-  !! 
+  !!
   !! Total evaporation transfers particle mass from the destination element back to the
   !! element indicated by <i>ievp2elem</i>. This relationship is not automatically generated,
-  !! because multiple elements can nucleate to a particular element and therefore the 
+  !! because multiple elements can nucleate to a particular element and therefore the
   !! reverse mapping is not unique.
   !!
   !! NOTE: The gas used for nucleation must be the same for all nucleation defined from
@@ -1319,9 +1321,9 @@ contains
   !! @see CARMA_AddGas
   subroutine CARMA_AddNucleation(carma, ielemfrom, ielemto, inucproc, &
       rlh_nuc, rc, igas, ievp2elem)
-      
+
     use carmaelement_mod, only         : CARMAELEMENT_Get
-    
+
     type(carma_type), intent(inout)    :: carma       !! the carma object
     integer, intent(in)                :: ielemfrom   !! the source element
     integer, intent(in)                :: ielemto     !! the destination element
@@ -1331,12 +1333,12 @@ contains
     integer, intent(out)               :: rc          !! return code, negative indicated failure
     integer, optional, intent(in)      :: igas        !! the gas
     integer, optional, intent(in)      :: ievp2elem   !! the element created upon evaporation
-    
+
     integer                            :: igroup      !! group for source element
-    
+
     ! Assume success.
     rc = RC_OK
-    
+
     ! Make sure the elements exist.
     if (ielemfrom > carma%f_NELEM) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_AddNucleation:: ERROR - The specifed element (", &
@@ -1371,8 +1373,8 @@ contains
         return
       end if
     end if
-    
-    
+
+
     ! If aerosol freezing is selected, but no I_AF_xxx sub-method is selected, then indicate an error.
     if (inucproc == I_AERFREEZE) then
       if (carma%f_do_print) then
@@ -1381,14 +1383,14 @@ contains
       end if
       return
     end if
-    
-    
+
+
     ! Array <inucgas> maps a particle group to its associated gas for nucleation:
     ! Nucleation from group <igroup> is associated with gas <inucgas(igroup)>
     ! Set to zero if particles are not subject to nucleation.
     if (present(igas)) then
       call CARMAELEMENT_Get(carma, ielemfrom, rc, igroup=igroup)
-      
+
       if (rc >= RC_OK) then
         carma%f_inucgas(igroup) = igas
       end if
@@ -1406,7 +1408,7 @@ contains
 
     ! <inucproc(iefrom,ieto)> specifies what nucleation process nucleates
     ! particles from element <ielem> to element <ieto>:
-    !   I_DROPACT:  Aerosol activation to droplets 
+    !   I_DROPACT:  Aerosol activation to droplets
     !   I_AERFREEZE: Aerosol homogeneous freezing
     !   I_DROPFREEZE: Droplet homogeneous freezing
     !   I_GLFREEZE: Glassy Aerosol heteroogeneous freezing
@@ -1442,7 +1444,7 @@ contains
   subroutine CARMA_Get(carma, rc, LUNOPRT, NBIN, NELEM, NGAS, NGROUP, NSOLUTE, NWAVE, do_detrain, &
     do_drydep, do_fixedinit, do_grow, do_print, do_print_init, do_thermo, wave, dwave, do_wave_emit, &
     do_partialinit,do_coremasscheck)
-    
+
     type(carma_type), intent(in)        :: carma                !! the carma object
     integer, intent(out)                :: rc                   !! return code, negative indicates failure
     integer, optional, intent(out)      :: NBIN                 !! number of radius bins per group
@@ -1464,10 +1466,10 @@ contains
     real(kind=f), optional, intent(out) :: dwave(carma%f_NWAVE) !! the wavelengths widths (cm)
     logical, optional, intent(out)      :: do_wave_emit(carma%f_NWAVE) !! do emission in this band?
     logical, optional, intent(out)      :: do_coremasscheck
-    
+
     ! Assume success.
     rc = RC_OK
-    
+
     if (present(LUNOPRT))  LUNOPRT = carma%f_LUNOPRT
     if (present(NBIN))     NBIN    = carma%f_NBIN
     if (present(NELEM))    NELEM   = carma%f_NELEM
@@ -1475,7 +1477,7 @@ contains
     if (present(NGROUP))   NGROUP  = carma%f_NGROUP
     if (present(NSOLUTE))  NSOLUTE = carma%f_NSOLUTE
     if (present(NWAVE))    NWAVE   = carma%f_NWAVE
-    
+
     if (present(do_detrain))    do_detrain     = carma%f_do_detrain
     if (present(do_drydep))     do_drydep      = carma%f_do_drydep
     if (present(do_grow))       do_grow        = carma%f_do_grow

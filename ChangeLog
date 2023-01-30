@@ -1,4 +1,23 @@
 ===============================================================
+Tag name: carma4_02
+Originator(s): Mike Mills, Francis Vitt
+Date: 30 Jan 2023
+
+One-line Summary: Include Vehkamaki sulfate nucleation option
+
+Purpose of changes:
+
+ Implement sulfate nucleation options:
+    'ZhaoTurco'
+        Zhao & Turco, JAS, V.26, No.5, 1995.
+    'Vehkamaki'
+        Vehkamaki, H., M. Kulmala, I. Napari, K.E.J. Lehtinen,
+        C. Timmreck, M. Noppel and A. Laaksonen, 2002,
+        An improved parameterization for sulfuric acid-water nucleation
+        rates for tropospheric and stratospheric conditions,
+        J. Geophys. Res., 107, 4622, doi:10.1029/2002jd002184
+
+===============================================================
 Tag name: carma4_01
 Originator(s): Francis Vitt
 Date: 12 Oct 2022
