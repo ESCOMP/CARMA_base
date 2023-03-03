@@ -54,10 +54,7 @@ subroutine newstate(carma, cstate, rc)
     if (rc < RC_OK) return
   endif
 
-  do iz = 1, NZ
-    call coremasscheck( carma, cstate, iz, .true.,.false.,.false., "AfterVertical", rc )
-    if (rc < RC_OK) return
-  end do
+  call fixcorecol(carma, cstate, rc)
 
   ! There can be two phases to the microphysics: in-cloud and clear sky. Particles
   ! that are tagged as "In-cloud" will only be processed in the in-cloud loop, and their
@@ -105,10 +102,7 @@ subroutine newstate(carma, cstate, rc)
     call newstate_calc(carma, cstate, scale_cldfrc(:), rc)
     if (rc < RC_OK) return
 
-    do iz = 1, NZ
-      call coremasscheck( carma, cstate, iz, .false.,.true.,.true., "AfterNewstate_calc", rc )
-      if (rc < RC_OK) return
-    end do
+    call fixcorecol(carma, cstate, rc)
 
     ! Save the new in-cloud values for the gas, particle and temperature fields.
     pc_cloudy(:,:,:)    = pc(:,:,:)
@@ -159,10 +153,7 @@ subroutine newstate(carma, cstate, rc)
       call newstate_calc(carma, cstate, (1._f - scale_cldfrc(:)), rc)
       if (rc < RC_OK) return
 
-      do iz = 1, NZ
-        call coremasscheck( carma, cstate, iz, .false.,.true.,.true., "AfterNewstate_calc", rc )
-        if (rc < RC_OK) return
-      end do
+      call fixcorecol(carma, cstate, rc)
 
       ! Restore the cloud fraction
       cldfrc(:) = cldfrc_orig(:)
@@ -250,10 +241,7 @@ subroutine newstate(carma, cstate, rc)
     call newstate_calc(carma, cstate, scale_threshold, rc)
     if (rc < RC_OK) return
 
-    do iz = 1,NZ
-      call coremasscheck( carma, cstate, iz, .false.,.true.,.true., "AfterNewstate_calc", rc )
-      if (rc < RC_OK) return
-    end do
+    call fixcorecol(carma, cstate, rc)
   end if
 
   ! Return to caller with new state computed

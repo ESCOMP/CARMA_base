@@ -52,11 +52,6 @@ subroutine microfast(carma, cstate, iz, scale_threshold, rc)
   call zeromicro(carma, cstate, iz, rc)
   if (rc < RC_OK) return
 
-  if(do_coremasscheck)then
-    call coremasscheck( carma, cstate, iz, .false.,.true.,.true., "AfterZeromicro", rc )
-    if (rc < RC_OK) return
-  end if
-
   ! Calculate (implicit) particle loss rates for nucleation, growth,
   ! evaporation, melting, etc.
   if (do_grow) then
@@ -173,9 +168,6 @@ subroutine microfast(carma, cstate, iz, scale_threshold, rc)
     if (rc /= RC_OK) return
   endif
 
-  call coremasscheck( carma, cstate, iz, .true.,.false.,.false., "AfterTsolve", rc )
-  if (rc < RC_OK) return
-
   !  Update saturation ratios
   if (do_grow .or. do_thermo) then
     do igas = 1, NGAS
@@ -280,14 +272,6 @@ subroutine microfast(carma, cstate, iz, scale_threshold, rc)
       end if
     end do
   endif
-
-  call coremasscheck( carma, cstate, iz, .true.,.false.,.false., "AfterUpdateSaturationRatio", rc )
-  if (rc < RC_OK) return
-
-  ! Update particle densities
-!  if (do_grow) then
-!    call rhopart(carma, cstate, iz, rc)
-!  end if
 
   ! Return to caller with new particle and gas concentrations.
   return

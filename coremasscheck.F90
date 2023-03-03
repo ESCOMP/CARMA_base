@@ -2,9 +2,16 @@
 ! reference the CARMA structure.
 #include "carma_globaer.h"
 
-!!  This routine checks if the coremass exceeds the total
+!!  This routine checks if the coremass exceeds the total.
 !!
-!! @author Yunqian Zhu
+!! NOTE: The fixer in this case is not mass conserving, and thus can have
+!! the effect of creating mass of the concentration element (by removing
+!! the negative values).
+!!
+!! NOTE: Errors will only be logged and runs aborted if they are greater
+!! than roundoff error.
+!!
+!! @author Yunqian Zhu, Charles Bardeen
 !! @version Apr-2021
 subroutine coremasscheck(carma, cstate, iz, fixcoremass,logmsg,abort, packagename, rc)
 
@@ -36,33 +43,47 @@ subroutine coremasscheck(carma, cstate, iz, fixcoremass,logmsg,abort, packagenam
 
   ! check the coremass exceeding the total mass
   do igroup = 1,NGROUP
-     iepart = ienconc(igroup)
-     do ibin = 1,NBIN
+
+    ! Only check groups that have coremasses
+    if (ncore(igroup) > 0) then
+
+      iepart = ienconc(igroup)
+
+      do ibin = 1,NBIN
         if (pc(iz, ibin, iepart) > 0._f) then
-           coremass = 0._f
-           do i = 1, ncore(igroup)
-              icore = icorelem(i,igroup)
-              coremass = coremass + pc(iz, ibin, icore)
-           end do ! i = 1, ncore(igroup)
-           if (coremass > pc(iz, ibin, iepart) * rmass(ibin, igroup)) then
-             if(coremass < pc(iz, ibin, iepart) * rmass(ibin, igroup)*(1._f+roundoff))then
-                pc(iz, ibin, iepart) = coremass/rmass(ibin,igroup) + ALMOST_ZERO
-             else
-               if(fixcoremass)then
-                 pc(iz, ibin, iepart) = coremass/rmass(ibin,igroup) + ALMOST_ZERO
-               endif
-               if (logmsg) then
-                 write(LUNOPRT,*) "Error - coremass exceeds total: ",packagename
-                 write(LUNOPRT,*) "coremass",coremass,"total",pc(iz, ibin, iepart) * rmass(ibin,igroup)
-               end if
-               if (abort) then
-                 rc = RC_ERROR
-                 return
-               end if
-             end if
-           end if
+
+          coremass = 0._f
+
+          do i = 1, ncore(igroup)
+            icore = icorelem(i,igroup)
+            coremass = coremass + pc(iz, ibin, icore)
+          end do ! i = 1, ncore(igroup)
+
+          if (coremass > pc(iz, ibin, iepart) * rmass(ibin, igroup)) then
+            if (((coremass - pc(iz, ibin, iepart) * rmass(ibin, igroup)) / coremass) .gt. roundoff) then
+              if (logmsg) then
+                write(LUNOPRT,*) "Error - coremass exceeds total: ",packagename
+                write(LUNOPRT,*) "coremass",coremass,"total",pc(iz, ibin, iepart) * rmass(ibin, igroup)
+              end if
+
+              if (abort) then
+                rc = RC_ERROR
+                return
+              end if
+
+              ! Only fix large errors if requested.
+              if (fixcoremass) then
+                pc(iz, ibin, iepart) = coremass / rmass(ibin, igroup)
+              endif
+
+            ! Automatically fix roundoff sized errors, regardless of settings.
+            else
+              pc(iz, ibin, iepart) = coremass / rmass(ibin, igroup)
+            end if
+          end if
         end if
-     end do
+      end do
+    end if
   end do
 
 end subroutine coremasscheck
