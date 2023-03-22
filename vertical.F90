@@ -2,6 +2,10 @@
 ! reference the CARMA structure.
 #include "carma_globaer.h"
 
+! NOTE: Putting this subroutine here temporarily because it won't compile when
+! in its own file. The carma_globaer.h macros are not expanding.
+
+
 !!  This routine drives the vertical transport calculations.
 !!
 !!  NOTE: Since this is only for sedimentation and brownian diffusion of a column within
@@ -37,9 +41,17 @@ subroutine vertical(carma, cstate, rc)
   real(kind=f)   :: vertdifu(NZP1)
   real(kind=f)   :: vertdifd(NZP1)
   real(kind=f)   :: vtrans(NZP1)
-  real(kind=f)   :: old_pc(NZ)
+  real(kind=f)   :: old_pc(NZ, NBIN, NELEM)
 
   rc = RC_OK
+
+  ! Before doing advection, make sure that there are no negative values for
+  ! the concentration element.
+  call fixcorecol(carma, cstate, rc)
+  if (rc < RC_OK) return
+
+  old_pc(:,:,:) = pc(:,:,:)
+  sedimentationflux(:,:) = 0._f
 
   do ielem = 1,NELEM          ! Loop over particle elements
     ig = igelem(ielem)        ! particle group
@@ -72,8 +84,6 @@ subroutine vertical(carma, cstate, rc)
           call vertdif(carma, cstate, ig, ibin, itbnd_pc, ibbnd_pc, vertdifu, vertdifd, rc)
           if (rc < RC_OK) return
 
-          old_pc(:) = pc(:,ibin,ielem)
-
           ! There are 2 different solvers, versol with uses a PPM scheme and versub
           ! which using an explicit substepping approach.
           if (do_explised) then
@@ -89,21 +99,43 @@ subroutine vertical(carma, cstate, rc)
               vertadvu, vertadvd, vertdifu, vertdifd, rc)
             if (rc < RC_OK) return
           end if
-
-          ! A clunky way to get the mass flux to the surface and to conserve mass
-          ! is to determine the total before and after. Anything lost went to the
-          ! surface.
-          !
-          ! NOTE: This only works if you assume nothing is lost out the top. It would be
-          ! better to figure out how to get this directly from versol.
-          pc_surf(ibin,ielem) = pc_surf(ibin, ielem) + sum(old_pc(:) * dz(:)) - &
-                                sum(pc(:,ibin,ielem) * dz(:))
-          sedimentationflux(ibin,ielem) = ( sum(old_pc(:) * dz(:)) - &
-                                          sum(pc(:,ibin,ielem) * dz(:)) ) / dtime
-        enddo  ! ibin
+        end do
       endif
     endif
   enddo  ! ielem
+
+
+  ! Advection can cause errors in tracer/tracer relationship that can cause
+  ! negative values for the concentration element. Use a mass conserving
+  ! fixer to make sure there are no negative values.
+  call fixcorecol(carma, cstate, rc)
+  if (rc < RC_OK) return
+
+
+  ! Now the the column has been fixed up, look to see how much mass
+  ! has been lost to the surface.
+  do ielem = 1,NELEM          ! Loop over particle elements
+    ig = igelem(ielem)        ! particle group
+
+    ! Should this group participate in sedimentation?
+    if (grp_do_vtran(ig)) then
+
+      do ibin = 1,NBIN          ! Loop over particle mass bins
+
+        ! A clunky way to get the mass flux to the surface and to conserve mass
+        ! is to determine the total before and after. Anything lost went to the
+        ! surface.
+        !
+        ! NOTE: This only works if you assume nothing is lost out the top. It would be
+        ! better to figure out how to get this directly from versol.
+        pc_surf(ibin,ielem) = pc_surf(ibin, ielem) + sum(old_pc(:,ibin,ielem) * dz(:) ) - &
+          sum(pc(:,ibin,ielem) * dz(:) )
+        sedimentationflux(ibin,ielem) = ( sum(old_pc(:,ibin,ielem) * dz(:) ) - &
+          sum(pc(:,ibin,ielem) * dz(:) ) ) / dtime
+      enddo  ! ibin
+    end if
+  end do
+
 
   ! Return to caller with new particle concentrations.
   return

@@ -913,19 +913,9 @@ contains
       end do
     end do
 
-    do iz = 1, cstate%f_NZ
-      call coremasscheck( cstate%f_carma, cstate, iz, .true.,.false.,.false., "BeforeRhopart", rc )
-      if (rc < 0) return
-    end do
-
     ! Determine the particle densities.
     call rhopart(cstate%f_carma, cstate, rc)
     if (rc < 0) return
-
-    do iz = 1, cstate%f_NZ
-      call coremasscheck( cstate%f_carma, cstate, iz, .false.,.true.,.true., "AfterRhopart", rc )
-      if (rc < 0) return
-    end do
 
     ! We have to hold off initialization until now, because the particle density
     ! (rhop) can not be determined until the particle masses are known (i.e. after
@@ -998,18 +988,12 @@ contains
       end if
     end if
 
-    do iz = 1, cstate%f_NZ
-      call coremasscheck( cstate%f_carma, cstate, iz, .true.,.false.,.false., "BeforeStep", rc )
-      if (rc < 0) return
-    end do
+    call fixcorecol(cstate%f_carma, cstate, rc)
 
     ! Calculate the impact of microphysics upon the state.
     call step(cstate%f_carma, cstate, rc)
 
-    do iz = 1, cstate%f_NZ
-      call coremasscheck( cstate%f_carma, cstate, iz, .false.,.true.,.true., "AfterStep", rc )
-      if (rc < 0) return
-    end do
+    call fixcorecol(cstate%f_carma, cstate, rc)
 
     return
   end subroutine CARMASTATE_Step

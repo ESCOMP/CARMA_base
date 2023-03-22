@@ -66,10 +66,7 @@ subroutine newstate_calc(carma, cstate, scale_threshold, rc)
     if (rc < RC_OK) return
   endif
 
-  do iz = 1,NZ
-    call coremasscheck( carma, cstate, iz, .true.,.false.,.false., "AfterMicroslow", rc )
-    if (rc < RC_OK) return
-  end do
+  call fixcorecol(carma, cstate, rc)
 
   ! If there is any microsphysics that happens on a faster time scale,
   ! then check to see if the time step needs to be subdivided and then

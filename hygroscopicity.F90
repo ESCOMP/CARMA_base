@@ -43,8 +43,11 @@ subroutine hygroscopicity(carma, cstate, rc)
       iepart = ienconc(igroup)     ! element of particle number concentration
       do ibin = 1, NBIN
         do z = 1, NZ
+        
           kappahygro(z,ibin,igroup) = 0._f
+          
           if (pc(z, ibin, iepart).gt.0._f) then
+          
             ! Weight hygro by mass of each core
             coremass = 0._f
             do i = 1, ncore(igroup)
@@ -54,17 +57,28 @@ subroutine hygroscopicity(carma, cstate, rc)
             end do ! i = 1, ncore(igroup)
 
             ! Add shell mass to hygro weighting
-            shellmass = max((pc(z, ibin, iepart) * rmass(ibin, igroup)) - coremass, 0._f)
-            kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) + shellmass * kappaelem(iepart)
-            !Divide by total mass of all particles in the bin to normalize:
+            !
+            ! NOTE: Check for coremass being to big for PC and adjust
+            ! accordingly.
+            shellmass = (pc(z, ibin, iepart) * rmass(ibin, igroup)) - coremass
+            if (shellmass < 0._f) then
+              shellmass = 0._f
+              pc(z, ibin, iepart) = coremass / rmass(ibin, igroup)
+            else 
+              kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) + shellmass * kappaelem(iepart)
+            end if
+
+            ! Divide by total mass of all particles in the bin to normalize:
             kappahygro(z,ibin,igroup) = kappahygro(z,ibin,igroup) / pc(z, ibin, iepart) / rmass(ibin, igroup)
           end if
+          
           if (kappahygro(z,ibin,igroup).gt.thresh1.or.kappahygro(z,ibin,igroup).lt.thresh0) then
             write(LUNOPRT,*) "hygro77: z,ibin,kappahygro,pc,rmass,shellmass,coremass", &
               z,ibin,kappahygro(z,ibin,igroup),pc(z, ibin, iepart),rmass(ibin, igroup),shellmass,coremass
             rc=RC_ERROR
             return
           end if
+          
           kappahygro(z,ibin,igroup) = min(kappahygro(z,ibin,igroup),1._f)
           kappahygro(z,ibin,igroup) = max(kappahygro(z,ibin,igroup),0._f)
         end do ! z = 1, NZ
