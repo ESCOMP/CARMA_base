@@ -1,4 +1,20 @@
 ===============================================================
+Tag name: carma4_03
+Originator(s): C Bardeen
+Date: 22 Mar 2023
+
+Corrections to core mass fixer and hygroscopicity.
+
+M       carmastate_mod.F90
+M       coremasscheck.F90
+A       fixcorecol.F90
+M       hygroscopicity.F90
+M       microfast.F90
+M       newstate.F90
+M       newstate_calc.F90
+M       vertical.F90
+
+===============================================================
 Tag name: carma4_02
 Originator(s): Mike Mills, Francis Vitt
 Date: 30 Jan 2023

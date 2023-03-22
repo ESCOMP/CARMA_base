@@ -2,10 +2,6 @@
 ! reference the CARMA structure.
 #include "carma_globaer.h"
 
-! NOTE: Putting this subroutine here temporarily because it won't compile when
-! in its own file. The carma_globaer.h macros are not expanding.
-
-
 !!  This routine drives the vertical transport calculations.
 !!
 !!  NOTE: Since this is only for sedimentation and brownian diffusion of a column within
