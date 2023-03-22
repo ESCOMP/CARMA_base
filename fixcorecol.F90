@@ -6,7 +6,7 @@
 !! is larger than the concentration element. This implies a negative mass
 !! of the concentration element, which is not physical.
 !!
-!! This routine attempts to conserving mass by using mass from the positive
+!! This routine attempts to conserve mass by using mass from the positive
 !! values to offset the negative values.
 !!
 !! @author Charles Bardeen

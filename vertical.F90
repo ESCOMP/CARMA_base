@@ -112,7 +112,7 @@ subroutine vertical(carma, cstate, rc)
   if (rc < RC_OK) return
 
 
-  ! Now the the column has been fixed up, look to see how much has mass
+  ! Now the the column has been fixed up, look to see how much mass
   ! has been lost to the surface.
   do ielem = 1,NELEM          ! Loop over particle elements
     ig = igelem(ielem)        ! particle group
