@@ -35,9 +35,9 @@ module carmagroup_mod
 contains
 
   subroutine CARMAGROUP_Create(carma, igroup, name, rmin, rmrat, ishape, eshape, is_ice, rc, is_fractal, &
-      irhswell, irhswcomp, refidx, do_mie, do_wetdep, do_drydep, do_vtran, solfac, scavcoef, shortname, &
-      cnsttype, maxbin, ifallrtn, is_cloud, rmassmin, imiertn, is_sulfate, dpc_threshold, rmon, df, falpha, &
-      neutral_volfrc)
+      irhswell, irhswcomp, do_mie, do_wetdep, do_drydep, do_vtran, solfac, scavcoef, shortname, &
+      cnsttype, maxbin, ifallrtn, is_cloud, rmassmin, imiertn, iopticstype, is_sulfate, dpc_threshold, &
+      rmon, df, falpha, neutral_volfrc)
     type(carma_type), intent(inout)             :: carma               !! the carma object
     integer, intent(in)                         :: igroup              !! the group index
     character(*), intent(in)                    :: name                !! the group name, maximum of 255 characters
@@ -53,7 +53,6 @@ contains
                                                                        !! [I_FITZGERALD | I_GERBER | I_WTPCT_H2SO4 | I_PETTERS]
     integer, optional, intent(in)               :: irhswcomp           !! the composition for particle swelling from relative humidity 
                                                                        !! [I_SWG_NH42SO4 | I_SWG_SEA_SALT | I_SWG_URBAN | I_SWG_RURAL]
-    complex(kind=f), optional, intent(in)       :: refidx(carma%f_NWAVE) !! refractive index for the particle
     logical, optional, intent(in)               :: do_mie              !! do mie calculations?
     logical, optional, intent(in)               :: do_wetdep           !! do wet deposition for this particle?
     logical, optional, intent(in)               :: do_drydep           !! do dry deposition for this particle?
@@ -72,6 +71,10 @@ contains
     real(kind=f), optional, intent(in)          :: rmassmin            !! the minimum mass, when used overrides rmin[g]
     integer, optional, intent(in)               :: imiertn             !! mie routine [I_MIERTN_TOON1981 | I_MIERTN_BOHREN1983
                                                                        !! | I_MIERTN_BOTET1997]
+    integer, optional, intent(in)               :: iopticstype         !! optics routine [I_OPTICS_FIXED  | I_OPTICS_MIXED_YU2015
+                                                                       !! | I_OPTICS_SULFATE_YU2015 | I_OPTICS_MIXED_CORESHELL 
+                                                                       !! | I_OPTICS_MIXED_VOLUME | I_OPTICS_MIXED_MAXWELL
+                                                                       !! | I_OPTICS_SULFATE ]
     logical, optional, intent(in)               :: is_sulfate          !! is this a sulfate particle?
     real(kind=f), optional, intent(in)          :: dpc_threshold       !! convergence criteria for particle concentration
                                                                        !! [fraction]
@@ -128,6 +131,7 @@ contains
     carma%f_group(igroup)%f_icorelem(:) = 0
     carma%f_group(igroup)%f_ifallrtn    = I_FALLRTN_STD
     carma%f_group(igroup)%f_imiertn     = I_MIERTN_TOON1981
+    carma%f_group(igroup)%f_iopticstype = I_OPTICS_FIXED
     carma%f_group(igroup)%f_is_fractal  = .false.
     carma%f_group(igroup)%f_is_cloud    = .false.
     carma%f_group(igroup)%f_is_sulfate  = .false.
@@ -141,7 +145,6 @@ contains
     ! Any optical properties?
     if (carma%f_NWAVE > 0) then
       allocate( &
-        carma%f_group(igroup)%f_refidx(carma%f_NWAVE), &
         carma%f_group(igroup)%f_qext(carma%f_NWAVE,carma%f_NBIN), &
         carma%f_group(igroup)%f_ssa(carma%f_NWAVE,carma%f_NBIN), &
         carma%f_group(igroup)%f_asym(carma%f_NWAVE,carma%f_NBIN), &
@@ -153,7 +156,6 @@ contains
       endif
 
       ! Initialize
-      carma%f_group(igroup)%f_refidx(:) = (0._f, 0._f)
       carma%f_group(igroup)%f_qext(:,:) = 0._f
       carma%f_group(igroup)%f_ssa(:,:)  = 0._f
       carma%f_group(igroup)%f_asym(:,:) = 0._f
@@ -185,7 +187,6 @@ contains
     ! Set optional parameters.
     if (present(irhswell))   carma%f_group(igroup)%f_irhswell     = irhswell
     if (present(irhswcomp))  carma%f_group(igroup)%f_irhswcomp    = irhswcomp
-    if (present(refidx))     carma%f_group(igroup)%f_refidx(:)    = refidx(:)
     if (present(do_mie))     carma%f_group(igroup)%f_do_mie       = do_mie
     if (present(do_wetdep))  carma%f_group(igroup)%f_do_wetdep    = do_wetdep
     if (present(do_drydep))  carma%f_group(igroup)%f_grp_do_drydep  = do_drydep
@@ -200,6 +201,7 @@ contains
     if (present(is_fractal)) carma%f_group(igroup)%f_is_fractal   = is_fractal
     if (present(rmassmin))   carma%f_group(igroup)%f_rmassmin     = rmassmin
     if (present(imiertn))    carma%f_group(igroup)%f_imiertn      = imiertn
+    if (present(iopticstype)) carma%f_group(igroup)%f_iopticstype  = iopticstype
     if (present(is_sulfate)) carma%f_group(igroup)%f_is_sulfate   = is_sulfate
     if (present(dpc_threshold)) carma%f_group(igroup)%f_dpc_threshold = dpc_threshold
     if (present(rmon))       carma%f_group(igroup)%f_rmon         = rmon
@@ -303,9 +305,8 @@ contains
       return
     end if
     
-    if (allocated(carma%f_group(igroup)%f_refidx)) then
+    if (allocated(carma%f_group(igroup)%f_qext)) then
       deallocate( &
-        carma%f_group(igroup)%f_refidx, &
         carma%f_group(igroup)%f_qext, &
         carma%f_group(igroup)%f_ssa, &
         carma%f_group(igroup)%f_asym, &
@@ -360,8 +361,8 @@ contains
   !! @see CARMA_Initialize 
   subroutine CARMAGROUP_Get(carma, igroup, rc, name, shortname, rmin, rmrat, ishape, eshape, is_ice, is_fractal, &
       irhswell, irhswcomp, cnsttype, r, rlow, rup, dr, rmass, dm, vol, qext, ssa, asym, do_mie, &
-      do_wetdep, do_drydep, do_vtran, solfac, scavcoef, ienconc, refidx, ncore, icorelem, maxbin, &
-      ifallrtn, is_cloud, rmassmin, arat, rrat, rprat, imiertn, is_sulfate, dpc_threshold, rmon, df, &
+      do_wetdep, do_drydep, do_vtran, solfac, scavcoef, ienconc, ncore, icorelem, maxbin, &
+      ifallrtn, is_cloud, rmassmin, arat, rrat, rprat, imiertn, iopticstype, is_sulfate, dpc_threshold, rmon, df, &
       nmon, falpha, neutral_volfrc)
       
     type(carma_type), intent(in)              :: carma                        !! the carma object
@@ -393,7 +394,6 @@ contains
                                                                               !! (maximum dimension / radius of enclosing sphere)
     real(kind=f), intent(out), optional       :: rprat(carma%f_NBIN)          !! the porusity radius ratio
                                                                               !! (scaled porosity radius / equiv. sphere)
-    complex(kind=f), intent(out), optional    :: refidx(carma%f_NWAVE)        !! the refractive index at each wavelength
     real(kind=f), intent(out), optional       :: qext(carma%f_NWAVE,carma%f_NBIN) !! extinction efficiency
     real(kind=f), intent(out), optional       :: ssa(carma%f_NWAVE,carma%f_NBIN)  !! single scattering albedo
     real(kind=f), intent(out), optional       :: asym(carma%f_NWAVE,carma%f_NBIN) !! asymmetry factor
@@ -415,6 +415,10 @@ contains
     real(kind=f), optional, intent(out)       :: rmassmin                     !! the minimum mass [g]
     integer, optional, intent(out)            :: imiertn                      !! mie routine [I_MIERTN_TOON1981
                                                                               !! | I_MIERTN_BOHREN1983 | I_MIERTN_BOTET1997]
+    integer, optional, intent(out)             :: iopticstype                 !! optics routine [I_OPTICS_FIXED  | I_OPTICS_MIXED_YU2015
+                                                                              !! | I_OPTICS_SULFATE_YU2015 | I_OPTICS_MIXED_CORESHELL 
+                                                                              !! | I_OPTICS_MIXED_VOLUME | I_OPTICS_MIXED_MAXWELL
+                                                                              !! | I_OPTICS_SULFATE ]
     logical, optional, intent(out)            :: is_sulfate                   !! is this a sulfate particle?
     real(kind=f), optional, intent(out)       :: dpc_threshold                !! convergence criteria for particle concentration
                                                                               !! [fraction]
@@ -471,6 +475,7 @@ contains
     if (present(is_cloud))     is_cloud     = carma%f_group(igroup)%f_is_cloud
     if (present(rmassmin))     rmassmin     = carma%f_group(igroup)%f_rmassmin
     if (present(imiertn))      imiertn      = carma%f_group(igroup)%f_imiertn
+    if (present(iopticstype))  iopticstype  = carma%f_group(igroup)%f_iopticstype
     if (present(is_sulfate))   is_sulfate   = carma%f_group(igroup)%f_is_sulfate
     if (present(dpc_threshold)) dpc_threshold = carma%f_group(igroup)%f_dpc_threshold
     if (present(rmon))         rmon         = carma%f_group(igroup)%f_rmon
@@ -480,13 +485,12 @@ contains
     if (present(neutral_volfrc)) neutral_volfrc = carma%f_group(igroup)%f_neutral_volfrc
     
     if (carma%f_NWAVE == 0) then
-      if (present(refidx) .or. present(qext) .or. present(ssa) .or. present(asym)) then
+      if (present(qext) .or. present(ssa) .or. present(asym)) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAGROUP_Get: ERROR no optical properties defined."
         rc = RC_ERROR
         return
       end if
     else
-      if (present(refidx))     refidx(:)    = carma%f_group(igroup)%f_refidx(:)
       if (present(qext))       qext(:,:)    = carma%f_group(igroup)%f_qext(:,:)
       if (present(ssa))        ssa(:,:)     = carma%f_group(igroup)%f_ssa(:,:)
       if (present(asym))       asym(:,:)    = carma%f_group(igroup)%f_asym(:,:)
@@ -538,6 +542,7 @@ contains
     logical                                   :: do_drydep          ! do dry deposition for this particle?
     logical                                   :: do_vtran           ! do sedimentation for this particle?
     integer                                   :: imiertn            ! mie scattering routine
+    integer                                   :: iopticstype        ! optical properties routine
     logical                                   :: is_sulfate         ! is this a sulfate particle?
     real(kind=f)                              :: dpc_threshold      ! convergence criteria for particle concentration
                                                                     ! [fraction]
@@ -555,7 +560,7 @@ contains
            r=r, dr=dr, rmass=rmass, dm=dm, vol=vol, ifallrtn=ifallrtn, &
            rmassmin=rmassmin, do_mie=do_mie, do_wetdep=do_wetdep, &
            do_drydep=do_drydep, do_vtran=do_vtran, imiertn=imiertn, &
-           neutral_volfrc=neutral_volfrc)
+           iopticstype=iopticstype, neutral_volfrc=neutral_volfrc)
       if (rc < 0) return
 
     
@@ -667,6 +672,25 @@ contains
           write(carma%f_LUNOPRT,*) "    imiertn       :    Botet, Rannou & Cabane, 1997"
         case default
           write(carma%f_LUNOPRT,*) "    imiertn       :    unknown, ", imiertn
+      end select
+
+      select case(iopticstype)
+        case (I_OPTICS_FIXED)
+          write(carma%f_LUNOPRT,*) "    iopticstype   :    Fixed Composition"
+        case (I_OPTICS_MIXED_YU2015)
+          write(carma%f_LUNOPRT,*) "    iopticstype   :    Yu (2015), mixed group"
+        case (I_OPTICS_SULFATE_YU2015)
+          write(carma%f_LUNOPRT,*) "    iopticstype   :    Yu (2015), pure sulfate group"
+        case (I_OPTICS_MIXED_CORESHELL)
+          write(carma%f_LUNOPRT,*) "    iopticstype   :    Mixed group, core/shell optics"
+        case (I_OPTICS_MIXED_VOLUME)
+          write(carma%f_LUNOPRT,*) "    iopticstype   :    Mixed group, Mie optics, volume mixing"
+        case (I_OPTICS_MIXED_MAXWELL)
+          write(carma%f_LUNOPRT,*) "    iopticstype   :    Mixed group, Mie optics, Maxwell-Garnett mixing"
+        case (I_OPTICS_SULFATE)
+          write(carma%f_LUNOPRT,*) "    iopticstype   :    Sulfate Group, Refractive index varies with WTP/RH"
+        case default
+          write(carma%f_LUNOPRT,*) "    iopticstype   :    unknown, ", iopticstype
       end select
   
       write(carma%f_LUNOPRT,*)   

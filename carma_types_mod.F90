@@ -40,19 +40,23 @@ module carma_types_mod
     !   name          Name of the element
     !   shortname     Short name of the element
     !   rho           Mass density of particle element [g/cm^3]
+    !   refidx        Refractive index
     !   igroup        Group to which the element belongs
     !   itype         Particle type specification
     !   icomposition  Particle compound specification
     !   isolute       Index of solute for the particle element
+    !   isShell       For core/shell optics, should this composition be part of the shell (TRUE) or the core (FALSE)
     !
     character(len=CARMA_NAME_LEN)               :: f_name
     character(len=CARMA_SHORT_NAME_LEN)         :: f_shortname
     real(kind=f)                                :: f_kappa
     real(kind=f), allocatable, dimension(:)     :: f_rho          ! (NBIN)
+    complex(kind=f), allocatable, dimension(:,:):: f_refidx       ! (NWAVE, NREFIDX)
     integer                                     :: f_igroup
     integer                                     :: f_itype
     integer                                     :: f_icomposition
     integer                                     :: f_isolute
+    logical                                     :: f_isShell
   end type carmaelement_type
 
 
@@ -151,12 +155,12 @@ module carma_types_mod
     !   rmassup     Upper bin boundary mass [g]
     !   rup         Upper bin boundary radius [cm]
     !   rlow        Lower bin boundary radius [cm]
-    !   refidx      refractive index
     !   qext        extinction efficiency
     !   ssa         single scattering albedo
     !   asym        asymmetry factor
     !   ifallrtn    routine to use to calculate fall velocity  [I_FALLRTN_...]
     !   imiertn     mie routine for optical properties [I_MIERTN_...]
+    !   iopticstype optics routine for optical properties [I_OPTICS_...]
     !   dpc_threshold convergence criteria for particle concentration [fraction]
     !   rmon        monomer radius of fractal particles [cm]
     !   df          fractal dimension for fractal particles
@@ -188,6 +192,7 @@ module carma_types_mod
     integer                                     :: f_irhswcomp
     integer                                     :: f_ifallrtn
     integer                                     :: f_imiertn
+    integer                                     :: f_iopticstype
     real(kind=f)                                :: f_rmin
     real(kind=f)                                :: f_rmassmin
     real(kind=f)                                :: f_rmrat
@@ -200,7 +205,6 @@ module carma_types_mod
     real(kind=f), allocatable, dimension(:)     :: f_rmassup    ! (NBIN)
     real(kind=f), allocatable, dimension(:)     :: f_rup        ! (NBIN)
     real(kind=f), allocatable, dimension(:)     :: f_rlow       ! (NBIN)
-    complex(kind=f), allocatable, dimension(:)  :: f_refidx     ! (NWAVE)
     real(kind=f), allocatable, dimension(:,:)   :: f_qext       ! (NWAVE,NBIN)
     real(kind=f), allocatable, dimension(:,:)   :: f_ssa        ! (NWAVE,NBIN)
     real(kind=f), allocatable, dimension(:,:)   :: f_asym       ! (NWAVE,NBIN)
@@ -281,6 +285,7 @@ module carma_types_mod
     !  NGAS     number of gases (may be 0)
     !  NSOLUTE  number of solutes (may be 0)
     !  NWAVE    number of wavelength bands (may be 0)
+    !  NREFIDX  number of refractive indices per wavelength (may be 0) 
     !
     integer :: f_NGROUP
     integer :: f_NELEM
@@ -288,6 +293,7 @@ module carma_types_mod
     integer :: f_NGAS
     integer :: f_NSOLUTE
     integer :: f_NWAVE
+    integer :: f_NREFIDX
 
     ! Output logical unit numbers
     !

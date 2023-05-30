@@ -13,7 +13,7 @@
 !!
 !! @author Chuck Bardeen
 !! @version 2011
-subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer, falpha_in, m, lqext, lqsca, lasym, rc)
+subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer, falpha_in, m, rcore, mcore, lqext, lqsca, lasym, rc)
 
   ! types
   use carma_precision_mod
@@ -32,8 +32,10 @@ subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer
   real(kind=f), intent(in)             :: nmonomer      !! number of monomers per aggregate [fractal particles only]
   real(kind=f), intent(in)             :: fractaldim    !! fractal dimension [fractal particles only]
   real(kind=f), intent(in)             :: rmonomer      !! monomer size (units?) [fractal particles only]
-  real(kind=f), intent(in)             :: falpha_in        !! packing coefficient [fractal particles only]
+  real(kind=f), intent(in)             :: falpha_in     !! packing coefficient [fractal particles only]
   complex(kind=f), intent(in)          :: m             !! refractive index particle
+  real(kind=f), intent(in)             :: rcore         !! radius core (cm) [core shell only]
+  complex(kind=f), intent(in)          :: mcore         !! refractive index core [core shell only]
   real(kind=f), intent(out)            :: lqext         !! EFFICIENCY FACTOR FOR EXTINCTION
   real(kind=f), intent(out)            :: lqsca         !! EFFICIENCY FACTOR FOR SCATTERING
   real(kind=f), intent(out)            :: lasym         !! asymmetry factor
@@ -46,6 +48,8 @@ subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer
   real(kind=f)                       :: wvno 
   real(kind=f)                       :: rfr 
   real(kind=f)                       :: rfi
+  real(kind=f)                       :: rfcr 
+  real(kind=f)                       :: rfci
   real(kind=f)                       :: x 
   real(kind=f)                       :: qback 
   real(kind=f)                       :: ctbrqs 
@@ -63,8 +67,16 @@ subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer
     ! We only care about the forward direction.
     theta(:) = 0.0_f
     
-    rfr = real(m)
-    rfi = aimag(m)
+    rfr  = real(m)
+    rfi  = aimag(m)
+
+    if (rcore .gt. 0.0_f) then
+      rfcr = real(mcore)
+      rfci = aimag(mcore)
+    else
+      rfcr = rfr
+      rfci = rfi
+    end if
     
     call miess(carma, &
                radius, &
@@ -76,12 +88,12 @@ subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer
                lqsca, &
                qback,&
                ctbrqs, &
-               0.0_f, &
-               rfr, &
-               rfi, &
+               rcore, &
+               rfcr, &
+               rfci, &
                wvno, &
                rc)
-               
+
     lasym = ctbrqs / lqsca
 
   else if (miertn == I_MIERTN_BOHREN1983) then

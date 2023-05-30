@@ -108,6 +108,16 @@ module carma_enums_mod
   ! How is the CARMA group represented in the parent model
   integer, public, parameter :: I_CNSTTYPE_PROGNOSTIC   = 1   !! Prognostic, advected constituent for each bin
   integer, public, parameter :: I_CNSTTYPE_DIAGNOSTIC   = 2   !! Diagnostic, bins diagonosed from model state
+
+  ! Optics Type  
+  integer, public, parameter :: I_OPTICS_FIXED          = 1   !! Fixed Composition
+  integer, public, parameter :: I_OPTICS_MIXED_YU2015   = 2   !! Yu (2015), mixed group
+  integer, public, parameter :: I_OPTICS_SULFATE_YU2015 = 3   !! Yu (2015), pure sulfate group
+  integer, public, parameter :: I_OPTICS_MIXED_YU_H2O   = 4   !! Yu (2015), mixed group includes water in shell
+  integer, public, parameter :: I_OPTICS_MIXED_CORESHELL= 5   !! Mixed group, core/shell optics
+  integer, public, parameter :: I_OPTICS_MIXED_VOLUME   = 6   !! Mixed group, Mie optics, volume mixing
+  integer, public, parameter :: I_OPTICS_MIXED_MAXWELL  = 7   !! Mixed group, Mie optics, Maxwell-Garnett mixing
+  integer, public, parameter :: I_OPTICS_SULFATE        = 8   !! Sulfate Group, Refractive index varies with WTP/RH
   
   ! Return Codes
   !
