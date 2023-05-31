@@ -560,7 +560,8 @@ contains
            r=r, dr=dr, rmass=rmass, dm=dm, vol=vol, ifallrtn=ifallrtn, &
            rmassmin=rmassmin, do_mie=do_mie, do_wetdep=do_wetdep, &
            do_drydep=do_drydep, do_vtran=do_vtran, imiertn=imiertn, &
-           iopticstype=iopticstype, neutral_volfrc=neutral_volfrc)
+           iopticstype=iopticstype, neutral_volfrc=neutral_volfrc, &
+           is_sulfate=is_sulfate, dpc_threshold=dpc_threshold)
       if (rc < 0) return
 
     

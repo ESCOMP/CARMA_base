@@ -154,19 +154,19 @@ subroutine rhopart(carma, cstate, rc)
 
             call getwetr(carma, igroup, relhum(iz), rlow(ibin,igroup), rlow_wet(iz,ibin,igroup), &
                          rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc,h2o_mass=h2o_mass, &
-                         h2o_vp=pvapl(iz, igash2o), temp=t(iz), kappa=kappahygro(iz,ibin,igroup),cstate=cstate, iz=iz)
+                         h2o_vp=pvapl(iz, igash2o), temp=t(iz), kappa=kappahygro(iz,ibin,igroup),cstate=cstate)
             if (rc < 0) return
 
             ! rup
             call getwetr(carma, igroup, relhum(iz), rup(ibin,igroup), rup_wet(iz,ibin,igroup), &
                          rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, h2o_mass=h2o_mass, &
-                         h2o_vp=pvapl(iz, igash2o),temp=t(iz), kappa=kappahygro(iz,ibin,igroup),cstate=cstate, iz=iz)
+                         h2o_vp=pvapl(iz, igash2o),temp=t(iz), kappa=kappahygro(iz,ibin,igroup),cstate=cstate)
             if (rc < 0) return
 
             ! r
             call getwetr(carma, igroup, relhum(iz), r(ibin,igroup), r_wet(iz,ibin,igroup), &
                         rhop(iz,ibin,igroup), rhop_wet(iz,ibin,igroup), rc, h2o_mass=h2o_mass, &
-                        h2o_vp=pvapl(iz, igash2o),temp=t(iz), kappa=kappahygro(iz,ibin,igroup),cstate=cstate, iz=iz)
+                        h2o_vp=pvapl(iz, igash2o),temp=t(iz), kappa=kappahygro(iz,ibin,igroup),cstate=cstate)
             if (rc < 0) return
 
          else ! I_GERBER and I_FITZGERALD

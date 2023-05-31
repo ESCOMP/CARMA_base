@@ -96,7 +96,7 @@ contains
         return
       end if
 
-      carma%f_element(ielement)%f_refidx(:,:) = CMPLX(0._f, 0._f)
+      carma%f_element(ielement)%f_refidx(:,:) = CMPLX(0._f, 0._f, kind=f)
     end if
 
 

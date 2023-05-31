@@ -38,7 +38,7 @@ contains
   !!
   !! @author  Chuck Bardeen, Pete Colarco
   !! @version May-2009 from Nov-2000
-  subroutine getwetr(carma, igroup, rh, rdry, rwet, rhopdry, rhopwet, rc, h2o_mass, h2o_vp, temp, kappa, cstate, iz, wgtpct)
+  subroutine getwetr(carma, igroup, rh, rdry, rwet, rhopdry, rhopwet, rc, h2o_mass, h2o_vp, temp, kappa, cstate, wgtpct)
 
     ! types
     use carma_precision_mod
@@ -64,7 +64,6 @@ contains
     real(kind=f), intent(in), optional   :: temp    !! temperature [K]
     real(kind=f), intent(in), optional   :: kappa   !! hygroscopicity parameter (Petters & Kreidenweis, ACP, 2007)
     type(carmastate_type), intent(in),optional :: cstate  !! the carma state object
-    integer, intent(in),optional         :: iz      !! level index
     real(kind=f), intent(in), optional   :: wgtpct   !! weight percent h2so4 (overrides rh)
 
     ! Local declarations
@@ -73,7 +72,7 @@ contains
     real(kind=f)            :: wtpkelv, den1, den2, drho_dwt
     real(kind=f)            :: sigkelv, sig1, sig2, dsigma_dwt
     real(kind=f)            :: rkelvinH2O_a, rkelvinH2O_b, rkelvinH2O, h2o_kelv
-    real(kind=f)            :: rvap,rh190
+    real(kind=f)            :: rh190
 
 
     ! The following parameters relate to the swelling of seasalt like particles
