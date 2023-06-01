@@ -3,29 +3,9 @@
 #include "carma_globaer.h"
 
 module wetr
+  use carma_precision_mod
 
 contains
-
-
-  !! This function is needed for generating wet radii for optics when using the
-  !! PETTERS scheme, and should not be used generally within CARMA.
-  !!
-  !! The vaporp_h2o_murphy2005 equation to calculate the vapor pressure at 190 K
-  !! for liquid water
-  function pvap_h2o(temp) result(pvap)
-  
-    use carma_precision_mod
-
-    implicit none
-    
-    real(kind=f), intent(in)      :: temp
-    real(kind=f)                  :: pvap
-        
-    pvap = temp / ( 10.0_f * exp(54.842763_f - (6763.22_f / temp) &
-                               - (4.210_f * log(temp)) + (0.000367_f * temp) + (tanh(0.0415_f * (temp - 218.8_f)) &
-                               * (53.878_f - (1331.22_f / temp) - (9.44523_f * log(temp)) + 0.014025_f * temp))) )
-  end function pvap_h2o
-
 
   !! This routine calculates the wet radius for hydrophilic particles that are
   !! assumed to grow in size based upon the realtive humidity.
@@ -96,8 +76,7 @@ contains
     real(kind=f)            :: c4
 
     ! Define formats
-    1 format(/,'Non-spherical particles specified for group ',i3, &
-        ' (ishape=',i3,') but spheres assumed in wetr.f.'/)
+  1 format(/,'Non-spherical particles specified for group ',i3, ' (ishape=',i3,') but spheres assumed in wetr.f.'/)
 
     ! If humidty affects the particle, then determine the equilbirium
     ! radius and density based upon the relative humidity.
@@ -260,20 +239,20 @@ contains
       ! Sulfate Aerosol, using weight percent.
       if (irhswell(igroup) == I_WTPCT_H2SO4) then
 
-        ! Has the weight percent already been specified, or do we need to determine
-        ! in based upon the water and temperature.
-        !
-        ! NOTE: This is used when generating optical properties files.
-        if (present(wgtpct) .and. present(temp)) then
-          rhopwet = sulfate_density(carma, wgtpct, temp, rc)
-          rwet = rdry * (100._f * rhopdry / wgtpct / rhopwet)**(1._f / 3._f)
-        else if (.not.( present(h2o_mass) .and. &
-                    present(h2o_vp) .and. &
-                    present(temp) )) then
+         ! Has the weight percent already been specified, or do we need to determine
+         ! in based upon the water and temperature.
+         !
+         ! NOTE: This is used when generating optical properties files.
+         if (present(wgtpct) .and. present(temp)) then
+            rhopwet = sulfate_density(carma, wgtpct, temp, rc)
+            rwet = rdry * (100._f * rhopdry / wgtpct / rhopwet)**(1._f / 3._f)
+         else if (.not.( present(h2o_mass) .and. &
+                         present(h2o_vp) .and. &
+                         present(temp) )) then
             if (do_print) write(LUNOPRT,*) "wetr:: ERROR - h2o_mass,h2o_vp,temp for WTPCT_H2SO4"
             rc = RC_ERROR
             return
-         else 
+         else
             ! Adjust calculation for the Kelvin effect of H2O:
             wtpkelv = 80._f ! start with assumption of 80 wt % H2SO4
             den1 = 2.00151_f - 0.000974043_f * temp ! density at 79 wt %
@@ -288,7 +267,7 @@ contains
             rwet = rdry * (100._f * rhopdry / wtpkelv / den2)**(1._f / 3._f)
 
             rkelvinH2O_b = 1._f + wtpkelv * drho_dwt / den2 - 3._f * wtpkelv &
-               * dsigma_dwt / (2._f*sigkelv)
+                 * dsigma_dwt / (2._f*sigkelv)
 
             rkelvinH2O_a = 2._f * gwtmol(igash2so4) * sigkelv / (den1 * RGAS * temp * rwet)
 
@@ -304,6 +283,24 @@ contains
 
     ! Return to caller with wet radius evaluated.
     return
+
+  contains
+
+    !! This function is needed for generating wet radii for optics when using the
+    !! PETTERS scheme, and should not be used generally within CARMA.
+    !!
+    !! The vaporp_h2o_murphy2005 equation to calculate the vapor pressure at 190 K
+    !! for liquid water
+    pure function pvap_h2o(temp) result(pvap)
+
+      real(kind=f), intent(in)      :: temp
+      real(kind=f)                  :: pvap
+
+      pvap = temp / ( 10.0_f * exp(54.842763_f - (6763.22_f / temp) &
+           - (4.210_f * log(temp)) + (0.000367_f * temp) + (tanh(0.0415_f * (temp - 218.8_f)) &
+           * (53.878_f - (1331.22_f / temp) - (9.44523_f * log(temp)) + 0.014025_f * temp))) )
+
+    end function pvap_h2o
 
   end subroutine
 end module

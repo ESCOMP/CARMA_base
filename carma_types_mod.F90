@@ -285,7 +285,7 @@ module carma_types_mod
     !  NGAS     number of gases (may be 0)
     !  NSOLUTE  number of solutes (may be 0)
     !  NWAVE    number of wavelength bands (may be 0)
-    !  NREFIDX  number of refractive indices per wavelength (may be 0) 
+    !  NREFIDX  number of refractive indices per wavelength (may be 0)
     !
     integer :: f_NGROUP
     integer :: f_NELEM

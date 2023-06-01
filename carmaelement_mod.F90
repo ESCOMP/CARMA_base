@@ -85,7 +85,7 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     if ((carma%f_NWAVE > 0) .and. (carma%f_NREFIDX > 0)) then
       allocate( &
         carma%f_element(ielement)%f_refidx(carma%f_NWAVE, carma%f_NREFIDX), &
@@ -119,7 +119,7 @@ contains
     if (present(kappa)) carma%f_element(ielement)%f_kappa = kappa
     if (present(refidx)) carma%f_element(ielement)%f_refidx(:,:) = refidx(:,:)
     if (present(isShell)) carma%f_element(ielement)%f_isShell = isShell
-    
+
     if (present(isolute)) then
 
       ! Make sure there are enough solutes allocated.
@@ -232,7 +232,7 @@ contains
     if (present(isolute))      isolute      = carma%f_element(ielement)%f_isolute
     if (present(kappa))        kappa        = carma%f_element(ielement)%f_kappa
     if (present(isShell))      isShell      = carma%f_element(ielement)%f_isShell
-    
+
     if ((carma%f_NWAVE == 0) .or. (carma%f_NREFIDX == 0)) then
       if (present(refidx)) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAGROUP_Get: ERROR no refidx defined."
