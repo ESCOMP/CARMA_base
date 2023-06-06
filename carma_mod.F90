@@ -136,7 +136,7 @@ contains
     real(kind=f), intent(in), optional :: wave(NWAVE)  !! wavelength centers (cm)
     real(kind=f), intent(in), optional :: dwave(NWAVE) !! wavelength width (cm)
     logical, intent(in), optional      :: do_wave_emit(NWAVE) !! do emission in band?
-    integer, intent(in), optional      :: NREFIDX   !! number of wavelengths
+    integer, intent(in), optional      :: NREFIDX   !! number of refractive indices per wavelength
 
     ! Local Varaibles
     integer                            :: ier
@@ -931,6 +931,8 @@ contains
                      carma%f_group(igroup)%f_rmon, &
                      carma%f_group(igroup)%f_falpha, &
                      carma%f_element(carma%f_group(igroup)%f_ienconc)%f_refidx(iwave, 1), &
+                     0.0_f, &
+                     0.0_f, &
                      Qext, &
                      Qsca, &
                      asym, &

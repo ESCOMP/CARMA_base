@@ -171,15 +171,24 @@ contains
     end if
 
     if (allocated(carma%f_element(ielement)%f_rho)) then
-      deallocate( &
-        carma%f_element(ielement)%f_rho, &
-        carma%f_element(ielement)%f_refidx, &
-        stat=ier)
-      if(ier /= 0) then
-        if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAELEMENT_Destroy: ERROR deallocating, status=", ier
-        rc = RC_ERROR
-        return
-      endif
+       deallocate(carma%f_element(ielement)%f_rho,stat=ier)
+       if(ier /= 0) then
+          if (carma%f_do_print) then
+             write(carma%f_LUNOPRT, *) "CARMAELEMENT_Destroy: ERROR deallocating f_rho, status=", ier
+          endif
+          rc = RC_ERROR
+          return
+       endif
+    endif
+    if (allocated(carma%f_element(ielement)%f_refidx)) then
+       deallocate(carma%f_element(ielement)%f_refidx, stat=ier)
+       if(ier /= 0) then
+          if (carma%f_do_print) then
+             write(carma%f_LUNOPRT, *) "CARMAELEMENT_Destroy: ERROR deallocating f_refidx, status=", ier
+          endif
+          rc = RC_ERROR
+          return
+       endif
     endif
 
     return
