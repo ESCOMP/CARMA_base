@@ -18,7 +18,7 @@ contains
   !!
   !! @author  Chuck Bardeen, Pete Colarco
   !! @version May-2009 from Nov-2000
-  subroutine getwetr(carma, igroup, rh, rdry, rwet, rhopdry, rhopwet, rc, h2o_mass, h2o_vp, temp, kappa, cstate, wgtpct)
+  subroutine getwetr(carma, igroup, rh, rdry, rwet, rhopdry, rhopwet, rc, h2o_mass, h2o_vp, temp, kappa, wgtpct)
 
     ! types
     use carma_precision_mod
@@ -43,7 +43,6 @@ contains
     real(kind=f), intent(in), optional   :: h2o_vp  !! water eq. vaper pressure (dynes/cm2)
     real(kind=f), intent(in), optional   :: temp    !! temperature [K]
     real(kind=f), intent(in), optional   :: kappa   !! hygroscopicity parameter (Petters & Kreidenweis, ACP, 2007)
-    type(carmastate_type), intent(in),optional :: cstate  !! the carma state object
     real(kind=f), intent(in), optional   :: wgtpct   !! weight percent h2so4 (overrides rh)
 
     ! Local declarations
