@@ -1,4 +1,21 @@
 ===============================================================
+Tag name: carma4_04
+Originator(s): C Bardeen
+Date: 6 Jun 2023
+
+Updates for optical properties tables generation
+
+M       carma_enums_mod.F90
+M       carma_globaer.h
+M       carma_mod.F90
+M       carma_types_mod.F90
+M       carmaelement_mod.F90
+M       carmagroup_mod.F90
+M       mie.F90
+M       rhopart.F90
+M       wetr.F90
+
+===============================================================
 Tag name: carma4_03
 Originator(s): C Bardeen
 Date: 22 Mar 2023

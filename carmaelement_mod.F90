@@ -38,7 +38,7 @@ contains
   !! @see CARMA_AddGas
   !! @see CARMAELEMENT_Destroy
  subroutine CARMAELEMENT_Create(carma, ielement, igroup, name, rho, itype, icomposition, rc, &
-              shortname, isolute, rhobin, arat, kappa)
+              shortname, isolute, rhobin, arat, kappa, refidx, isShell)
     type(carma_type), intent(inout)       :: carma               !! the carma object
     integer, intent(in)                   :: ielement            !! the element index
     integer, intent(in)                   :: igroup              !! Group to which the element belongs
@@ -52,6 +52,8 @@ contains
     real(kind=f), optional, intent(in)    :: rhobin(carma%f_NBIN)!! mass density per bin of particle element [g/cm^3]
     real(kind=f), optional, intent(in)    :: arat(carma%f_NBIN)  !! projected area ratio
     real(kind=f), optional, intent(in)    :: kappa               !! hygroscopicity parameter for the particle element [units?]
+    complex(kind=f), optional, intent(in) :: refidx(carma%f_NWAVE, carma%f_NREFIDX) !! refractive indices
+    logical, optional, intent(in)         :: isShell             !! Is this element part of the shell or the core?
 
     ! Local variables
     integer                               :: ier
@@ -84,6 +86,20 @@ contains
       return
     end if
 
+    if ((carma%f_NWAVE > 0) .and. (carma%f_NREFIDX > 0)) then
+      allocate( &
+        carma%f_element(ielement)%f_refidx(carma%f_NWAVE, carma%f_NREFIDX), &
+        stat=ier)
+      if(ier /= 0) then
+          if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAELEMENT_Add: ERROR allocating, status=", ier
+        rc = RC_ERROR
+        return
+      end if
+
+      carma%f_element(ielement)%f_refidx(:,:) = CMPLX(0._f, 0._f, kind=f)
+    end if
+
+
     ! Save off the settings.
     carma%f_element(ielement)%f_igroup       = igroup
     carma%f_element(ielement)%f_name         = name
@@ -96,10 +112,14 @@ contains
     carma%f_element(ielement)%f_shortname   = ""
     carma%f_element(ielement)%f_isolute     = 0
     carma%f_element(ielement)%f_kappa       = 0.0_f
+    carma%f_element(ielement)%f_isShell     = .true.
 
     ! Set optional parameters.
     if (present(shortname))    carma%f_element(ielement)%f_shortname = shortname
     if (present(kappa)) carma%f_element(ielement)%f_kappa = kappa
+    if (present(refidx)) carma%f_element(ielement)%f_refidx(:,:) = refidx(:,:)
+    if (present(isShell)) carma%f_element(ielement)%f_isShell = isShell
+
     if (present(isolute)) then
 
       ! Make sure there are enough solutes allocated.
@@ -151,14 +171,24 @@ contains
     end if
 
     if (allocated(carma%f_element(ielement)%f_rho)) then
-      deallocate( &
-        carma%f_element(ielement)%f_rho, &
-        stat=ier)
-      if(ier /= 0) then
-        if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAELEMENT_Destroy: ERROR deallocating, status=", ier
-        rc = RC_ERROR
-        return
-      endif
+       deallocate(carma%f_element(ielement)%f_rho,stat=ier)
+       if(ier /= 0) then
+          if (carma%f_do_print) then
+             write(carma%f_LUNOPRT, *) "CARMAELEMENT_Destroy: ERROR deallocating f_rho, status=", ier
+          endif
+          rc = RC_ERROR
+          return
+       endif
+    endif
+    if (allocated(carma%f_element(ielement)%f_refidx)) then
+       deallocate(carma%f_element(ielement)%f_refidx, stat=ier)
+       if(ier /= 0) then
+          if (carma%f_do_print) then
+             write(carma%f_LUNOPRT, *) "CARMAELEMENT_Destroy: ERROR deallocating f_refidx, status=", ier
+          endif
+          rc = RC_ERROR
+          return
+       endif
     endif
 
     return
@@ -175,7 +205,7 @@ contains
   !!
   !! @see CARMAELEMENT_Create
   !! @see CARMA_GetElement
-  subroutine CARMAELEMENT_Get(carma, ielement, rc, igroup, name, shortname, rho, itype, icomposition, isolute, kappa)
+  subroutine CARMAELEMENT_Get(carma, ielement, rc, igroup, name, shortname, rho, itype, icomposition, isolute, kappa, refidx, isShell)
     type(carma_type), intent(in)                :: carma           !! the carma object
     integer, intent(in)                         :: ielement        !! the element index
     integer, intent(out)                        :: rc              !! return code, negative indicates failure
@@ -187,6 +217,8 @@ contains
     integer, optional, intent(out)              :: icomposition    !! Particle compound specification
     integer, optional, intent(out)              :: isolute         !! Index of solute for the particle element
     real(kind=f), optional, intent(out)         :: kappa           !! hygroscopicity parameter for the particle element [units?]
+    complex(kind=f), optional, intent(out)      :: refidx(carma%f_NWAVE, carma%f_NREFIDX) !! Refractive indices
+    logical, optional, intent(out)              :: isShell         !! Is this element part of the shell or the core?
 
     ! Assume success.
     rc = RC_OK
@@ -208,6 +240,17 @@ contains
     if (present(icomposition)) icomposition = carma%f_element(ielement)%f_icomposition
     if (present(isolute))      isolute      = carma%f_element(ielement)%f_isolute
     if (present(kappa))        kappa        = carma%f_element(ielement)%f_kappa
+    if (present(isShell))      isShell      = carma%f_element(ielement)%f_isShell
+
+    if ((carma%f_NWAVE == 0) .or. (carma%f_NREFIDX == 0)) then
+      if (present(refidx)) then
+        if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAGROUP_Get: ERROR no refidx defined."
+        rc = RC_ERROR
+        return
+      end if
+    else
+      if (present(refidx))       refidx(:,:)       = carma%f_element(ielement)%f_refidx(:,:)
+    end if
 
     return
   end subroutine CARMAELEMENT_Get
@@ -232,7 +275,9 @@ contains
     integer                                   :: itype            ! Particle type specification
     integer                                   :: icomposition     ! Particle compound specification
     integer                                   :: isolute          ! Index of solute for the particle element
-    real(kind=f)                              :: kappa            !
+    real(kind=f)                              :: kappa            ! hygroscopicity factor
+    complex(kind=f)                           :: refidx(carma%f_NWAVE, carma%f_NREFIDX) ! Refractive indices
+    logical                                   :: isShell          ! Is this element part of the shell or the core?
 
     ! Assume success.
     rc = RC_OK
@@ -240,7 +285,8 @@ contains
     ! Test out the Get method.
     if (carma%f_do_print) then
       call CARMAELEMENT_Get(carma, ielement, rc, name=name, shortname=shortname, igroup=igroup, &
-                            itype=itype, icomposition=icomposition, rho=rho, isolute=isolute, kappa=kappa)
+                            itype=itype, icomposition=icomposition, rho=rho, isolute=isolute, &
+                            kappa=kappa, refidx=refidx, isShell=isShell)
       if (rc < 0) return
 
 
@@ -267,6 +313,8 @@ contains
       write(carma%f_LUNOPRT,*) "    icomposition  : ", icomposition
       write(carma%f_LUNOPRT,*) "    isolute       : ", isolute
       write(carma%f_LUNOPRT,*) "    kappa         : ", kappa
+      write(carma%f_LUNOPRT,*) "    isShell       : ", isShell
+      write(carma%f_LUNOPRT,*) "    ref. index    : ", refidx
     end if
 
     return

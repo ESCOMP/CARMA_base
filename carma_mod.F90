@@ -122,7 +122,7 @@ contains
   !!  @version Feb-2009
   !!  @author  Chuck Bardeen
   subroutine CARMA_Create(carma, NBIN, NELEM, NGROUP, NSOLUTE, NGAS, NWAVE, rc, &
-    LUNOPRT, wave, dwave, do_wave_emit)
+    LUNOPRT, wave, dwave, do_wave_emit, NREFIDX)
 
     type(carma_type), intent(out)      :: carma     !! the carma object
     integer, intent(in)                :: NBIN      !! number of radius bins per group
@@ -136,6 +136,7 @@ contains
     real(kind=f), intent(in), optional :: wave(NWAVE)  !! wavelength centers (cm)
     real(kind=f), intent(in), optional :: dwave(NWAVE) !! wavelength width (cm)
     logical, intent(in), optional      :: do_wave_emit(NWAVE) !! do emission in band?
+    integer, intent(in), optional      :: NREFIDX   !! number of refractive indices per wavelength
 
     ! Local Varaibles
     integer                            :: ier
@@ -157,6 +158,11 @@ contains
     carma%f_NGAS    = NGAS
     carma%f_NSOLUTE = NSOLUTE
     carma%f_NWAVE   = NWAVE
+    if (present(NREFIDX)) then
+      carma%f_NREFIDX = NREFIDX
+    else
+      carma%f_NREFIDX = 0
+    end if
 
 
     ! Allocate tables for the groups.
@@ -910,6 +916,8 @@ contains
 
             ! Assume the particle is homogeneous (no core).
             !
+            ! Refractive index comes from the concentration element.
+            !
             ! NOTE: The miess does not converge over as broad a
             ! range of input parameters as bhmie, but it can handle
             ! coated spheres.
@@ -922,7 +930,9 @@ contains
                      carma%f_group(igroup)%f_df(ibin), &
                      carma%f_group(igroup)%f_rmon, &
                      carma%f_group(igroup)%f_falpha, &
-                     carma%f_group(igroup)%f_refidx(iwave), &
+                     carma%f_element(carma%f_group(igroup)%f_ienconc)%f_refidx(iwave, 1), &
+                     0.0_f, &
+                     0.0_f, &
                      Qext, &
                      Qsca, &
                      asym, &
@@ -1441,7 +1451,7 @@ contains
   !! @version May-2009
   !!
   !! @see CARMA_Create
-  subroutine CARMA_Get(carma, rc, LUNOPRT, NBIN, NELEM, NGAS, NGROUP, NSOLUTE, NWAVE, do_detrain, &
+  subroutine CARMA_Get(carma, rc, LUNOPRT, NBIN, NELEM, NGAS, NGROUP, NSOLUTE, NWAVE, NREFIDX, do_detrain, &
     do_drydep, do_fixedinit, do_grow, do_print, do_print_init, do_thermo, wave, dwave, do_wave_emit, &
     do_partialinit,do_coremasscheck)
 
@@ -1453,6 +1463,7 @@ contains
     integer, optional, intent(out)      :: NSOLUTE              !! total number of solutes
     integer, optional, intent(out)      :: NGAS                 !! total number of gases
     integer, optional, intent(out)      :: NWAVE                !! number of wavelengths
+    integer, optional, intent(out)      :: NREFIDX              !! number of refractive indices per element
     integer, optional, intent(out)      :: LUNOPRT              !! logical unit number for output
     logical, optional, intent(out)      :: do_detrain           !! do detrainement?
     logical, optional, intent(out)      :: do_drydep            !! do dry deposition?
@@ -1477,6 +1488,7 @@ contains
     if (present(NGROUP))   NGROUP  = carma%f_NGROUP
     if (present(NSOLUTE))  NSOLUTE = carma%f_NSOLUTE
     if (present(NWAVE))    NWAVE   = carma%f_NWAVE
+    if (present(NREFIDX))  NREFIDX = carma%f_NREFIDX
 
     if (present(do_detrain))    do_detrain     = carma%f_do_detrain
     if (present(do_drydep))     do_drydep      = carma%f_do_drydep

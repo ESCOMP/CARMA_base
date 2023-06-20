@@ -33,6 +33,7 @@
 #define NELEM         carma%f_NELEM
 #define NSOLUTE       carma%f_NSOLUTE
 #define NWAVE         carma%f_NWAVE
+#define NREFIDX       carma%f_NREFIDX
 
 !  Model logical units for I/O
 #define LUNOPRT       carma%f_LUNOPRT
@@ -59,6 +60,7 @@
 #define icomp(ielem)          carma%f_element(ielem)%f_icomposition
 #define isolelem(ielem)       carma%f_element(ielem)%f_isolute
 #define kappaelem(ielem)      carma%f_element(ielem)%f_kappa
+#define isShell(ielem)        carma%f_element(ielem)%f_isShell
 
 ! Gas object
 #define gasname(igas)         carma%f_gas(igas)%f_name
@@ -107,6 +109,7 @@
 #define ssa(iwave,ibin,igroup)  carma%f_group(igroup)%f_ssa(iwave,ibin)
 #define do_mie(igroup)          carma%f_group(igroup)%f_do_mie
 #define imiertn(igroup)         carma%f_group(igroup)%f_imiertn
+#define iopticstype(igroup)     carma%f_group(igroup)%f_iopticstype
 #define dpc_threshold(igroup)   carma%f_group(igroup)%f_dpc_threshold
 #define rmon(igroup)            carma%f_group(igroup)%f_rmon
 #define df(ibin,igroup)         carma%f_group(igroup)%f_df(ibin)

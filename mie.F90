@@ -13,7 +13,7 @@
 !!
 !! @author Chuck Bardeen
 !! @version 2011
-subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer, falpha_in, m, lqext, lqsca, lasym, rc)
+subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer, falpha_in, m, rcore, mcore, lqext, lqsca, lasym, rc)
 
   ! types
   use carma_precision_mod
@@ -32,40 +32,52 @@ subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer
   real(kind=f), intent(in)             :: nmonomer      !! number of monomers per aggregate [fractal particles only]
   real(kind=f), intent(in)             :: fractaldim    !! fractal dimension [fractal particles only]
   real(kind=f), intent(in)             :: rmonomer      !! monomer size (units?) [fractal particles only]
-  real(kind=f), intent(in)             :: falpha_in        !! packing coefficient [fractal particles only]
+  real(kind=f), intent(in)             :: falpha_in     !! packing coefficient [fractal particles only]
   complex(kind=f), intent(in)          :: m             !! refractive index particle
+  real(kind=f), intent(in)             :: rcore         !! radius core (cm) [core shell only]
+  complex(kind=f), intent(in)          :: mcore         !! refractive index core [core shell only]
   real(kind=f), intent(out)            :: lqext         !! EFFICIENCY FACTOR FOR EXTINCTION
   real(kind=f), intent(out)            :: lqsca         !! EFFICIENCY FACTOR FOR SCATTERING
   real(kind=f), intent(out)            :: lasym         !! asymmetry factor
   integer, intent(inout)               :: rc            !! return code, negative indicates failure
-  
+
 
   integer, parameter                 :: nang     = 10   ! Number of angles
-    
+
   real(kind=f)                       :: theta(IT)
-  real(kind=f)                       :: wvno 
-  real(kind=f)                       :: rfr 
+  real(kind=f)                       :: wvno
+  real(kind=f)                       :: rfr
   real(kind=f)                       :: rfi
-  real(kind=f)                       :: x 
-  real(kind=f)                       :: qback 
-  real(kind=f)                       :: ctbrqs 
+  real(kind=f)                       :: rfcr
+  real(kind=f)                       :: rfci
+  real(kind=f)                       :: x
+  real(kind=f)                       :: qback
+  real(kind=f)                       :: ctbrqs
   complex(kind=f)                    :: s1(2*nang-1)
   complex(kind=f)                    :: s2(2*nang-1)
-  real(kind=f)                       :: rmonomer_out      
+  real(kind=f)                       :: rmonomer_out
   real(kind=f)                       :: fractaldim_out
 
   ! Calculate the wave number.
   wvno = 2._f * PI / wavelength
- 
+
   ! Select the appropriate routine.
   if (miertn == I_MIERTN_TOON1981) then
 
     ! We only care about the forward direction.
     theta(:) = 0.0_f
-    
-    rfr = real(m)
-    rfi = aimag(m)
-    
+
+    rfr  = real(m)
+    rfi  = aimag(m)
+
+    if (rcore .gt. 0.0_f) then
+      rfcr = real(mcore)
+      rfci = aimag(mcore)
+    else
+      rfcr = rfr
+      rfci = rfi
+    end if
+
     call miess(carma, &
                radius, &
                rfr, &
@@ -76,12 +88,12 @@ subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer
                lqsca, &
                qback,&
                ctbrqs, &
-               0.0_f, &
-               rfr, &
-               rfi, &
+               rcore, &
+               rfcr, &
+               rfci, &
                wvno, &
                rc)
-               
+
     lasym = ctbrqs / lqsca
 
   else if (miertn == I_MIERTN_BOHREN1983) then
@@ -107,7 +119,7 @@ subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer
 
     if (radius .le. rmonomer) then
       rmonomer_out = radius
-      fractaldim_out = 3.0_f 
+      fractaldim_out = 3.0_f
     else
       rmonomer_out = rmonomer
       fractaldim_out = fractaldim
@@ -127,17 +139,17 @@ subroutine mie(carma, miertn, radius, wavelength, nmonomer, fractaldim, rmonomer
                            lqsca, &              !! scattering efficiency
                            lasym, &              !! asymmetry parameter
                            rc)
-                           
+
   else
     if (do_print) write(LUNOPRT, *) "mie::Unknown Mie routine specified."
     rc = RC_ERROR
   end if
-  
+
   ! The mie code isn't perfect, so don't let it return values that aren't
   ! physical.
   lqext = max(lqext, 0._f)
   lqsca = max(0._f, min(lqext, lqsca))
   lasym = max(-1.0_f, min(1.0_f, lasym))
-  
+
   return
 end subroutine mie

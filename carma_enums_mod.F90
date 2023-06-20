@@ -7,19 +7,19 @@ module carma_enums_mod
 
   !--
   ! Index values of CARMA's flags.  In a given list, begin with 1
-  ! (instead of 0) so that undefined flags will produce an error. 
+  ! (instead of 0) so that undefined flags will produce an error.
   !
   ! For example:
   ! if( itype(ielem) .eq. I_INVOLATILE )then
   !
   ! If itype(ielem) hasn't been defined (and is still 0), we do not want
   ! to execute the statements that follow.
-  
+
   !  Define values of flag used for vertical transport
   !  boundary conditions (ixxxbnd_pc)
   integer, public, parameter :: I_FIXED_CONC = 1    !! Fixed Concentration
   integer, public, parameter :: I_FLUX_SPEC  = 2    !! Flux Specification
-  
+
   !  Define values of flag used for particle element
   !  type specification (itype).
   integer, public, parameter :: I_INVOLATILE = 1    !! Involatile particle
@@ -27,7 +27,7 @@ module carma_enums_mod
   integer, public, parameter :: I_COREMASS   = 3    !! Core Mass
   integer, public, parameter :: I_VOLCORE    = 4    !! Voltile Core
   integer, public, parameter :: I_CORE2MOM   = 5    !! Core Mass - 2 Moments
-    
+
   !!  Define values of flag used for nucleation process
   !!  specification (inucproc).
   !!
@@ -45,12 +45,12 @@ module carma_enums_mod
   integer, public, parameter :: I_HETNUC            = 4096  !! Heterogeneous Nucleation
   integer, public, parameter :: I_HOMNUC            = 8192  !! Binary homogeneous gas-to-particle nucleation
   integer, public, parameter :: I_HETNUCSULF        = 16384 !! Binary homogeneous gas-to-particle nucleation
-  
+
   !  Define values of flag used for collection process (icollec)
   integer, public, parameter :: I_COLLEC_CONST = 1   !! Constant Collection Efficiency
   integer, public, parameter :: I_COLLEC_FUCHS = 2   !! Binwise Maxima of Fuchs' and Langmuir's Efficiencies
   integer, public, parameter :: I_COLLEC_DATA  = 3   !! Input Data
-  
+
   !  Define values of flag used for coagulation operation (icoagop)
   integer, public, parameter :: I_COAGOP_CONST = 1   !! Constant Coagulation Kernel
   integer, public, parameter :: I_COAGOP_CALC  = 2   !! Calculate Coagulation Kernel
@@ -59,14 +59,15 @@ module carma_enums_mod
   integer, public, parameter :: I_SPHERE   = 1   !! spherical
   integer, public, parameter :: I_HEXAGON  = 2   !! hexagonal prisms or plates
   integer, public, parameter :: I_CYLINDER = 3   !! circular disks, cylinders, or spheroids
-  
+
   !  Define values of flag used for particle swelling parameterization (irhswell)
   integer, public, parameter :: I_NO_SWELLING  = 0   !! No swelling
   integer, public, parameter :: I_FITZGERALD   = 1   !! Fitzgerald
   integer, public, parameter :: I_GERBER       = 2   !! Gerber
   integer, public, parameter :: I_WTPCT_H2SO4  = 3   !! The weight percent method for sulfate aerosol
-  integer, public, parameter :: I_PETTERS      = 4   !! hygroscopicity for mixed aerosols: Petters and Kreidenweis (ACP, 2007), Pengfei Yu et al. (JAMES, 2015) 
-  
+  integer, public, parameter :: I_PETTERS      = 4   !! hygroscopicity for mixed aerosols: Petters and Kreidenweis
+                                                     !! (ACP, 2007), Pengfei Yu et al. (JAMES, 2015)
+
   !  Define vallues of flag used for particle swelling composition (Fiztgerald)
   integer, public, parameter :: I_SWF_NH42SO4   = 1   !! (NH4)2SO4
   integer, public, parameter :: I_SWF_NH4NO3    = 2   !! NH4NO3
@@ -83,7 +84,7 @@ module carma_enums_mod
   integer, public, parameter :: I_SWG_SEA_SALT  = 12  !! Sea Salt
   integer, public, parameter :: I_SWG_URBAN     = 13  !! Urban
   integer, public, parameter :: I_SWG_RURAL     = 14  !! Rural
-  
+
   ! Routines to calculate gas vapor pressures
   integer, public, parameter :: I_VAPRTN_H2O_BUCK1981      = 1   !! H2O, Buck[1981]
   integer, public, parameter :: I_VAPRTN_H2O_MURPHY2005    = 2   !! H2O, Murphy & Koop [2005]
@@ -99,16 +100,26 @@ module carma_enums_mod
   integer, public, parameter :: I_MIERTN_TOON1981      = 1   !! Shell/Core, Toon & Ackerman [1981]
   integer, public, parameter :: I_MIERTN_BOHREN1983    = 2   !! Homogeneous Sphere, Bohren & Huffman [1983]
   integer, public, parameter :: I_MIERTN_BOTET1997     = 3   !! Fractal mean-field, Botet et al. [1997]
- 
-  ! Gas Composition  
+
+  ! Gas Composition
   integer, public, parameter :: I_GCOMP_H2O             = 1   !! Water Vapor
   integer, public, parameter :: I_GCOMP_H2SO4           = 2   !! Sulphuric Acid
   integer, public, parameter :: I_GCOMP_SO2             = 3   !! Sulfer Dioxide
-  
+
   ! How is the CARMA group represented in the parent model
   integer, public, parameter :: I_CNSTTYPE_PROGNOSTIC   = 1   !! Prognostic, advected constituent for each bin
   integer, public, parameter :: I_CNSTTYPE_DIAGNOSTIC   = 2   !! Diagnostic, bins diagonosed from model state
-  
+
+  ! Optics Type
+  integer, public, parameter :: I_OPTICS_FIXED          = 1   !! Fixed Composition
+  integer, public, parameter :: I_OPTICS_MIXED_YU2015   = 2   !! Yu (2015), mixed group
+  integer, public, parameter :: I_OPTICS_SULFATE_YU2015 = 3   !! Yu (2015), pure sulfate group
+  integer, public, parameter :: I_OPTICS_MIXED_YU_H2O   = 4   !! Yu (2015), mixed group includes water in shell
+  integer, public, parameter :: I_OPTICS_MIXED_CORESHELL= 5   !! Mixed group, core/shell optics
+  integer, public, parameter :: I_OPTICS_MIXED_VOLUME   = 6   !! Mixed group, Mie optics, volume mixing
+  integer, public, parameter :: I_OPTICS_MIXED_MAXWELL  = 7   !! Mixed group, Mie optics, Maxwell-Garnett mixing
+  integer, public, parameter :: I_OPTICS_SULFATE        = 8   !! Sulfate Group, Refractive index varies with WTP/RH
+
   ! Return Codes
   !
   ! NOTE: Also see error handling macros in globaer.h.
@@ -141,4 +152,3 @@ module carma_enums_mod
   integer, public, parameter   :: I_ME         = 6   !! Mercator
   integer, public, parameter   :: I_HYBRID     = 7   !! Hybrid
 end module
-
