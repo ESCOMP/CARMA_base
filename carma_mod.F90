@@ -1453,7 +1453,7 @@ contains
   !! @see CARMA_Create
   subroutine CARMA_Get(carma, rc, LUNOPRT, NBIN, NELEM, NGAS, NGROUP, NSOLUTE, NWAVE, NREFIDX, do_detrain, &
     do_drydep, do_fixedinit, do_grow, do_print, do_print_init, do_thermo, wave, dwave, do_wave_emit, &
-    do_partialinit,do_coremasscheck)
+    do_partialinit,do_coremasscheck,igash2o)
 
     type(carma_type), intent(in)        :: carma                !! the carma object
     integer, intent(out)                :: rc                   !! return code, negative indicates failure
@@ -1477,6 +1477,7 @@ contains
     real(kind=f), optional, intent(out) :: dwave(carma%f_NWAVE) !! the wavelengths widths (cm)
     logical, optional, intent(out)      :: do_wave_emit(carma%f_NWAVE) !! do emission in this band?
     logical, optional, intent(out)      :: do_coremasscheck
+    integer, optional, intent(out)      :: igash2o              !! Gas index for H2O.
 
     ! Assume success.
     rc = RC_OK
@@ -1504,6 +1505,8 @@ contains
     if (present(do_wave_emit)) do_wave_emit(:)   = carma%f_do_wave_emit(:)
 
     if (present(do_coremasscheck)) do_coremasscheck = carma%f_do_coremasscheck
+
+    if (present(igash2o)) igash2o = carma%f_igash2o
 
     return
   end subroutine CARMA_Get
