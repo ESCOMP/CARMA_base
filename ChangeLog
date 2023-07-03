@@ -1,14 +1,20 @@
 Tag name: carma4_05
 Originator(s): C Bardeen
-Date: ???
+Date: 3 Jul 2023
 
-Gas ref indx and evap updates ???
+Allow a gas to have a refractive index; fix evaporation problem.
 
         modified:   carma_mod.F90
         modified:   carma_types_mod.F90
         modified:   carmagas_mod.F90
+  - Allow a gas to have a refractive index. This is for the optics table
+    generation for groups that have water in equilibrium, but not as an
+    actual element in the group (e.g. sulfates).
+
         modified:   evap_mono.F90
         modified:   evap_poly.F90
+  - Fix a problem where a group that grows may have coremasses that don't
+    evaporate back to another carma group (i.e. evap2elem is 0).
 
 ===============================================================
 Tag name: carma4_04
