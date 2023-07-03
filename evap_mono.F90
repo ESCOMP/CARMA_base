@@ -33,7 +33,7 @@ subroutine evap_mono(carma,cstate,iz,ibin,ig,iavg,ieto,igto,rc)
   integer, intent(inout)               :: rc      !! return code, negative indicates failure
 
   ! Local declarations
-  integer                              :: ic  
+  integer                              :: ic
   integer                              :: iecore
   integer                              :: ie2cn
   integer                              :: jbin
@@ -50,7 +50,7 @@ subroutine evap_mono(carma,cstate,iz,ibin,ig,iavg,ieto,igto,rc)
   totevap(ibin,ig) = .true.
 
   ! Possibly put all of core mass into largest, smallest, or
-  ! smallest nucelated CN bin 
+  ! smallest nucelated CN bin
   if( too_big .or. too_small .or. nuc_small )then
 
     if( too_big )then
@@ -74,8 +74,19 @@ subroutine evap_mono(carma,cstate,iz,ibin,ig,iavg,ieto,igto,rc)
     do ic = 2, ncore(ig)
       iecore = icorelem(ic,ig)
       ie2cn  = ievp2elem(iecore)
-      evappe(jbin,ie2cn) = evappe(jbin,ie2cn) + &
-        factor*evcore(ic)*rmass(jbin,igto)
+
+      ! It is possible to have coremasses in the particle
+      ! that don't participate in nucleation. If there is no
+      ! evp2elem defined, then skip this part.
+      !
+      ! NOTE: This cam up in a sensitivity test where there were
+      ! two nucleation cores (dust and sulfates) and there was
+      ! a desire to turn off one of the nucleation mechanisms for
+      ! sensitivity testing.
+      if (ie2cn .gt. 0) then
+        evappe(jbin,ie2cn) = evappe(jbin,ie2cn) + &
+          factor*evcore(ic)*rmass(jbin,igto)
+      end if
     enddo
   else
 
@@ -89,19 +100,25 @@ subroutine evap_mono(carma,cstate,iz,ibin,ig,iavg,ieto,igto,rc)
 
     fracmass = ( rmass(iavg,igto) - coreavg ) / diffmass(iavg,igto,iavg-1,igto)
 !    fracmass = max( 0._f, min( ONE, fracmass ) )
-  
+
     ! First the CN number concentration element
     evappe(iavg-1,ieto) = evappe(iavg-1,ieto) + evdrop*fracmass
     evappe(iavg,ieto) = evappe(iavg,ieto) + evdrop*( ONE - fracmass )
-  
+
     ! Now the cores
     do ic = 2, ncore(ig)
       iecore = icorelem(ic,ig)
       ie2cn  = ievp2elem(iecore)
-      evappe(iavg-1,ie2cn) = evappe(iavg-1,ie2cn) + &
-          rmass(iavg-1,igto)*evcore(ic)*fracmass
-      evappe(iavg,ie2cn) = evappe(iavg,ie2cn) + &
-          rmass(iavg,igto)*evcore(ic)*( ONE - fracmass )
+
+      ! It is possible to have coremasses in the particle
+      ! that don't participate in nucleation. If there is no
+      ! evp2elem defined, then skip this part.
+      if (ie2cn .gt. 0) then
+        evappe(iavg-1,ie2cn) = evappe(iavg-1,ie2cn) + &
+            rmass(iavg-1,igto)*evcore(ic)*fracmass
+        evappe(iavg,ie2cn) = evappe(iavg,ie2cn) + &
+            rmass(iavg,igto)*evcore(ic)*( ONE - fracmass )
+      end if
     enddo
   endif
 

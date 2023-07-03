@@ -32,7 +32,7 @@ contains
   !! @see CARMA_AddGas
   !! @see CARMAGAS_Destroy
   subroutine CARMAGAS_Create(carma, igas, name, wtmol, ivaprtn, icomposition, &
-       rc, shortname, dgc_threshold, ds_threshold)
+       rc, shortname, dgc_threshold, ds_threshold, refidx)
     type(carma_type), intent(inout)       :: carma           !! the carma object
     integer, intent(in)                   :: igas            !! the gas index
     character(*), intent(in)              :: name            !! the gas name, maximum of 255 characters
@@ -45,7 +45,10 @@ contains
                                                              !! [0 : off; > 0 : percentage change]
     real(kind=f), optional, intent(in)    :: ds_threshold    !! convergence criteria for gas saturation
                                                              !! [0 : off; > 0 : percentage change; < 0 : amount past 0 crossing]
+    complex(kind=f), optional, intent(in) :: refidx(carma%f_NWAVE, carma%f_NREFIDX) !! refractive indices
 
+    integer :: ier
+    
     ! Assume success.
     rc = RC_OK
     
@@ -56,6 +59,20 @@ contains
       rc = RC_ERROR
       return
     end if
+    
+    if ((carma%f_NWAVE > 0) .and. (carma%f_NREFIDX > 0)) then
+      allocate( &
+        carma%f_gas(igas)%f_refidx(carma%f_NWAVE, carma%f_NREFIDX), &
+        stat=ier)
+      if(ier /= 0) then
+          if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAELEMENT_Add: ERROR allocating, status=", ier
+        rc = RC_ERROR
+        return
+      end if
+
+      carma%f_gas(igas)%f_refidx(:,:) = CMPLX(0._f, 0._f, kind=f)
+    end if
+
 
     ! Save off the settings.
     carma%f_gas(igas)%f_name         = name
@@ -73,6 +90,7 @@ contains
     if (present(shortname))     carma%f_gas(igas)%f_shortname      = shortname
     if (present(dgc_threshold)) carma%f_gas(igas)%f_dgc_threshold  = dgc_threshold
     if (present(ds_threshold))  carma%f_gas(igas)%f_ds_threshold   = ds_threshold
+    if (present(refidx)) carma%f_gas(igas)%f_refidx(:,:) = refidx(:,:)
 
     return
   end subroutine CARMAGAS_Create
@@ -89,6 +107,8 @@ contains
     integer, intent(in)                :: igas          !! the gas index
     integer, intent(out)               :: rc            !! return code, negative indicates failure
 
+    integer :: ier
+
     ! Assume success.
     rc = RC_OK
     
@@ -99,6 +119,18 @@ contains
       rc = RC_ERROR
       return
     end if
+    
+    if (allocated(carma%f_gas(igas)%f_refidx)) then
+       deallocate(carma%f_gas(igas)%f_refidx, stat=ier)
+       if(ier /= 0) then
+          if (carma%f_do_print) then
+             write(carma%f_LUNOPRT, *) "CARMAGAS_Destroy: ERROR deallocating f_refidx, status=", ier
+          endif
+          rc = RC_ERROR
+          return
+       endif
+    endif
+    
 
     return
   end subroutine CARMAGAS_Destroy
@@ -114,7 +146,7 @@ contains
   !!
   !! @see CARMAGAS_Create
   !! @see CARMA_GetGas
-  subroutine CARMAGAS_Get(carma, igas, rc, name, shortname, wtmol, ivaprtn, icomposition, dgc_threshold, ds_threshold)
+  subroutine CARMAGAS_Get(carma, igas, rc, name, shortname, wtmol, ivaprtn, icomposition, dgc_threshold, ds_threshold, refidx)
     type(carma_type), intent(in)                :: carma         !! the carma object
     integer, intent(in)                         :: igas          !! the gas index
     integer, intent(out)                        :: rc            !! return code, negative indicates failure
@@ -125,6 +157,7 @@ contains
     integer, optional, intent(out)              :: icomposition  !! gas compound specification
     real(kind=f), optional, intent(out)         :: dgc_threshold !! convergence criteria for gas concentration [fraction]
     real(kind=f), optional, intent(out)         :: ds_threshold  !! convergence criteria for gas saturation [fraction]
+    complex(kind=f), optional, intent(out)      :: refidx(carma%f_NWAVE, carma%f_NREFIDX) !! Refractive indices
 
     ! Assume success.
     rc = RC_OK
@@ -145,6 +178,16 @@ contains
     if (present(icomposition)) icomposition = carma%f_gas(igas)%f_icomposition
     if (present(dgc_threshold)) dgc_threshold = carma%f_gas(igas)%f_dgc_threshold
     if (present(ds_threshold)) ds_threshold = carma%f_gas(igas)%f_ds_threshold
+
+    if ((carma%f_NWAVE == 0) .or. (carma%f_NREFIDX == 0)) then
+      if (present(refidx)) then
+        if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAGROUP_Get: ERROR no refidx defined."
+        rc = RC_ERROR
+        return
+      end if
+    else
+      if (present(refidx))       refidx(:,:)       = carma%f_gas(igas)%f_refidx(:,:)
+    end if
         
     return
   end subroutine CARMAGAS_Get
@@ -169,6 +212,7 @@ contains
     integer                                   :: icomposition  !! gas compound specification
     real(kind=f)                              :: dgc_threshold !! convergence criteria for gas concentration [fraction]
     real(kind=f)                              :: ds_threshold  !! convergence criteria for gas saturation [fraction]
+    complex(kind=f)                           :: refidx(carma%f_NWAVE, carma%f_NREFIDX) ! Refractive indices
 
     ! Assume success.
     rc = RC_OK
@@ -176,7 +220,7 @@ contains
     ! Test out the Get method.
     if (carma%f_do_print) then
       call CARMAGAS_Get(carma, igas, rc, name=name, shortname=shortname, wtmol=wtmol, &
-                        ivaprtn=ivaprtn, icomposition=icomposition)
+                        ivaprtn=ivaprtn, icomposition=icomposition, refidx=refidx)
       if (rc < RC_OK) return
 
     
@@ -201,6 +245,7 @@ contains
         case default
           write(carma%f_LUNOPRT,*) "    icomposition  :    unknown, ", icomposition
       end select
+      write(carma%f_LUNOPRT,*) "    ref. index    : ", refidx
     end if
     
     return

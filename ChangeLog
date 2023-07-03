@@ -1,3 +1,15 @@
+Tag name: carma4_05
+Originator(s): C Bardeen
+Date: ???
+
+Gas ref indx and evap updates ???
+
+        modified:   carma_mod.F90
+        modified:   carma_types_mod.F90
+        modified:   carmagas_mod.F90
+        modified:   evap_mono.F90
+        modified:   evap_poly.F90
+
 ===============================================================
 Tag name: carma4_04
 Originator(s): C Bardeen

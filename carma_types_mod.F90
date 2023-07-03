@@ -86,6 +86,7 @@ module carma_types_mod
     !   ivaprtn       vapor pressure routine for the gas
     !   dgc_threshold convergence criteria for gas concentration [fraction]
     !   ds_threshold  convergence criteria for gas saturation [fraction]
+    !   refidx        Refractive index
     !
     character(len=CARMA_NAME_LEN)               :: f_name
     character(len=CARMA_SHORT_NAME_LEN)         :: f_shortname
@@ -94,6 +95,7 @@ module carma_types_mod
     integer                                     :: f_icomposition
     real(kind=f)                                :: f_dgc_threshold
     real(kind=f)                                :: f_ds_threshold
+    complex(kind=f), allocatable, dimension(:,:):: f_refidx       ! (NWAVE, NREFIDX)
   end type carmagas_type
 
 

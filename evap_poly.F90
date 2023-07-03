@@ -132,8 +132,14 @@ subroutine evap_poly(carma,cstate,iz,ibin,ig,iavg,ieto,igto,rc)
     do ic = 2, ncore(ig)
       iecore = icorelem(ic,ig)
       ie2cn  = ievp2elem(iecore)
-      evappe(ito,ie2cn) = evappe(ito,ie2cn) + &
-        rmass(ito,igto)*evcore(ic)*prob(ito)*dm(ito,igto)
+
+      ! It is possible to have coremasses in the particle
+      ! that don't participate in nucleation. If there is no
+      ! evp2elem defined, then skip this part.
+      if (ie2cn .gt. 0) then
+        evappe(ito,ie2cn) = evappe(ito,ie2cn) + &
+          rmass(ito,igto)*evcore(ic)*prob(ito)*dm(ito,igto)
+      end if
     enddo
   enddo
  
