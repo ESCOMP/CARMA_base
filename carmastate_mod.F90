@@ -1151,6 +1151,20 @@ contains
       else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
         sedimentationflux = sedimentationflux / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       end if
+
+      ! NOTE: The concentration element will be handled different, we want to return
+      ! the sedimentation flux of the element NOT the sedimentation flux of the total
+      ! particle, so you need to subtract the sum of the core masses.
+      ienconc = cstate%f_carma%f_group(igroup)%f_ienconc
+  
+      if (ienconc == ielem) then
+        
+        ! Subtract the core massed from the total mass
+        do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
+          sedimentationflux = sedimentationflux - cstate%f_sedimentationflux(ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) * 1e4_f / 1e3_f
+        end do
+      end if 
+
     end if
 
     ! Is the hygroscopicity parameter requested?
