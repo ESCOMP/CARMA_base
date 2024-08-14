@@ -1,6 +1,7 @@
 ! Include shortname defintions, so that the F77 code does not have to be modified to
 ! reference the CARMA structure.
 #include "carma_globaer.h"
+! comment here...
 
 module wetr
   use carma_precision_mod
