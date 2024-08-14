@@ -501,6 +501,9 @@ subroutine setupckern(carma, cstate, rc)
 
                 ! Now combine all the coagulation and collection kernels into the
                 ! overall kernel.
+                if (.not. do_aer_cld_interact)then
+		  ccd = 0._f
+                end if
                 ckernel(k,i1,i2,j1,j2) = cbr + ccd + cgr
 
                 ! To avoid generation of large, non-physical hydrometeors by

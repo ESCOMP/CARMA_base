@@ -342,7 +342,7 @@ contains
       do_grow, do_incloud, do_explised, do_print_init, do_substep, do_thermo, do_vdiff, &
       do_vtran, do_drydep, vf_const, minsubsteps, maxsubsteps, maxretries, conmax, &
       do_pheat, do_pheatatm, dt_threshold, cstick, gsticki, gstickl, tstick, do_clearsky, &
-      do_partialinit, do_coremasscheck, sulfnucl_method )
+      do_partialinit, do_coremasscheck, sulfnucl_method, do_aer_cld_interact)
     type(carma_type), intent(inout)     :: carma         !! the carma object
     integer, intent(out)                :: rc            !! return code, negative indicates failure
     logical, intent(in), optional       :: do_cnst_rlh   !! use constant values for latent heats
@@ -359,6 +359,7 @@ contains
     logical, intent(in), optional       :: do_vdiff      !! do Brownian diffusion
     logical, intent(in), optional       :: do_vtran      !! do sedimentation
     logical, intent(in), optional       :: do_drydep     !! do dry deposition
+    logical, intent(in), optional       :: do_aer_cld_interact !!for ccd in coag kernel
     real(kind=f), intent(in), optional  :: vf_const      !! if specified and non-zero,
                                                          !! constant fall velocity for all particles [cm/s]
     integer, intent(in), optional       :: minsubsteps   !! minimum number of substeps, default = 1
@@ -396,6 +397,7 @@ contains
     carma%f_do_vdiff      = .FALSE.
     carma%f_do_vtran      = .FALSE.
     carma%f_do_drydep     = .FALSE.
+    carma%f_do_aer_cld_interact = .FALSE.
     carma%f_dt_threshold  = 0._f
     carma%f_cstick        = 1._f
     carma%f_gsticki       = 0.93_f
@@ -411,6 +413,7 @@ contains
     if (present(do_detrain))    carma%f_do_detrain    = do_detrain
     if (present(do_fixedinit))  carma%f_do_fixedinit  = do_fixedinit
     if (present(do_grow))       carma%f_do_grow       = do_grow
+    if (present(do_aer_cld_interact)) carma%f_do_aer_cld_interact = do_aer_cld_interact
     if (present(do_incloud))    carma%f_do_incloud    = do_incloud
     if (present(do_explised))   carma%f_do_explised   = do_explised
     if (present(do_pheat))      carma%f_do_pheat      = do_pheat

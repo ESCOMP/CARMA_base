@@ -148,6 +148,7 @@
 #define do_vdiff      carma%f_do_vdiff
 #define do_vtran      carma%f_do_vtran
 #define do_drydep     carma%f_do_drydep
+#define do_aer_cld_interact carma%f_do_aer_cld_interact
 #define if_nuc        carma%f_if_nuc
 #define time          cstate%f_time
 #define dtime         cstate%f_dtime
