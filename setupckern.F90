@@ -320,14 +320,14 @@ subroutine setupckern(carma, cstate, rc)
 
                 ! <ccd> is convective diffusion coagulation coefficient
                 if (do_aer_cld_interact) then
-     			  if( re_larg .lt. 1._f )then
+                  if( re_larg .lt. 1._f )then
                     ccd = 0.45_f*cbr*pe3
                   else
                     ccd = 0.45_f*cbr*pe3*re_larg**(ONE/6._f)
                   endif
-  				else
-     			  ccd = 0._f
-  				end if
+                else
+                  ccd = 0._f
+                end if
 
                 ! Next calculate gravitational collection kernel.
 
