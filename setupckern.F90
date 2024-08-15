@@ -319,11 +319,15 @@ subroutine setupckern(carma, cstate, rc)
                 pe3 = pe**(1._f/3._f)
 
                 ! <ccd> is convective diffusion coagulation coefficient
-                if( re_larg .lt. 1._f )then
-                  ccd = 0.45_f*cbr*pe3
-                else
-                  ccd = 0.45_f*cbr*pe3*re_larg**(ONE/6._f)
-                endif
+                if (do_aer_cld_interact) then
+     			  if( re_larg .lt. 1._f )then
+                    ccd = 0.45_f*cbr*pe3
+                  else
+                    ccd = 0.45_f*cbr*pe3*re_larg**(ONE/6._f)
+                  endif
+  				else
+     			  ccd = 0._f
+  				end if
 
                 ! Next calculate gravitational collection kernel.
 
@@ -501,9 +505,6 @@ subroutine setupckern(carma, cstate, rc)
 
                 ! Now combine all the coagulation and collection kernels into the
                 ! overall kernel.
-                if (.not. do_aer_cld_interact)then
-		  ccd = 0._f
-                end if
                 ckernel(k,i1,i2,j1,j2) = cbr + ccd + cgr
 
                 ! To avoid generation of large, non-physical hydrometeors by
