@@ -366,7 +366,6 @@ module carma_types_mod
     !   do_vdiff    If .true. then do Brownian diffusion                  {init}
     !   do_vtran    If .true. then do vertical transport                  {init}
     !   do_cnst_rlh If .true. then uses constants for rlhe and rlhm       {setupgrow}
-    !   do_aer_cld_interact If .true. then enable aerosol gravitational coagulation {init}
     !   igrowgas    Gas that condenses into a particle element            {setupgrow}
     !   inucgas     Gas that nucleates a particle group                   {setupnuc}
     !   if_nuc      Nucleation conditional array                          {setupaer}
@@ -407,7 +406,6 @@ module carma_types_mod
     logical                                       :: f_do_substep
     logical                                       :: f_do_thermo
     logical                                       :: f_do_cnst_rlh
-    logical                                       :: f_do_aer_cld_interact
     logical, allocatable, dimension(:,:)          :: f_if_nuc       !(NELEM,NELEM)
     real(kind=f)                                  :: f_conmax
     integer                                       :: f_igash2o
@@ -474,6 +472,7 @@ module carma_types_mod
     integer, allocatable, dimension(:,:)                :: f_npairu  ! (NGROUP,NBIN)
     integer, allocatable, dimension(:,:,:,:,:)          :: f_kbin    ! (NGROUP,NGROUP,NGROUP,NBIN,NBIN)
     real(kind=f), allocatable, dimension(:,:,:,:,:,:)   :: f_pkernel ! (NBIN,NBIN,NGROUP,NGROUP,NGROUP,6)
+    logical, allocatable, dimension(:,:)                :: f_use_ccd ! (NGROUP,NGROUP)
 
     !  Coagulation group pair mapping
     !

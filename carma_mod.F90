@@ -196,6 +196,7 @@ contains
       carma%f_rlh_nuc(NELEM, NELEM), &
       carma%f_icoagelem(NELEM, NGROUP), &
       carma%f_icoagelem_cm(NELEM, NGROUP), &
+      carma%f_use_ccd(NGROUP,NGROUP), &
       stat=ier)
     if(ier /= 0) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Create: ERROR allocating elements, NELEM=", &
@@ -216,6 +217,7 @@ contains
     carma%f_rlh_nuc(:,:) = 0._f
     carma%f_icoagelem(:,:) = 0
     carma%f_icoagelem_cm(:,:) = 0
+    carma%f_use_ccd(:,:) = .false.
 
 
     ! Allocate tables for the bins.
@@ -342,7 +344,7 @@ contains
       do_grow, do_incloud, do_explised, do_print_init, do_substep, do_thermo, do_vdiff, &
       do_vtran, do_drydep, vf_const, minsubsteps, maxsubsteps, maxretries, conmax, &
       do_pheat, do_pheatatm, dt_threshold, cstick, gsticki, gstickl, tstick, do_clearsky, &
-      do_partialinit, do_coremasscheck, sulfnucl_method, do_aer_cld_interact)
+      do_partialinit, do_coremasscheck, sulfnucl_method )
     type(carma_type), intent(inout)     :: carma         !! the carma object
     integer, intent(out)                :: rc            !! return code, negative indicates failure
     logical, intent(in), optional       :: do_cnst_rlh   !! use constant values for latent heats
@@ -359,7 +361,6 @@ contains
     logical, intent(in), optional       :: do_vdiff      !! do Brownian diffusion
     logical, intent(in), optional       :: do_vtran      !! do sedimentation
     logical, intent(in), optional       :: do_drydep     !! do dry deposition
-    logical, intent(in), optional       :: do_aer_cld_interact !!for ccd in coag kernel
     real(kind=f), intent(in), optional  :: vf_const      !! if specified and non-zero,
                                                          !! constant fall velocity for all particles [cm/s]
     integer, intent(in), optional       :: minsubsteps   !! minimum number of substeps, default = 1
@@ -397,7 +398,6 @@ contains
     carma%f_do_vdiff      = .FALSE.
     carma%f_do_vtran      = .FALSE.
     carma%f_do_drydep     = .FALSE.
-    carma%f_do_aer_cld_interact = .FALSE.
     carma%f_dt_threshold  = 0._f
     carma%f_cstick        = 1._f
     carma%f_gsticki       = 0.93_f
@@ -413,7 +413,6 @@ contains
     if (present(do_detrain))    carma%f_do_detrain    = do_detrain
     if (present(do_fixedinit))  carma%f_do_fixedinit  = do_fixedinit
     if (present(do_grow))       carma%f_do_grow       = do_grow
-    if (present(do_aer_cld_interact)) carma%f_do_aer_cld_interact = do_aer_cld_interact
     if (present(do_incloud))    carma%f_do_incloud    = do_incloud
     if (present(do_explised))   carma%f_do_explised   = do_explised
     if (present(do_pheat))      carma%f_do_pheat      = do_pheat
@@ -1072,6 +1071,7 @@ contains
         carma%f_rlh_nuc, &
         carma%f_icoagelem, &
         carma%f_icoagelem_cm, &
+        carma%f_use_ccd, &
         stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Destroy: ERROR deallocating elements, status=", ier
@@ -1163,7 +1163,7 @@ contains
   !! Add a coagulation process between two groups (<i>igroup1</i> and <i>igroup2</i>), with the resulting
   !! particle being in the destination group (<i>igroup3</i>). If <i>ck0</i> is specifed, then a constant
   !! coagulation kernel will be used.
-  subroutine CARMA_AddCoagulation(carma, igroup1, igroup2, igroup3, icollec, rc, ck0, grav_e_coll0)
+  subroutine CARMA_AddCoagulation(carma, igroup1, igroup2, igroup3, icollec, rc, ck0, grav_e_coll0,use_ccd)
     type(carma_type), intent(inout)    :: carma         !! the carma object
     integer, intent(in)                :: igroup1       !! first source group
     integer, intent(in)                :: igroup2       !! second source group
@@ -1173,6 +1173,7 @@ contains
     real(kind=f), intent(in), optional :: ck0           !! if specified, forces a constant coagulation kernel
     real(kind=f), intent(in), optional :: grav_e_coll0  !! if <i>icollec</i> is I_COLLEC_CONST
                                                         !! the constant gravitational collection efficiency
+    logical, intent(in), optional      :: use_ccd       !! if ccd is turned on
 
     ! Assume success.
     rc = RC_OK
@@ -1233,6 +1234,12 @@ contains
     end if
 
     carma%f_icollec = icollec
+    
+    if(present(use_ccd))then
+      carma%f_use_ccd(igroup1,igroup2) = use_ccd
+    else
+      carma%f_use_ccd(igroup1,igroup2) = .false.
+    end if
 
     return
   end subroutine CARMA_AddCoagulation

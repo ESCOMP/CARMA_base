@@ -319,7 +319,7 @@ subroutine setupckern(carma, cstate, rc)
                 pe3 = pe**(1._f/3._f)
 
                 ! <ccd> is convective diffusion coagulation coefficient
-                if (do_aer_cld_interact) then
+                if (use_ccd(j1,j2)) then
                   if( re_larg .lt. 1._f )then
                     ccd = 0.45_f*cbr*pe3
                   else
