@@ -320,12 +320,18 @@ subroutine setupckern(carma, cstate, rc)
 
                 ! <ccd> is convective diffusion coagulation coefficient
                 if (use_ccd(j1,j2)) then
+                ! Convective diffusion coagulation can be large in specific 
+                ! scavenging processes such as turbulence environment inside 
+                ! volcanic plume or raindrop washing away the aerosols.
+                ! use_ccd should only set to be .true. if doing processes mentioned above. 
                   if( re_larg .lt. 1._f )then
                     ccd = 0.45_f*cbr*pe3
                   else
                     ccd = 0.45_f*cbr*pe3*re_larg**(ONE/6._f)
                   endif
                 else
+                ! all other conditions, use_ccd should set to .false.
+                ! and use_ccd should be .false. as default
                   ccd = 0._f
                 end if
 
