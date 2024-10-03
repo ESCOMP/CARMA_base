@@ -1,3 +1,26 @@
+Tag name: carma4_07
+Originator(s): Yunqian Zhu (zywshoon)
+Date: 26 Sep 2024
+
+Add switch to control convective diffusion coagulation
+Defaut is FALSE
+
+M       carma_globaer.h
+M       carma_mod.F90
+M       carma_types_mod.F90
+M       setupckern.F90
+
+===============================================================
+Tag name: carma4_06
+Originator(s): F Vitt
+Date: 5 Sep 2024
+
+Replace LU matrix code with LAPACK lib routine
+
+            deleted:    lusolvec_mod.F90
+            modified:   fractal_meanfield_mod.F90
+
+===============================================================
 Tag name: carma4_05
 Originator(s): C Bardeen
 Date: 3 Jul 2023

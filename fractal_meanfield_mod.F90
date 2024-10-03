@@ -18,8 +18,8 @@
 !!
 !! calculating the matrix elements
 !!   - FUNCTION funa()        calling: dqag,fpl
-!!   - FUNCTION fpl()         calling: plgndr
-!!   - FUNCTION plgndr()
+!!   - FUNCTION fpl()         calling: calcpoly
+!!   - FUNCTION calcpoly()
 !!   - FUNCTION funb_n()
 !!   - FUNCTION funs_n()      calling: dq2agi,xfreal_n,xfimag_n
 !!   - FUNCTION xfreal_n()    calling: besseljy,phi
@@ -28,8 +28,8 @@
 !!
 !! Routines to calculate the scattered wave
 !! of monomer:
-!!   - FUNCTION fpi()         calling: plgndr()
-!!   - FUNCTION ftau()        calling: plgndr()
+!!   - FUNCTION fpi()         calling: calcpoly()
+!!   - FUNCTION ftau()        calling: calcpoly()
 !! of agglomerate/cluster:
 !!   - FUNCTION fp1()
 !!
@@ -51,7 +51,6 @@ module fractal_meanfield_mod
 
   use adgaquad_types_mod
   use adgaquad_mod
-  use lusolvec_mod
 
   implicit none
 
@@ -137,7 +136,6 @@ module fractal_meanfield_mod
     complex(kind=f)                    :: d2(nmi)
     complex(kind=f)                    :: Ap1(nmi,nmi)
     complex(kind=f)                    :: Bp1(nmi,nmi)
-    complex(kind=f)                    :: dvec(n2m)  ! For matrix eqn of order 2N
     complex(kind=f)                    :: cvec(n2m)
     complex(kind=f)                    :: EpABC(n2m,n2m)
     integer                            :: luindx(n2m)  ! For LU decomposition
@@ -158,6 +156,10 @@ module fractal_meanfield_mod
 
     ! Previously these were globals, which wouldn't be thread safe.
     type(adgaquad_vars_type)           :: fx_vars
+
+    integer :: info
+
+    external ZGESV ! lapack routine to solve complex matrix eqn.
 
     errabs=0.0_f
 
@@ -354,8 +356,6 @@ module fractal_meanfield_mod
     do ii=1,n1stop
       cvec(ii)        = an(ii)       ! right hand side vector
       cvec(n1stop+ii) = bn(ii)
-      dvec(ii)        = zeroc        ! solution vector d
-      dvec(n1stop+ii) = zeroc
     end do
 
     do pp=0,n2stop       !variable p
@@ -427,9 +427,13 @@ module fractal_meanfield_mod
     end do
 
     ! ======================================================================
-    ! *** solve matrix equation using external routines (LU decomposition)
-    CALL LUDCMPC(EpABC,n2stop,n2m,luindx,dlu)
-    CALL LUBKSBC(EpABC,n2stop,n2m,luindx,cvec)
+    ! *** solve matrix equation using lapack routine
+    call ZGESV(n2stop, 1, EpABC, n2m, luindx, cvec, n2m, info)
+    if (info/=0) then
+       rc = info
+       return
+    end if
+
     do ii=1,n1stop
       d1(ii) = cvec(ii)
       d2(ii) = cvec(ii+n1stop)
@@ -837,7 +841,7 @@ module fractal_meanfield_mod
   END FUNCTION funa
 
   !!
-  !! CALLS:  FUNCTION plgndr() Legendre-Functions
+  !! CALLS:  FUNCTION calcpoly() Legendre-Functions
   !!
   !! Used in funa.  Integrand of eq. 14, Botet et al. 1997
   !!
@@ -854,9 +858,9 @@ module fractal_meanfield_mod
     integer :: m,n,mu,nu,p,pmu
     real(kind=f) :: c1,c2,c3
 
-    c1=plgndr(fx_vars%u1,fx_vars%u2,x,fx_vars)
-    c2=plgndr(fx_vars%u3,fx_vars%u4,x,fx_vars)
-    c3=plgndr(fx_vars%u5,fx_vars%u6,x,fx_vars)
+    c1 = calcpoly(fx_vars%u1,fx_vars%u2,x,fx_vars)
+    c2 = calcpoly(fx_vars%u3,fx_vars%u4,x,fx_vars)
+    c3 = calcpoly(fx_vars%u5,fx_vars%u6,x,fx_vars)
 
     fpl=c1*c2*c3+1._f        !this is a trick!
 
@@ -864,14 +868,11 @@ module fractal_meanfield_mod
   END FUNCTION fpl
 
   !!
-  !! Adapted from FUNCTION plgndr() in: Press, Teukolsky, Vetterling, Flannery
-  !! "Numerical Recipes in ???" (e.g. Num.Rec.in C, 2nd Ed., Cambridge Univ.Press, 1992, page 254)
-  !!
   !! Calculate Legendre Polynomials, used in eq. 14 Botet et al. 1997
   !!
   !! @author P. Rannou, R. Botet, Eric Wolf
   !! @version March 2013
-  FUNCTION plgndr(l,m,x,fx_vars)
+  FUNCTION calcpoly(l,m,x,fx_vars)
 
     ! Arguments
     integer, intent(in) :: l                         !! indices
@@ -880,7 +881,7 @@ module fractal_meanfield_mod
     type(adgaquad_vars_type), intent(in) :: fx_vars  !! variables for functions being integrated
 
     ! Local declarations
-    real(kind=f) :: plgndr
+    real(kind=f) :: calcpoly
     integer ::lbl
     real(kind=f) :: pll, pmm, somx2, pmmp1
     integer :: i, ll
@@ -890,7 +891,7 @@ module fractal_meanfield_mod
     mstar=m
 
     lbl=0
-    plgndr=0._f
+    calcpoly=0._f
 
     if (mstar.lt.0)then
       mstar=-m
@@ -899,7 +900,7 @@ module fractal_meanfield_mod
 
     if (mstar.gt.l) then
       pll=0._f
-      plgndr=0._f
+      calcpoly=0._f
       return          ! si m>l, Pl,m=0 !
     endif
 
@@ -915,29 +916,29 @@ module fractal_meanfield_mod
     endif
 
     if(l.eq.mstar) then
-      plgndr=pmm
+      calcpoly=pmm
     else
       pmmp1=x*(2*mstar+1)*pmm
 
       if(l.eq.mstar+1) then
-        plgndr=pmmp1
+        calcpoly=pmmp1
       else
         do ll=mstar+2,l
           pll=(x*(2*ll-1)*pmmp1-(ll+mstar-1)*pmm)/(ll-mstar)
           pmm=pmmp1
           pmmp1=pll
         end do
-        plgndr=pll
+        calcpoly=pll
       endif
     endif
 
     if (lbl.eq.1) then
-      plgndr=(-1)**mstar*(fx_vars%fact(l-mstar)/fx_vars%fact(l+mstar))*plgndr
+      calcpoly=(-1)**mstar*(fx_vars%fact(l-mstar)/fx_vars%fact(l+mstar))*calcpoly
       mstar=-m         !restitution du parametre m!!!!!
     endif
 
     return
-  END FUNCTION plgndr
+  END FUNCTION calcpoly
 
   !!
   !! replaces funb(nu,n,p) in original code,
@@ -1279,7 +1280,7 @@ module fractal_meanfield_mod
   !! e.g. Bohren,Huffman (1983)
   !!      pp.94 ff Eq.(4.46)-(4.49)
   !!      p.112
-  !! CALLS:  FUNCTION plgndr() Legendre-Functions
+  !! CALLS:  FUNCTION calcpoly() Legendre-Functions
   !!
   !! @author P. Rannou, R. Botet, Eric Wolf
   !! @version Mar 2013
@@ -1299,7 +1300,7 @@ module fractal_meanfield_mod
     if (x.eq.1._f) y=1._f-1.e-6_f
           ! alternatively, one could use Bohren,Huffman
           ! p.112:   pi_n(1)=tau_n(1)= 1/2 * n * (n+1) !!!
-    flag=plgndr(l,1,y,fx_vars)
+    flag=calcpoly(l,1,y,fx_vars)
     fpi=(1._f-y**2._f)**(-0.5_f)*flag
     return
   END FUNCTION fpi
@@ -1309,7 +1310,7 @@ module fractal_meanfield_mod
   !! e.g. Bohren,Huffman (1983)
   !!      pp.94 ff Eq.(4.46)-(4.49)
   !!      p.112
-  !! CALLS:  FUNCTION plgndr() Legendre-Functions
+  !! CALLS:  FUNCTION calcpoly() Legendre-Functions
   !!
   !! @author P. Rannou, R. Botet, Eric Wolf
   !! @version March 2013
@@ -1330,7 +1331,7 @@ module fractal_meanfield_mod
     if (x.eq.1._f) y=1._f-1.e-6_f
         ! alternatively, one could use Bohren,Huffman
   ! p.112:   pi_n(1)=tau_n(1)= 1/2 * n * (n+1) !!!
-    flag=plgndr(l,0,y,fx_vars)
+    flag=calcpoly(l,0,y,fx_vars)
     fp=fpi(l,y,fx_vars)
     tau=-y*fp+l*(l*1._f+1._f)*flag
     return
