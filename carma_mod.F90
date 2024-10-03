@@ -170,6 +170,7 @@ contains
       carma%f_group(NGROUP), &
       carma%f_icoag(NGROUP, NGROUP), &
       carma%f_inucgas(NGROUP), &
+      carma%f_use_ccd(NGROUP,NGROUP), &
       stat=ier)
     if(ier /= 0) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Create: ERROR allocating groups, NGROUP=", &
@@ -181,6 +182,7 @@ contains
     ! Initialize
     carma%f_icoag(:, :)  = 0
     carma%f_inucgas(:)   = 0
+    carma%f_use_ccd(:,:) = .false.
 
     ! Allocate tables for the elements.
     allocate( &
@@ -196,7 +198,6 @@ contains
       carma%f_rlh_nuc(NELEM, NELEM), &
       carma%f_icoagelem(NELEM, NGROUP), &
       carma%f_icoagelem_cm(NELEM, NGROUP), &
-      carma%f_use_ccd(NGROUP,NGROUP), &
       stat=ier)
     if(ier /= 0) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Create: ERROR allocating elements, NELEM=", &
@@ -217,7 +218,6 @@ contains
     carma%f_rlh_nuc(:,:) = 0._f
     carma%f_icoagelem(:,:) = 0
     carma%f_icoagelem_cm(:,:) = 0
-    carma%f_use_ccd(:,:) = .false.
 
 
     ! Allocate tables for the bins.
@@ -1045,6 +1045,7 @@ contains
         carma%f_group, &
         carma%f_icoag, &
         carma%f_inucgas, &
+        carma%f_use_ccd, &
         stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Destroy: ERROR deallocating groups, status=", ier
@@ -1071,7 +1072,6 @@ contains
         carma%f_rlh_nuc, &
         carma%f_icoagelem, &
         carma%f_icoagelem_cm, &
-        carma%f_use_ccd, &
         stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Destroy: ERROR deallocating elements, status=", ier

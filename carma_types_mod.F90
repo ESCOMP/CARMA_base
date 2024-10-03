@@ -407,6 +407,7 @@ module carma_types_mod
     logical                                       :: f_do_thermo
     logical                                       :: f_do_cnst_rlh
     logical, allocatable, dimension(:,:)          :: f_if_nuc       !(NELEM,NELEM)
+    logical, allocatable, dimension(:,:)          :: f_use_ccd ! (NGROUP,NGROUP)
     real(kind=f)                                  :: f_conmax
     integer                                       :: f_igash2o
     integer                                       :: f_igash2so4
@@ -472,7 +473,6 @@ module carma_types_mod
     integer, allocatable, dimension(:,:)                :: f_npairu  ! (NGROUP,NBIN)
     integer, allocatable, dimension(:,:,:,:,:)          :: f_kbin    ! (NGROUP,NGROUP,NGROUP,NBIN,NBIN)
     real(kind=f), allocatable, dimension(:,:,:,:,:,:)   :: f_pkernel ! (NBIN,NBIN,NGROUP,NGROUP,NGROUP,6)
-    logical, allocatable, dimension(:,:)                :: f_use_ccd ! (NGROUP,NGROUP)
 
     !  Coagulation group pair mapping
     !
