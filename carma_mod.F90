@@ -170,6 +170,7 @@ contains
       carma%f_group(NGROUP), &
       carma%f_icoag(NGROUP, NGROUP), &
       carma%f_inucgas(NGROUP), &
+      carma%f_use_ccd(NGROUP,NGROUP), &
       stat=ier)
     if(ier /= 0) then
       if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Create: ERROR allocating groups, NGROUP=", &
@@ -181,6 +182,7 @@ contains
     ! Initialize
     carma%f_icoag(:, :)  = 0
     carma%f_inucgas(:)   = 0
+    carma%f_use_ccd(:,:) = .false.
 
     ! Allocate tables for the elements.
     allocate( &
@@ -1043,6 +1045,7 @@ contains
         carma%f_group, &
         carma%f_icoag, &
         carma%f_inucgas, &
+        carma%f_use_ccd, &
         stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMA_Destroy: ERROR deallocating groups, status=", ier
@@ -1160,7 +1163,7 @@ contains
   !! Add a coagulation process between two groups (<i>igroup1</i> and <i>igroup2</i>), with the resulting
   !! particle being in the destination group (<i>igroup3</i>). If <i>ck0</i> is specifed, then a constant
   !! coagulation kernel will be used.
-  subroutine CARMA_AddCoagulation(carma, igroup1, igroup2, igroup3, icollec, rc, ck0, grav_e_coll0)
+  subroutine CARMA_AddCoagulation(carma, igroup1, igroup2, igroup3, icollec, rc, ck0, grav_e_coll0,use_ccd)
     type(carma_type), intent(inout)    :: carma         !! the carma object
     integer, intent(in)                :: igroup1       !! first source group
     integer, intent(in)                :: igroup2       !! second source group
@@ -1170,6 +1173,7 @@ contains
     real(kind=f), intent(in), optional :: ck0           !! if specified, forces a constant coagulation kernel
     real(kind=f), intent(in), optional :: grav_e_coll0  !! if <i>icollec</i> is I_COLLEC_CONST
                                                         !! the constant gravitational collection efficiency
+    logical, intent(in), optional      :: use_ccd       !! if ccd is turned on
 
     ! Assume success.
     rc = RC_OK
@@ -1230,6 +1234,12 @@ contains
     end if
 
     carma%f_icollec = icollec
+    
+    if(present(use_ccd))then
+      carma%f_use_ccd(igroup1,igroup2) = use_ccd
+    else
+      carma%f_use_ccd(igroup1,igroup2) = .false.
+    end if
 
     return
   end subroutine CARMA_AddCoagulation

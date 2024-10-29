@@ -407,6 +407,7 @@ module carma_types_mod
     logical                                       :: f_do_thermo
     logical                                       :: f_do_cnst_rlh
     logical, allocatable, dimension(:,:)          :: f_if_nuc       !(NELEM,NELEM)
+    logical, allocatable, dimension(:,:)          :: f_use_ccd ! (NGROUP,NGROUP)
     real(kind=f)                                  :: f_conmax
     integer                                       :: f_igash2o
     integer                                       :: f_igash2so4

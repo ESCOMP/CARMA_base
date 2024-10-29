@@ -288,6 +288,7 @@
 #define jglow         carma%f_jglow
 #define igup          carma%f_igup
 #define jgup          carma%f_jgup
+#define use_ccd       carma%f_use_ccd
 
 !  Particle fall velocities, transport rates, and coagulation kernels
 #define bpm           cstate%f_bpm
