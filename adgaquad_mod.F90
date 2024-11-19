@@ -540,7 +540,7 @@ module adgaquad_mod
     errbnd = dmax1(epsabs,epsrel*dabs(result))
     if(abserr.le.0.5e2_f*epmach*defabs.and.abserr.gt.errbnd) ier = 2
     if(limit.eq.1) ier = 1
-    if(ier.ne.0.or.(abserr.le.errbnd.and.abserr.ne.resabs).or.abserr.eq.0.0d+00) go to 60
+    if(ier.ne.0.or.(abserr.le.errbnd.and.abserr.ne.resabs).or.abserr.eq.0.0_f) go to 60
     !
     !           initialization
     !           --------------
@@ -3139,8 +3139,8 @@ module adgaquad_mod
       absc = hlgth*xgk(j)
       absc1 = centr-absc
       absc2 = centr+absc
-      tabsc1 = boun+dinf*(0.1d+01-absc1)/absc1
-      tabsc2 = boun+dinf*(0.1d+01-absc2)/absc2
+      tabsc1 = boun+dinf*(1.0_f-absc1)/absc1
+      tabsc2 = boun+dinf*(1.0_f-absc2)/absc2
       fval1 = fx(tabsc1, fx_vars)
       fval2 = fx(tabsc2, fx_vars)
       if(inf.eq.2) fval1 = fval1+fx(-tabsc1, fx_vars)

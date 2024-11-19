@@ -1521,4 +1521,4 @@ contains
     return
   end subroutine CARMA_Get
 
-end module
+end module carma_mod

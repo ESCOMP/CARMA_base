@@ -107,7 +107,7 @@ subroutine setupvf_std(carma, cstate, j, rc)
 
       ! Stokes fall velocity and Reynolds' number
       vf(k,i,j) = (ONE * 2._f / 9._f) * rhop_wet(k,i,j) * r_wet(k,i,j)**2 * GRAV * bpm(k,i,j) / rmu(k) / rprat(i,j)
-      re(k,i,j) = 2. * rhoa_cgs * r_wet(k,i,j) * rprat(i,j) * vf(k,i,j) / rmu(k)
+      re(k,i,j) = 2._f * rhoa_cgs * r_wet(k,i,j) * rprat(i,j) * vf(k,i,j) / rmu(k)
 
       if (re(k,i,j) .ge. 1._f) then
 
@@ -127,7 +127,7 @@ subroutine setupvf_std(carma, cstate, j, rc)
           cdrag = 0.45_f
           vf(k,i,j) = bpm(k,i,j) * &
                       sqrt( 8._f * rhop_wet(k,i,j) * r_wet(k,i,j) * GRAV / &
-                      (3._f * cdrag * rhoa_cgs * rprat(i,j)**2.) )
+                      (3._f * cdrag * rhoa_cgs * rprat(i,j)**2._f) )
         endif
       endif
     enddo      ! <i=1,NBIN>

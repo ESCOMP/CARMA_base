@@ -363,7 +363,7 @@ subroutine binary_nuc_zhao1995( carma, cstate, temp, weight_percent, rh, h2so4, 
   real(kind=f), intent(in) :: beta1
 
 ! subr arguments (out)
-  real(kind=f), intent(out) :: nucrate_cgs         ! binary nucleation rate, j (# cm-3 s-1)
+  real(kind=f), intent(out) :: nucrate_cgs      ! binary nucleation rate, j (# cm-3 s-1)
   real(kind=f), intent(out) :: radius_cluster   ! the radius of cluster (cm)
   real(kind=f), intent(out) :: mass_cluster_dry ! dry mass of cluster (g)
   real(kind=f), intent(out) :: ftry
@@ -517,7 +517,9 @@ subroutine binary_nuc_zhao1995( carma, cstate, temp, weight_percent, rh, h2so4, 
   ! Possibility 1: loop finds no saddle, so no nucleation occurs:
   if (fct(i) * fct(i+1) > 0._f) then
     nucrate_cgs = 0.0_f
-
+    radius_cluster = 0.0_f
+    mass_cluster_dry = 0.0_f
+    ftry = 0.0_f
     return
 
   ! Possibility 2: loop crossed the saddle; interpolate to find exact value:
@@ -555,7 +557,9 @@ subroutine binary_nuc_zhao1995( carma, cstate, temp, weight_percent, rh, h2so4, 
       * raln + (1._f - wfstar) / gwtmol(igash2o) * rhln)
   if (ystar < 1.e-20_f) then
     nucrate_cgs = 0.0_f
-
+    radius_cluster = 0.0_f
+    mass_cluster_dry = 0.0_f
+    ftry = 0.0_f
     return
   end if
 

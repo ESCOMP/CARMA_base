@@ -76,7 +76,7 @@ subroutine evap_poly(carma,cstate,iz,ibin,ig,iavg,ieto,igto,rc)
 
     ! <prob> is probability that core mass is in CN bin <ito>.
     if( coreavg .gt. 0._f .and. coresig .gt. 0._f )then
-       expon = -log( rmassto/coreavg )**2 / ( 2.*coresig )
+       expon = -log( rmassto/coreavg )**2 / ( 2._f*coresig )
        expon = max(-POWMAX, expon)
     else
       expon = 0._f

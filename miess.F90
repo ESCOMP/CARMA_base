@@ -126,8 +126,8 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
   Z(2) =  K3 * RO
   Z(3) =  K1 * R
   Z(4) =  K2 * R
-  X1   =  REAL( Z(1) )
-  X4   =  REAL( Z(4) )
+  X1   =  REAL( Z(1) ,f)
+  X4   =  REAL( Z(4) ,f)
   Y1   =  aimag( Z(1) )
   Y4   =  aimag( Z(4) )
   RRF  =  1.0_f / RF
@@ -173,9 +173,9 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
   enddo
 
   do J = 1,JX
-    if ( THETD(J) .lt. 0.0 )  THETD(J) =  ABS( THETD(J) )
+    if ( THETD(J) .lt. 0.0_f )  THETD(J) =  ABS( THETD(J) )
 
-    if ( THETD(J) .le. 0.0 )  then
+    if ( THETD(J) .le. 0.0_f )  then
       CSTHT(J)  = 1.0_f
       SI2THT(J) = 0.0_f
     else if ( THETD(J) .lt. 90.0_f ) then
@@ -210,7 +210,7 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
   TA(1)  =  T(2)
   TA(2)  =  T(1)
   WFN(2) =  RX * WFN(1) - WM1
-  TA(3)  =  REAL(WFN(2))
+  TA(3)  =  REAL(WFN(2),f)
   TA(4)  =  aimag(WFN(2))
 
   if ( IFLAG .ne. 2 ) then
@@ -229,8 +229,8 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
     EY1MY4  =  EXP( Y1 - Y4 )
     AA  =  SINX4 * ( EY1PY4 + EY1MY4 )
     BB  =  COSX4 * ( EY1PY4 - EY1MY4 )
-    CC  =  SINX1 * ( E2Y1 + 1.0 )
-    DD  =  COSX1 * ( E2Y1 - 1.0 )
+    CC  =  SINX1 * ( E2Y1 + 1.0_f )
+    DD  =  COSX1 * ( E2Y1 - 1.0_f )
     DENOM   =  1.0_f  +  E2Y1 * ( 4.0_f * SINX1 * SINX1 - 2.0_f + E2Y1 )
     REALP   =  ( AA * CC  +  BB * DD ) / DENOM
     AMAGP   =  ( BB * CC  -  AA * DD ) / DENOM
@@ -341,11 +341,11 @@ SUBROUTINE miess(carma,RO,RFR,RFI,THETD,JX,QEXT,QSCAT,QBS,CTBRQS,R,RE2,TMAG2,WVN
     ! HERE SET UP HOMOGENEOUS SPHERE
     WM1    =  WFN(1)
     WFN(1) =  WFN(2)
-    TA(1)  =  REAL(WFN(1))
+    TA(1)  =  REAL(WFN(1),f)
     TA(2)  =  aimag(WFN(1))
     TA(4)  =  aimag(WFN(2))
     WFN(2) =  T(1) * RX * WFN(1)  -  WM1
-    TA(3)  =  REAL(WFN(2))
+    TA(3)  =  REAL(WFN(2),f)
   
     if ( IFLAG .ne. 2 ) then
   
