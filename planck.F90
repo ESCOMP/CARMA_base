@@ -173,7 +173,7 @@ contains
     planckBandIntensity = 0._f
 
     do i = 1, iter
-      planckBandIntensity = planckBandIntensity + planckIntensity(wstart + (i - 0.5) * ddwave, temp) * ddwave
+      planckBandIntensity = planckBandIntensity + planckIntensity(wstart + (i - 0.5_f) * ddwave, temp) * ddwave
     end do
  
     planckBandIntensity = planckBandIntensity / dwvl
@@ -319,8 +319,9 @@ contains
     enddo
      
     ! Convert to erg/cm2/s/sr/cm
-    planckBandIntensityConley2011 = total * 1e7 / 1e4 / dwvl
+    planckBandIntensityConley2011 = total * 1e7_f / 1e4_f / dwvl
      
     return
   end function
-end
+
+end module planck

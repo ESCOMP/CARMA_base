@@ -129,7 +129,7 @@ subroutine freezaerl_tabazadeh2000(carma, cstate, iz, rc)
                     rlhbar = ( 79.7_f * (t(iz)-T0) + &
                       0.485_f/2._f * (t(iz)-T0)**2 - &
                       2.5e-3_f/3._f * (t(iz)-T0)**3 ) &
-                      / (t(iz)-T0) * 4.186e7*18._f
+                      / (t(iz)-T0) * 4.186e7_f*18._f
         
                     ! Equilibrium H2SO4 weight percent for fixed water activity
                     act = min(1.0_f, ssl + 1._f)
@@ -177,7 +177,7 @@ subroutine freezaerl_tabazadeh2000(carma, cstate, iz, rc)
                     A3 = -621.3958e+2_f - 287.7670_f*C1 - 406.4638e-3_f*C2 &
                          + 111.9488e-4_f*C3 + 360.7768e-7_f*C4
                     A4 = 409.0293e+3_f + 127.0854e+1_f*C1 + 326.9710e-3_f*C2 &
-                         - 137.7435e-4*C3 - 263.3585e-7*C4
+                         - 137.7435e-4_f*C3 - 263.3585e-7_f*C4
                     A5 = -159.6989e+4_f - 306.2836e+1_f*C1 + 136.6499e-3_f*C2 &
                          + 637.3031e-5_f*C3
                     A6 = 385.7411e+4_f + 408.3717e+1_f*C1 - 192.7785e-3_f*C2

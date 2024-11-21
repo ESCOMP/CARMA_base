@@ -486,7 +486,7 @@ module fractal_meanfield_mod
     ! *** Extinction cross section sigext( d^1_1,n , d^2_1,n ) ***
     sigext=0._f
     do ir=1,n1stop                ! loop (sum) over Mie-indices
-      sigext=sigext+(2._f*ir+1._f)*REAL(d1(ir)+d2(ir))
+      sigext=sigext+(2._f*ir+1._f)*REAL(d1(ir)+d2(ir),f)
     end do
     sigext  = fx_vars%nb * 2._f*pi/fx_vars%k**2._f * sigext    ! Eq.(27)
 
@@ -1473,4 +1473,4 @@ module fractal_meanfield_mod
     return
   END FUNCTION fdval
 
-end module
+end module fractal_meanfield_mod

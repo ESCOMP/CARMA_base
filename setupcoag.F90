@@ -241,13 +241,13 @@ subroutine setupcoag(carma, rc)
 
           do i = 1, NBIN
             do j = 1,NBIN
-              volx(igrp,ig,jg,i,j) = 1.
+              volx(igrp,ig,jg,i,j) = 1._f
 
               if(kbin(igrp,ig,jg,i,j).eq.i) then
 
                 ibin = kbin(igrp,ig,jg,i,j)
                 rmkbin = rmass(ibin,igrp)
-                volx(igrp,ig,jg,i,j) = 1. - &
+                volx(igrp,ig,jg,i,j) = 1._f - &
                    (rmrat(igrp)*rmkbin-rmass(i,ig)-rmass(j,jg)) &
                    /(rmrat(igrp)*rmkbin-rmkbin)* &
                    rmass(i,ig)/(rmass(i,ig) + rmass(j,jg))

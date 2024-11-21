@@ -36,4 +36,5 @@ module adgaquad_types_mod
     real(kind=f)                                :: zed
     real(kind=f)                                :: coeff
   end type adgaquad_vars_type
-end module
+
+end module adgaquad_types_mod

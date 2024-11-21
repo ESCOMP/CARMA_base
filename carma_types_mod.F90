@@ -830,4 +830,5 @@ module carma_types_mod
     real(kind=f), allocatable, dimension(:,:,:)  :: f_dtpart     ! (NZ,NBIN,NGROUP)
     real(kind=f)                                 :: f_phprod
    end type carmastate_type
-end module
+
+end module carma_types_mod

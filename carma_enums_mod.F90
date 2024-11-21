@@ -151,4 +151,5 @@ module carma_enums_mod
   integer, public, parameter   :: I_PS         = 5   !! Polar Sterographic
   integer, public, parameter   :: I_ME         = 6   !! Mercator
   integer, public, parameter   :: I_HYBRID     = 7   !! Hybrid
-end module
+
+end module carma_enums_mod

@@ -187,7 +187,7 @@ subroutine setupbins(carma, rc)
                   (3.0_f+2.0_f*gamma**5.0_f)    
           perm = happel*rmon(igrp)**2.0_f                                   ! Permeability (eq. 3.3)
           brinkman = nmon(j,igrp)**(1.0_f/df(j,igrp))*1.0_f/sqrt(happel)    ! Brinkman parameter (eq. 3.9) 
-          epsil = 1.0_f - brinkman**(-1.)*tanh(brinkman)                    !
+          epsil = 1.0_f - brinkman**(-1._f)*tanh(brinkman)                    !
           omega = 2.0_f/3.0_f*epsil/(2.0_f/3.0_f+epsil/brinkman**2.0_f)     ! drag coefficient (eq. 2.7)
           rp = rf * omega
           rprat(j,igrp) = rp/r(j,igrp)

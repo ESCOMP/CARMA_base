@@ -301,5 +301,7 @@ contains
 
     end function pvap_h2o
 
-  end subroutine
-end module
+  end subroutine getwetr
+  
+end module wetr
+
