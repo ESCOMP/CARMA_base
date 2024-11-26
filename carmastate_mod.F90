@@ -1051,7 +1051,7 @@ contains
   !! @see CARMASTATE_SetBin
   subroutine CARMASTATE_GetBin(cstate, ielem, ibin, mmr, rc, &
                                nmr, numberDensity, nucleationRate, r_wet, rhop_wet, rhop_dry, &
-                               surface, sedimentationflux, vf, vd, dtpart, kappa)
+                               surface, sedimentationflux, vf, vd, dtpart, kappa, totalmmr)
     type(carmastate_type), intent(in)     :: cstate         !! the carma state object
     integer, intent(in)                   :: ielem          !! the element index
     integer, intent(in)                   :: ibin           !! the bin index
@@ -1069,9 +1069,11 @@ contains
     real(kind=f), optional, intent(out)   :: vd                  !! deposition velocity [cm/s]
     real(kind=f), optional, intent(out)   :: dtpart(cstate%f_NZ) !! delta particle temperature [K]
     real(kind=f), optional, intent(out)   :: kappa(cstate%f_NZ)  !! hygroscopicity parameter
+    real(kind=f), optional, intent(out)   :: totalmmr(cstate%f_NZ) !! mmr of the entire particle (kg/m3)
 
-    integer                               :: ienconc        !! index of element that is the particle concentration for the group
+    integer                               :: ienconc        ! index of element that is the particle concentration for the group
     integer                               :: igroup         ! Group containing this bin
+    integer                               :: icore          ! coremass index for group  
 
     ! Assume success.
     rc = RC_OK
@@ -1095,11 +1097,9 @@ contains
       return
     end if
 
-
     ! Use the specified mass mixing ratio and the air density to determine the mass
     ! of the particles in g/x/y/z.
     mmr(:) = cstate%f_pc(:, ibin, ielem) / cstate%f_rhoa_wet(:)
-
 
     ! Handle the special cases for different types of elements ...
     if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
@@ -1108,12 +1108,23 @@ contains
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       mmr(:) = mmr(:) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     end if
-
-    ! If the number of particles in the group is less than the minimum value represented
-    ! by CARMA, then return and mmr of 0.0 for all elements.
+      
+    ! NOTE: The concentration element will be handled different, we want to return
+    ! the mmr of the element NOT the mmr of the total particle, so you need to subtract
+    ! the sum of the core masses.
     ienconc = cstate%f_carma%f_group(igroup)%f_ienconc
-!    where (cstate%f_pc(:, ibin, ienconc) <= SMALL_PC) mmr(:) = 0.0_f
 
+    if (ienconc == ielem) then
+      
+      ! Subtract the core massed from the total mass
+      do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
+        mmr(:) = mmr(:) - cstate%f_pc(:, ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) / cstate%f_rhoa_wet(:)
+      end do
+    end if
+    
+    ! NOTE: Could add a check here to make sure that the conc_md is greater than or
+    ! equal to 0.
+    where (cstate%f_pc(:, ibin, ienconc) <= 0.0_f) mmr(:) = 0.0_f
 
     ! Do they also want the mass concentration of particles at the surface?
     if (present(surface)) then
@@ -1128,6 +1139,17 @@ contains
       else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
         surface = surface / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       end if
+      
+      ! NOTE: The concentration element will be handled different, we want to return
+      ! the mass concentration of the element NOT the mass concentration of the total
+      ! particle, so you need to subtract the sum of the core masses.
+      if (ienconc == ielem) then
+        
+        ! Subtract the core massed from the total mass
+        do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
+          surface = surface - cstate%f_pc_surf(ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) * 1e4_f / 1e3_f
+        end do
+      end if 
     end if
 
     ! Do they also want the mass flux of particles that sediment to the surface?
@@ -1143,6 +1165,17 @@ contains
       else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
         sedimentationflux = sedimentationflux / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       end if
+
+      ! NOTE: The concentration element will be handled different, we want to return
+      ! the sedimentation flux of the element NOT the sedimentation flux of the total
+      ! particle, so you need to subtract the sum of the core masses.
+      if (ienconc == ielem) then
+        
+        ! Subtract the core massed from the total mass
+        do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
+          sedimentationflux = sedimentationflux - cstate%f_sedimentationflux(ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) * 1e4_f / 1e3_f
+        end do
+      end if 
     end if
 
     ! Is the hygroscopicity parameter requested?
@@ -1153,6 +1186,7 @@ contains
 
     ! If this is the partcile # element, then determine some other statistics.
     if (ienconc == ielem) then
+      if (present(totalmmr))      totalmmr(:)        = (cstate%f_pc(:, ibin, ielem) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)) / cstate%f_rhoa_wet(:)
       if (present(nmr))           nmr(:)             = (cstate%f_pc(:, ibin, ielem) / cstate%f_rhoa_wet(:)) * 1000._f
       if (present(numberDensity)) numberDensity(:)   = cstate%f_pc(:, ibin, ielem) / cstate%f_zmet(:)
       if (present(r_wet))         r_wet(:)           = cstate%f_r_wet(:, ibin, igroup)
@@ -1190,6 +1224,7 @@ contains
         if (present(dtpart))        dtpart(:)          = CAM_FILL
       end if
     else
+      if (present(totalmmr))       totalmmr(:)        = CAM_FILL
       if (present(nmr))            nmr(:)             = CAM_FILL
       if (present(numberDensity))  numberDensity(:)   = CAM_FILL
       if (present(nucleationRate)) nucleationRate(:)  = CAM_FILL
@@ -1373,9 +1408,13 @@ contains
     integer, intent(in)                   :: ibin           !! the bin index
     real(kind=f), intent(in)              :: mmr(cstate%f_NZ) !! the bin mass mixing ratio [kg/kg]
     integer, intent(out)                  :: rc             !! return code, negative indicates failure
-    real(kind=f), optional, intent(in)    :: surface        !! particles mass on the surface [kg/m2]
+    real(kind=f), optional, intent(in)    :: surface        !! element mass on the surface [kg/m2]
 
     integer                               :: igroup         ! Group containing this bin
+    real(kind=f)                          :: conc_md(cstate%f_NZ) ! mass density of concentration element (g/x/y/z)
+    real(kind=f)                          :: conc_mc        ! mass concentration of concentration element (kg/m2)
+    integer                               :: ienconc
+    integer                               :: icore
 
     ! Assume success.
     rc = RC_OK
@@ -1398,6 +1437,16 @@ contains
       rc = RC_ERROR
       return
     end if
+    
+    ienconc = cstate%f_carma%f_group(igroup)%f_ienconc
+    
+    ! Determine the current mass density of the species represented by the concentration element
+    ! (concentration_element*rmass - sum(coremass))
+    conc_md(:) = cstate%f_pc(:, ibin, ienconc) * cstate%f_carma%f_group(igroup)%f_rmass(ibin) 
+
+    do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
+      conc_md(:) = conc_md(:) - cstate%f_pc(:, ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore))  
+    end do
 
     ! Use the specified mass mixing ratio and the air density to determine the mass
     ! of the particles in g/x/y/z.
@@ -1405,26 +1454,62 @@ contains
 
     ! Handle the special cases for different types of elements ...
     if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
-         (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
+        (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
       cstate%f_pc(:, ibin, ielem) = cstate%f_pc(:, ibin, ielem) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       cstate%f_pc(:, ibin, ielem) = cstate%f_pc(:, ibin, ielem) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     end if
+    
+    ! Update the concentration element to be the concentration of the particle (i.e. mass density
+    ! of the concentration element species plus the sum of the coremasses).
+    !
+    ! NOTE: Recalculating this from scratch makes sure that the concentration element * rmass is
+    ! greater than or equal to the sum of the cores masses and you don't end up with a
+    ! negative concentration species mass.
+    if (ielem /= ienconc) then
+      cstate%f_pc(:, ibin, ienconc) = conc_md(:) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)   
+    end if
+    
+    do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
+      cstate%f_pc(:, ibin, ienconc) = cstate%f_pc(:, ibin, ienconc) + cstate%f_pc(:, ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) /  cstate%f_carma%f_group(igroup)%f_rmass(ibin)  
+    end do
 
     ! If they specified an initial mass of particles on the surface, then use that
     ! value.
     if (present(surface)) then
+
+      ! Determine the current mass density of the species represented by the concentration element
+      ! (concentration_element*rmass - sum(coremass))
+      conc_mc = cstate%f_pc_surf(ibin, ienconc) * cstate%f_carma%f_group(igroup)%f_rmass(ibin) 
+
+      do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
+        conc_mc = conc_mc - cstate%f_pc_surf(ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore))  
+      end do
 
       ! Convert from g/cm2 to kg/m2
       cstate%f_pc_surf(ibin, ielem) = surface / 1e4_f * 1e3_f
 
       ! Handle the special cases for different types of elements ...
       if ((cstate%f_carma%f_element(ielem)%f_itype == I_INVOLATILE) .or. &
-           (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
+          (cstate%f_carma%f_element(ielem)%f_itype == I_VOLATILE)) then
         cstate%f_pc_surf(ibin, ielem) = cstate%f_pc_surf(ibin, ielem) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
         cstate%f_pc_surf(ibin, ielem) = cstate%f_pc_surf(ibin, ielem) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       end if
+
+      ! Update the concentration element to be the concentration of the particle (i.e. mass density
+      ! of the concentration element species plus the sum of the coremasses).
+      !
+      ! NOTE: Recalculating this from scratch makes sure that the concentration element * rmass is
+      ! greater than or equal to the sum of the cores masses and you don't end up with a
+      ! negative concentration species mass.
+      if (ielem /= ienconc) then
+        cstate%f_pc_surf(ibin, ienconc) = conc_mc / cstate%f_carma%f_group(igroup)%f_rmass(ibin)   
+      end if
+    
+      do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
+        cstate%f_pc_surf(ibin, ienconc) = cstate%f_pc_surf(ibin, ienconc) + cstate%f_pc_surf(ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)  
+      end do
     else
       cstate%f_pc_surf(ibin, ielem) = 0.0_f
     end if

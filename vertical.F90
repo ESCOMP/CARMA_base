@@ -124,10 +124,10 @@ subroutine vertical(carma, cstate, rc)
         !
         ! NOTE: This only works if you assume nothing is lost out the top. It would be
         ! better to figure out how to get this directly from versol.
-        pc_surf(ibin,ielem) = pc_surf(ibin, ielem) + sum(old_pc(:,ibin,ielem) * dz(:) ) - &
-          sum(pc(:,ibin,ielem) * dz(:) )
-        sedimentationflux(ibin,ielem) = ( sum(old_pc(:,ibin,ielem) * dz(:) ) - &
-          sum(pc(:,ibin,ielem) * dz(:) ) ) / dtime
+        pc_surf(ibin,ielem) = pc_surf(ibin, ielem) + max(0.0_f,sum(old_pc(:,ibin,ielem) * dz(:) ) - &
+          sum(pc(:,ibin,ielem) * dz(:) ))
+        sedimentationflux(ibin,ielem) = ( max(0.0_f,sum(old_pc(:,ibin,ielem) * dz(:) ) - &
+          sum(pc(:,ibin,ielem) * dz(:) ) ) ) / dtime
       enddo  ! ibin
     end if
   end do
