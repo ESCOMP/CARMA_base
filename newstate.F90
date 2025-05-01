@@ -50,11 +50,12 @@ subroutine newstate(carma, cstate, rc)
 
   ! Calculate changes due to vertical transport
   if (do_vtran) then
+
     call vertical(carma, cstate, rc)
     if (rc < RC_OK) return
   endif
 
-  ! pc was changed by vertical, therefore we want to change pcl to pc before it is used by coagulation 
+  ! pc was changed by vertical, therefore we want to change pcl to pc before it is used by coagulation
   pcl(:,:,:)  = pc(:,:,:)
 
   ! There can be two phases to the microphysics: in-cloud and clear sky. Particles
@@ -102,7 +103,6 @@ subroutine newstate(carma, cstate, rc)
       end if
     end do
 
-
     call newstate_calc(carma, cstate, scale_cldfrc(:), rc)
     if (rc < RC_OK) return
 
@@ -118,8 +118,6 @@ subroutine newstate(carma, cstate, rc)
 
 
     if (do_substep) zsubsteps_cloudy(:) = zsubsteps(:)
-
-
 
     ! Now do the clear sky portion, using the original gridbox average concentrations.
     ! This is optional. If clear sky is not selected then all of the microphysics is
@@ -254,6 +252,6 @@ subroutine newstate(carma, cstate, rc)
     if (rc < RC_OK) return
   end if
 
-  ! Return to caller with new state computed 
+  ! Return to caller with new state computed
   return
 end
