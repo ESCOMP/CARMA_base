@@ -250,7 +250,7 @@ subroutine setupckern(carma, cstate, rc)
               rlbi = 8._f*di/(PI*gi)
               dti1= (2._f*r1 + rlbi)**3
               dti2= (4._f*r1*r1 + rlbi*rlbi)**1.5_f
-              dti = 1._f/(6._f*r1*rlbi)
+              dti = sqrt(2._f)/(6._f*r1*rlbi)
               dti = dti*(dti1 - dti2) - 2._f*r1
 
               !  Second particle
@@ -261,7 +261,7 @@ subroutine setupckern(carma, cstate, rc)
                 rlbj = 8._f*dj/(PI*gj)
                 dtj1= (2._f*r2 + rlbj)**3
                 dtj2= (4._f*r2*r2 + rlbj*rlbj)**1.5_f
-                dtj = 1._f/(6._f*r2*rlbj)
+                dtj = sqrt(2._f)/(6._f*r2*rlbj)
                 dtj = dtj*(dtj1 - dtj2) - 2._f*r2
 
                 !  Account for the charging effect of small particles (Van Der Waal's forces).
