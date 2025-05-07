@@ -37,7 +37,7 @@ contains
   subroutine CARMAGROUP_Create(carma, igroup, name, rmin, rmrat, ishape, eshape, is_ice, rc, is_fractal, &
       irhswell, irhswcomp, do_mie, do_wetdep, do_drydep, do_vtran, solfac, scavcoef, shortname, &
       cnsttype, maxbin, ifallrtn, is_cloud, rmassmin, imiertn, iopticstype, is_sulfate, dpc_threshold, &
-      rmon, df, falpha, neutral_volfrc)
+      rmon, df, falpha, neutral_volfrc, rho)
     type(carma_type), intent(inout)             :: carma               !! the carma object
     integer, intent(in)                         :: igroup              !! the group index
     character(*), intent(in)                    :: name                !! the group name, maximum of 255 characters
@@ -82,6 +82,7 @@ contains
     real(kind=f), optional, intent(in)          :: df(carma%f_NBIN)    !! fractal dimension
     real(kind=f), optional, intent(in)          :: falpha              !! fractal packing coefficient
     real(kind=f), optional, intent(in)          :: neutral_volfrc      !! volume fraction of core mass for neutralization
+    real(kind=f), optional, intent(in)          :: rho(carma%f_NBIN)   !! mass desity [g/cm3]
 
     ! Local variables
     integer                               :: ier
@@ -112,6 +113,7 @@ contains
       carma%f_group(igroup)%f_rprat(carma%f_NBIN), &
       carma%f_group(igroup)%f_df(carma%f_NBIN), &
       carma%f_group(igroup)%f_nmon(carma%f_NBIN), &
+      carma%f_group(igroup)%f_rho(carma%f_NBIN), &
       stat=ier)
     if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAGROUP_Add: ERROR allocating, status=", ier
@@ -141,6 +143,7 @@ contains
     carma%f_group(igroup)%f_nmon(:)     = 1.0_f
     carma%f_group(igroup)%f_falpha      = 1.0_f
     carma%f_group(igroup)%f_neutral_volfrc = 0.0_f
+    carma%f_group(igroup)%f_rho(:)      = 0._f
 
     ! Any optical properties?
     if (carma%f_NWAVE > 0) then
@@ -206,6 +209,7 @@ contains
     if (present(dpc_threshold)) carma%f_group(igroup)%f_dpc_threshold = dpc_threshold
     if (present(rmon))       carma%f_group(igroup)%f_rmon         = rmon
     if (present(df))         carma%f_group(igroup)%f_df(:)        = df(:)
+    if (present(rho))        carma%f_group(igroup)%f_rho(:)       = rho(:)
     if (present(falpha))     carma%f_group(igroup)%f_falpha       = falpha
     if (present(neutral_volfrc)) carma%f_group(igroup)%f_neutral_volfrc = neutral_volfrc
 
@@ -318,7 +322,7 @@ contains
       endif
     endif
 
-    ! Allocate dynamic data.
+    ! De-allocate dynamic data.
     if (allocated(carma%f_group(igroup)%f_r)) then
       deallocate( &
         carma%f_group(igroup)%f_r, &
@@ -335,6 +339,7 @@ contains
         carma%f_group(igroup)%f_rprat, &
         carma%f_group(igroup)%f_df, &
         carma%f_group(igroup)%f_nmon, &
+        carma%f_group(igroup)%f_rho, &
         stat=ier)
       if(ier /= 0) then
         if (carma%f_do_print) write(carma%f_LUNOPRT, *) "CARMAGROUP_Destroy: ERROR deallocating, status=", ier
@@ -363,7 +368,7 @@ contains
       irhswell, irhswcomp, cnsttype, r, rlow, rup, dr, rmass, dm, vol, qext, ssa, asym, do_mie, &
       do_wetdep, do_drydep, do_vtran, solfac, scavcoef, ienconc, ncore, icorelem, maxbin, &
       ifallrtn, is_cloud, rmassmin, arat, rrat, rprat, imiertn, iopticstype, is_sulfate, dpc_threshold, rmon, df, &
-      nmon, falpha, neutral_volfrc)
+      nmon, falpha, neutral_volfrc, rho)
 
     type(carma_type), intent(in)              :: carma                        !! the carma object
     integer, intent(in)                       :: igroup                       !! the group index
@@ -427,6 +432,7 @@ contains
     real(kind=f), optional, intent(out)       :: nmon(carma%f_NBIN)           !! number of monomers per
     real(kind=f), optional, intent(out)       :: falpha                       !! fractal packing coefficient
     real(kind=f), optional, intent(out)       :: neutral_volfrc               !! volume fraction of core mass for neutralization
+    real(kind=f), optional, intent(out)       :: rho(carma%f_NBIN)            !! mass density
 
     ! Assume success.
     rc = RC_OK
@@ -483,6 +489,7 @@ contains
     if (present(nmon))         nmon(:)      = carma%f_group(igroup)%f_nmon(:)
     if (present(falpha))       falpha       = carma%f_group(igroup)%f_falpha
     if (present(neutral_volfrc)) neutral_volfrc = carma%f_group(igroup)%f_neutral_volfrc
+    if (present(rho))          rho(:)       = carma%f_group(igroup)%f_rho(:)
 
     if (carma%f_NWAVE == 0) then
       if (present(qext) .or. present(ssa) .or. present(asym)) then

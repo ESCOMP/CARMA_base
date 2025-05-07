@@ -42,7 +42,7 @@ subroutine setupbins(carma, rc)
 
 
   !  Determine which elements are particle number concentrations
-  !  <ienconc(igroup)> is the element corresponding to particle number 
+  !  <ienconc(igroup)> is the element corresponding to particle number
   !  concentration in group <igroup>
   !
   igrp = 0
@@ -54,7 +54,7 @@ subroutine setupbins(carma, rc)
       ienconc(igrp) = ielem
     endif
   enddo
-  
+
   if( igrp .gt. NGROUP )then
     if (do_print) write(LUNOPRT,'(/,a)') 'CARMA_setupbin:: ERROR - bad itype array'
     rc = -1
@@ -77,30 +77,30 @@ subroutine setupbins(carma, rc)
   !
   !  Also evaluate whether or not second moment is used <if_sec_mom> for each group.
   ielem = 0
-  
+
   do igrp = 1, NGROUP
-  
+
     ncore(igrp) = 0
     if_sec_mom(igrp) = .false.
     imomelem(igrp) = 0
-  
+
     do j = 1, nelemg(igrp)
-  
+
       ielem = ielem + 1
-  
+
       if( itype(ielem) .eq. I_COREMASS .or. &
           itype(ielem) .eq. I_VOLCORE )then
-  
+
         ncore(igrp) = ncore(igrp) + 1
         icorelem(ncore(igrp),igrp) = ielem
-  
+
       elseif( itype(ielem) .eq. I_CORE2MOM )then
-  
+
         if_sec_mom(igrp) = .true.
         imomelem(igrp) = ielem
-  
+
       endif
-  
+
     enddo
   enddo
 
@@ -110,7 +110,11 @@ subroutine setupbins(carma, rc)
   do ig = 1,NGROUP
     ie = ienconc(ig)
     do ibin = 1,NBIN
-      tmp_rhop(ibin, ig) = rhoelem(ibin, ie)
+      if (rhogroup(ibin,ig) == 0.0_f) then
+        tmp_rhop(ibin, ig) = rhoelem(ibin, ie)
+      else
+        tmp_rhop(ibin, ig) = rhogroup(ibin, ig)
+      end if
 
         !  Set initial density of all hydrometeor groups to 1 such that nucleation
         !  mapping arrays are calculated correctly.
@@ -120,7 +124,7 @@ subroutine setupbins(carma, rc)
 !           endif
     enddo
   enddo
-  
+
   !  Set up the particle bins.
   !  For each particle group, the mass of a particle in
   !  bin j is <rmrat> times that in bin j-1
@@ -143,12 +147,12 @@ subroutine setupbins(carma, rc)
     if (rmassmin(igrp) == 0._f) then
       rmassmin(igrp) = cpi*tmp_rhop(1,igrp)*rmin(igrp)**3
     else
-      
+
       ! Just for internal consistency, recalculate rmin based on the rmass
       ! that is being used.
       rmin(igrp) = (rmassmin(igrp) / cpi / tmp_rhop(1,igrp)) ** (1._f / 3._f)
     end if
-    
+
     do j = 1, NBIN
       rmass(j,igrp)   = rmassmin(igrp) * rmrat(igrp)**(j-1)
       rmassup(j,igrp) = 2._f*rmrat(igrp)/(rmrat(igrp)+1._f)*rmass(j,igrp)
@@ -158,12 +162,12 @@ subroutine setupbins(carma, rc)
       rup(j,igrp) = ( rmassup(j,igrp)/tmp_rhop(j,igrp)/cpi )**(ONE/3._f)
       dr(j,igrp)  = vrfact*(rmass(j,igrp)/tmp_rhop(j,igrp))**(ONE/3._f)
       rlow(j,igrp) = rup(j,igrp) - dr(j,igrp)
- 
+
       if (is_grp_fractal(igrp)) then
       ! fractal flag is true
 
         if (r(j,igrp) .le. rmon(igrp)) then   ! if the bin radius is less than the monomer size
-                                     
+
           nmon(j,igrp) = 1.0_f
           rrat(j,igrp) = 1.0_f
           arat(j,igrp) = 1.0_f
@@ -175,18 +179,18 @@ subroutine setupbins(carma, rc)
           rf = (1.0_f/falpha(igrp))**(1.0_f/df(j,igrp))*r(j,igrp)**(3.0_f/df(j,igrp))*rmon(igrp)**(1.0_f-3.0_f/df(j,igrp))
           nmon(j,igrp) = falpha(igrp)*(rf/rmon(igrp))**df(j,igrp)
 
-          rrat(j,igrp) = rf/r(j,igrp)           
-                                                                                         
+          rrat(j,igrp) = rf/r(j,igrp)
+
           ! Calculate mobility radius for permeable aggregates
-          ! using Vainshtein (2003) formulation     
+          ! using Vainshtein (2003) formulation
           vpor = 1.0_f - (nmon(j,igrp))**(1.0_f-3.0_f/df(j,igrp))           ! Volume average porosity (eq. 3.2)
           upor = 1.0_f-(1.0_f - vpor)*sqrt(df(j,igrp)/3.0_f)                ! Uniform poroisty (eq. 3.10)
           gamma = (1.0_f - upor)**(1.0_f/3.0_f)
           happel = 2.0_f/(9.0_f*(1.0_f-upor))*   &                          ! Happel permeability model
                   (3.0_f-4.5_f*gamma+4.5_f*gamma**5.0_f-3.0_f*gamma**6.0_f)/  &
-                  (3.0_f+2.0_f*gamma**5.0_f)    
+                  (3.0_f+2.0_f*gamma**5.0_f)
           perm = happel*rmon(igrp)**2.0_f                                   ! Permeability (eq. 3.3)
-          brinkman = nmon(j,igrp)**(1.0_f/df(j,igrp))*1.0_f/sqrt(happel)    ! Brinkman parameter (eq. 3.9) 
+          brinkman = nmon(j,igrp)**(1.0_f/df(j,igrp))*1.0_f/sqrt(happel)    ! Brinkman parameter (eq. 3.9)
           epsil = 1.0_f - brinkman**(-1.)*tanh(brinkman)                    !
           omega = 2.0_f/3.0_f*epsil/(2.0_f/3.0_f+epsil/brinkman**2.0_f)     ! drag coefficient (eq. 2.7)
           rp = rf * omega
@@ -202,7 +206,7 @@ subroutine setupbins(carma, rc)
       endif
    enddo
   enddo
-  
+
   !  Evaluate differences between valuse of <rmass> in different bins.
   do igrp = 1, NGROUP
    do jgrp = 1, NGROUP
@@ -213,7 +217,7 @@ subroutine setupbins(carma, rc)
     enddo
    enddo
   enddo
-  
+
   !  Report some initialization values
   if (do_print_init) then
     write(LUNOPRT,5)
@@ -229,7 +233,7 @@ subroutine setupbins(carma, rc)
     write(LUNOPRT,1) 'ncore  ',(ncore(i),i=1,NGROUP)
     write(LUNOPRT,7) 'fractal',(is_grp_fractal(i),i=1,NGROUP)
   end if
- 
+
   !  Return to caller with particle grid initialized
   return
 end
