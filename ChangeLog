@@ -1,4 +1,32 @@
 ===============================================================
+Tag name: carma4_10
+Originator(s): tilmes, zywshoon
+Date: 5 Aug 2025
+
+Address following issues:
+
+issue #54
+ Variable pcl should be set up after vertical so coagulation use the correct pcl for its calculation.
+
+issue #55
+ Wet radius calculation did not include changes in the density of the particle and instead used a dry
+ radius based on the concentration element density. We are introducing a new calculation of the dry
+ radius rdry_mid that includes the rhodry variable of the particles.
+
+issue #56
+ New optional variable to be used in CARMAGROUP_Create to allow the density of the group to be defined
+ differently than the density of the concentration element.
+
+M       carma_globaer.h
+M       carma_types_mod.F90
+M       carmagroup_mod.F90
+M       newstate.F90
+M       rhopart.F90
+M       setupbins.F90
+M       setupckern.F90
+M       wetr.F90
+
+===============================================================
 Tag name: carma4_09
 Originator(s):  C Bardeen
 Date: 3 Dec 2024
