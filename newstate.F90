@@ -24,6 +24,7 @@ subroutine newstate(carma, cstate, rc)
   integer, intent(inout)               :: rc      !! return code, negative indicates failure
 
   real(kind=f)                    :: pc_orig(NZ,NBIN,NELEM)
+  real(kind=f)                    :: pcl_orig(NZ,NBIN,NELEM)
   real(kind=f)                    :: gc_orig(NZ,NGAS)
   real(kind=f)                    :: t_orig(NZ)
   real(kind=f)                    :: cldfrc_orig(NZ)
@@ -54,7 +55,8 @@ subroutine newstate(carma, cstate, rc)
     if (rc < RC_OK) return
   endif
 
-  call fixcorecol(carma, cstate, rc)
+  ! pc was changed by vertical, therefore we want to change pcl to pc before it is used by coagulation
+  pcl(:,:,:)  = pc(:,:,:)
 
   ! There can be two phases to the microphysics: in-cloud and clear sky. Particles
   ! that are tagged as "In-cloud" will only be processed in the in-cloud loop, and their
@@ -79,6 +81,7 @@ subroutine newstate(carma, cstate, rc)
     ! particle is in the incloud portion of the grid box. Particle that are not "cloud
     ! particles" have their mass spread throughout the grid box.
     pc_orig(:,:,:) = pc(:,:,:)
+    pcl_orig(:,:,:) = pcl(:,:,:)
     gc_orig(:,:)   = gc(:,:)
     t_orig(:)      = t(:)
 
@@ -94,6 +97,7 @@ subroutine newstate(carma, cstate, rc)
       if (is_grp_cloud(igroup)) then
         do ibin = 1, NBIN
           pc(:, ibin, ielem)  = pc(:, ibin, ielem)  / scale_cldfrc(:)
+          pcl(:, ibin, ielem)  = pcl(:, ibin, ielem) / scale_cldfrc(:)
           pcd(:, ibin, ielem) = pcd(:, ibin, ielem) / scale_cldfrc(:)
         end do
       end if
@@ -102,14 +106,16 @@ subroutine newstate(carma, cstate, rc)
     call newstate_calc(carma, cstate, scale_cldfrc(:), rc)
     if (rc < RC_OK) return
 
-    call fixcorecol(carma, cstate, rc)
-
     ! Save the new in-cloud values for the gas, particle and temperature fields.
     pc_cloudy(:,:,:)    = pc(:,:,:)
     gc_cloudy(:,:)      = gc(:,:)
     t_cloudy(:)         = t(:)
-    rlheat_cloudy(:)    = rlheat(:)
-    partheat_cloudy(:)  = partheat(:)
+
+    if (do_grow) then
+      rlheat_cloudy(:)    = rlheat(:)
+      partheat_cloudy(:)  = partheat(:)
+    endif
+
 
     if (do_substep) zsubsteps_cloudy(:) = zsubsteps(:)
 
@@ -117,6 +123,7 @@ subroutine newstate(carma, cstate, rc)
     ! This is optional. If clear sky is not selected then all of the microphysics is
     ! done in-cloud.
     pc(:,:,:) = pc_orig(:,:,:)
+    pcl(:,:,:) = pcl_orig(:,:,:)
     gc(:,:)   = gc_orig(:,:)
     t(:)      = t_orig(:)
 
@@ -132,6 +139,7 @@ subroutine newstate(carma, cstate, rc)
 
         if (is_grp_cloud(igroup)) then
           pc(:, :, ielem)  = 0._f
+          pcl(:, :, ielem)  = 0._f
           pcd(:, :, ielem) = 0._f
         end if
       end do
@@ -153,8 +161,6 @@ subroutine newstate(carma, cstate, rc)
       call newstate_calc(carma, cstate, (1._f - scale_cldfrc(:)), rc)
       if (rc < RC_OK) return
 
-      call fixcorecol(carma, cstate, rc)
-
       ! Restore the cloud fraction
       cldfrc(:) = cldfrc_orig(:)
 
@@ -162,8 +168,12 @@ subroutine newstate(carma, cstate, rc)
       pc_clear(:,:,:)     = pc(:,:,:)
       gc_clear(:,:)       = gc(:,:)
       t_clear(:)          = t(:)
-      rlheat_clear(:)     = rlheat(:)
-      partheat_clear(:)   = partheat(:)
+
+      if (do_grow) then
+        rlheat_clear(:)     = rlheat(:)
+        partheat_clear(:)   = partheat(:)
+      endif
+
 
       if (do_substep) zsubsteps_clear(:) = zsubsteps(:)
 
@@ -240,8 +250,6 @@ subroutine newstate(carma, cstate, rc)
     scale_threshold(:) = 1._f
     call newstate_calc(carma, cstate, scale_threshold, rc)
     if (rc < RC_OK) return
-
-    call fixcorecol(carma, cstate, rc)
   end if
 
   ! Return to caller with new state computed

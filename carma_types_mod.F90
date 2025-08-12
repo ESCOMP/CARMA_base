@@ -147,6 +147,7 @@ module carma_types_mod
     !   rmrat       Ratio of masses of particles in consecutive bins
     !   eshape      Ratio of particle length / diameter
     !   r           Radius bins [cm]
+    !   rho         Mass density of particle group [g/cm^3]
     !   rmass       Mass bins [g]
     !   rrat        Ratio of maximum diameter to diameter of equivalent sphere
     !   rprat       Ratio of mobility diameter of a porous particle to diameter of equivlent sphere
@@ -201,6 +202,7 @@ module carma_types_mod
     real(kind=f)                                :: f_eshape
     real(kind=f), allocatable, dimension(:)     :: f_r          ! (NBIN)
     real(kind=f), allocatable, dimension(:)     :: f_rmass      ! (NBIN)
+    real(kind=f), allocatable, dimension(:)     :: f_rho        ! (NBIN)
     real(kind=f), allocatable, dimension(:)     :: f_vol        ! (NBIN)
     real(kind=f), allocatable, dimension(:)     :: f_dr         ! (NBIN)
     real(kind=f), allocatable, dimension(:)     :: f_dm         ! (NBIN)

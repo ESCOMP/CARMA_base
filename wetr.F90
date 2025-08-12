@@ -18,7 +18,7 @@ contains
   !!
   !! @author  Chuck Bardeen, Pete Colarco
   !! @version May-2009 from Nov-2000
-  subroutine getwetr(carma, igroup, rh, rdry, rwet, rhopdry, rhopwet, rc, h2o_mass, h2o_vp, temp, kappa, wgtpct)
+  subroutine getwetr(carma, igroup, ibin, rh, rdry_init, rwet, rhopdry, rhopwet, rc, h2o_mass, h2o_vp, temp, kappa, wgtpct)
 
     ! types
     use carma_precision_mod
@@ -33,8 +33,9 @@ contains
 
     type(carma_type), intent(in)         :: carma   !! the carma object
     integer, intent(in)                  :: igroup  !! group index
+    integer, intent(in)                  :: ibin    !! bin number
     real(kind=f), intent(in)             :: rh      !! relative humidity
-    real(kind=f), intent(in)             :: rdry    !! dry radius [cm]
+    real(kind=f), intent(in)             :: rdry_init    !! dry radius [cm] based on concentration element density 
     real(kind=f), intent(out)            :: rwet    !! wet radius [cm]
     real(kind=f), intent(in)             :: rhopdry !! dry radius [cm]
     real(kind=f), intent(out)            :: rhopwet !! wet radius [cm]
@@ -52,6 +53,8 @@ contains
     real(kind=f)            :: sigkelv, sig1, sig2, dsigma_dwt
     real(kind=f)            :: rkelvinH2O_a, rkelvinH2O_b, rkelvinH2O, h2o_kelv
     real(kind=f)            :: rh190
+    real(kind=f)            :: rdry     !! dry radius [cm] including composition 
+    real(kind=f)            :: rdry_mid     !! mid-point dry radius [cm] including composition 
 
 
     ! The following parameters relate to the swelling of seasalt like particles
@@ -79,6 +82,11 @@ contains
 
     ! If humidty affects the particle, then determine the equilbirium
     ! radius and density based upon the relative humidity.
+
+
+    rdry_mid = ((3._f * rmass(ibin,igroup)) / (4._f * pi * rhopdry))**(1._f/3._f)
+    rdry = rdry_init/r(ibin,igroup) * rdry_mid
+
     if (irhswell(igroup) == I_NO_SWELLING) then
 
       ! No swelling, just use the dry values.
