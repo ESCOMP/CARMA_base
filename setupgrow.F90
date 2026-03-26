@@ -100,6 +100,31 @@ subroutine setupgrow(carma, cstate, rc)
       rlhm(k,igash2so4) = rlhe(k, igash2o)
     end if
 
+    ! Properties for NH3
+    if (igasnh3 /= 0) then
+      ! Diffusivity
+      rhoa_cgs = rhoa(k) / zmet(k)
+      aden     = rhoa_cgs * AVG / WTMOL_AIR
+      diffus(k,igasnh3) = 1.76575e+17_f * sqrt(t(k)) / aden
+
+      ! HACK: make NH3 latent heats same as water
+      rlhe(k,igasnh3) = rlhe(k, igash2o)
+      rlhm(k,igasnh3) = rlhe(k, igash2o)
+    end if
+
+    ! Properties for HNO3
+    if (igashno3 /= 0) then
+      ! Diffusivity 
+      ! zhu 2014 6 the idea is Dhno3=C*DH2o, and C = 0.466 which make 
+      ! the Dhno3 match Dh2o in room temperature and pressure experiment.
+      diffus(k,igashno3) = 0.211_f * (1.01325e+6_f / p(k)) * &
+                           (t(k) / 273.15_f )**1.94_f*0.466_f
+
+      ! HACK: make HNO3 latent heats same as water
+      rlhe(k,igashno3) = rlhe(k, igash2o)
+      rlhm(k,igashno3) = rlhe(k, igash2o)
+    end if
+
   enddo
 
 #ifdef CARMA_DEBUG

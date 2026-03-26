@@ -111,8 +111,8 @@ subroutine setupgkern(carma, cstate, rc)
       akelvini(:,igas) = 2._f*gwtmol(igas)*surfctia(:) &
                         / ( t(:)*RHO_W*RGAS )
 
-    ! condensing gas is H2SO4
-    else if (igas .eq. igash2so4) then
+    ! condensing gas is H2SO4; if NH3, use the same as H2SO4
+    else if (igas .eq. igash2so4 .or. igas .eq. igasnh3) then
 
       ! Calculate Kelvin curvature factor for H2SO4 interactively with temperature:
       do k = 1, NZ
@@ -124,6 +124,30 @@ subroutine setupgkern(carma, cstate, rc)
         ! for water vapor.
         akelvini(k, igas) = akelvini(k, igash2o)
       end do
+      
+    ! condensing gas is HNO3
+    else if (igas .eq. igashno3) then
+      ! Calculate Kelvin curvature factor for H2SO4 interactively with temperature:
+      do k = 1, NZ
+        if(wtpct(k) .ge. 65._f .or. t(k) .gt. 200._f)then
+          surf_tens = sulfate_surf_tens(carma, wtpct(k), t(k), rc)
+          rho_H2SO4 = sulfate_density(carma,wtpct(k),t(k),rc)
+        else
+          surf_tens = ternary_surf_tens(carma,wtpct(k),min(wtpct_hno3(k),45._f),t(k),rc)
+          rho_H2SO4 = ternary_density(carma,wtpct(k),min(wtpct_hno3(k),45._f),t(k),rc)
+        end if
+        akelvin(k, igas) = 2._f * gwtmol(igas) * surf_tens / (t(k) * rho_H2SO4 * RGAS)
+        !! Not doing condensation of h2So4 on ice, so just set it to the value
+        !! for water vapor.
+        !if(t(k) .lt. 200._f)then
+        !  surf_tens = NAT_surf_tens(carma,t(k),rc)
+        ! rho_H2SO4 = 1.35
+        ! akelvini(k, igas) = 2._f * gwtmol(igas) * surf_tens / (t(k) * rho_H2SO4 * RGAS)
+        !else
+        akelvini(k, igas) = akelvini(k, igash2o)
+        !end if
+      end do
+  
     else
 
       ! Condensing gas is not yet configured.
@@ -195,7 +219,11 @@ subroutine setupgkern(carma, cstate, rc)
 
     ! condensing gas is <igas>
     igas = igrowgas(ielem)
-
+    
+    ! check if the last core elements grow.
+    !Because we set up the GROWCORE as the last elements.
+    if(igas .eq. 0 .and. ncore(igroup) .ne. 0) igas = igrowgas(ielem+ncore(igroup))
+    
     ! If the group doesn't grow, but is involved in aerosol
     ! freezing, then the gas properties still need to be calculated.
     if( igas .eq. 0 ) igas = inucgas(igroup)

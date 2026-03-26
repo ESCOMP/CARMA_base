@@ -75,7 +75,8 @@ subroutine upgxfer(carma, cstate, iz, ibin, ielem, rc)
           itype(iefrom) .eq. I_VOLATILE )then
         ipow_from = 0
       elseif ( itype(iefrom) .eq. I_COREMASS .or. &
-               itype(iefrom) .eq. I_VOLCORE )then
+               itype(iefrom) .eq. I_VOLCORE .or. &
+               itype(ielem) .eq. I_GROWCORE)then
         ipow_from = 1
       else
         ipow_from = 2
@@ -85,7 +86,8 @@ subroutine upgxfer(carma, cstate, iz, ibin, ielem, rc)
           itype(ielem) .eq. I_VOLATILE )then
         ipow_to = 0 
       elseif ( itype(ielem) .eq. I_COREMASS .or. &
-               itype(ielem) .eq. I_VOLCORE )then
+               itype(ielem) .eq. I_VOLCORE .or. &
+          itype(iefrom) .eq. I_GROWCORE)then
         ipow_to = 1 
       else
         ipow_to = 2 

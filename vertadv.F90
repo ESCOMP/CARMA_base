@@ -2,8 +2,8 @@
 ! reference the CARMA structure.
 #include "carma_globaer.h"
 
-!!  This routine calculates vertrical advection rates using
-!!  Piecewise Polynomial Method [Colela and Woodard, J. Comp. Phys.,
+!!!  This routine calculates vertical advection rates using
+!!  Piecewise Polynomial Method [Colella and Woodward, J. Comp. Phys.,
 !!  54, 174-201, 1984]
 !!
 !! @author Eric Jensen

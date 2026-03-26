@@ -89,6 +89,7 @@ subroutine setupbins(carma, rc)
       ielem = ielem + 1
 
       if( itype(ielem) .eq. I_COREMASS .or. &
+          itype(ielem) .eq. I_GROWCORE .or. &
           itype(ielem) .eq. I_VOLCORE )then
 
         ncore(igrp) = ncore(igrp) + 1

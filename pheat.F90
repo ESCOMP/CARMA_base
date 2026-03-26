@@ -47,7 +47,7 @@ subroutine pheat(carma, cstate, iz, igroup, iepart, ibin, igas, dmdt, rc)
   integer, intent(in)                  :: iepart  !! group's concentration element index
   integer, intent(in)                  :: ibin    !! bin index
   integer, intent(in)                  :: igas    !! gas index
-  real(kind=f), intent(out)            :: dmdt    !! particle growth rate (g/s)
+  real(kind=f), intent(inout)            :: dmdt    !! particle growth rate (g/s)
   integer, intent(inout)               :: rc      !! return code, negative indicates failure
 
   ! Local declarations
@@ -62,6 +62,7 @@ subroutine pheat(carma, cstate, iz, igroup, iepart, ibin, igas, dmdt, rc)
   integer                              :: ieoth_abs
   integer                              :: jother
   integer                              :: isol
+  integer                              :: jbin
   real(kind=f)                         :: otherm(NELEM)
   real(kind=f)                         :: argsol
   real(kind=f)                         :: othermtot
@@ -85,6 +86,11 @@ subroutine pheat(carma, cstate, iz, igroup, iepart, ibin, igas, dmdt, rc)
   real(kind=f)                         :: ddtp                    ! change in particle temperature in last iteration (K)
   real(kind=f)                         :: plkint                  ! planck intensity
   
+  real(kind=f)  :: gc_cgs, rvap  
+  integer            :: jesub,jelemg,jcoregas
+  real(kind=f)       :: totalcoremass, pcnh3,pch2so4,pchno3
+  real(kind=f)       :: pcAN,gcAN,dmdt_AN
+
   ! <akas> is combined kelvin (curvature) and solute factors.
   !
   ! Ignore solute factor for ice particles.
@@ -128,7 +134,7 @@ subroutine pheat(carma, cstate, iz, igroup, iepart, ibin, igas, dmdt, rc)
       enddo
   
       condm = rmass(ibin,igroup) * pc(iz,ibin,iepart) - othermtot
-      condv = min(0._f, (rmass(ibin,igroup) / rhoelem(ibin,iepart)) - othervtot)
+      condv = max(0._f, (rmass(ibin,igroup) / rhoelem(ibin,iepart)) - othervtot)
   
       if( condm .le. 0._f )then
   
@@ -177,48 +183,139 @@ subroutine pheat(carma, cstate, iz, igroup, iepart, ibin, igas, dmdt, rc)
     pvap = pvapl(iz,igas)
   endif
 
-
+  dmdt = 0._f
   ! If particle heating is being considered, then determine qrad and tpart to
   ! determine dmdt.
   !
   ! NOTE: If no optical properties, then can't do the particle heating calculation.
   if ((.not. do_pheat) .or. (.not. do_mie(igroup))) then
-
-    ! Ignore the qrad term.
+    ! general equation, Ignore the qrad term.
     dmdt = pvap * ( ss + 1._f - akas ) * g0 / ( 1._f + g0 * g1 * pvap )
-                     
-    ! Is neutralization set up for the group?
-    if (neutral_volfrc(igroup) > 0._f) then
+    !write(*,*) "pheat: dmdt",dmdt,pvap
     
-      ! When the particle is less than fully neutralized, calculate a new
-      ! dmdt based upon assuming that the saturation vapor pressure (pvap)
-      ! is 0.
-      if (volfrc >= neutral_volfrc(igroup)) then
-        dmdt = max((pvap * (ss + 1._f)) * g0, dmdt)
-      else
+    !----------- H2SO4 -----------
+    ! Ignore the qrad term.
+    ! if the group has one element and the growing gas is H2SO4; pure sulfate group
+    if(ncore(igroup) .eq. 0 .and. igas .eq. igash2so4)then
+      dmdt = pvap * ( ss + 1._f - akas ) * g0 / ( 1._f + g0 * g1 * pvap )
+    endif
 
-        ! You can only lose sulfuric acid (condensed) mass until the volume fraction
-        ! for neutralization is reached. At that point the particle is fully
-        ! neutralized and the vapor pressure goes to 0. The volume of condensed gas
-        ! in excess of full neutralization is:
-        !
-        !  condv - othervtot * ((1 - neutral_volfrc) / neutral_volfrc)
-        !
-        ! NOTE: Limit the growth rate so that the neutralized volume fraction is
-        ! not overshot. Test have shown that this requires reducing the rate by a
-        ! factor of 2; although, other values probably work too.
-        dmdt = max(-(condv - othervtot * ((1._f - neutral_volfrc(igroup)) / neutral_volfrc(igroup))) &
+    ! mixed particle group, core has more than 0 element; mixed sulfate group
+    if (ncore(igroup) .gt. 0 .and. igas .eq. igash2so4) then
+      dmdt = pvap * ( ss + 1._f - akas ) * g0 / ( 1._f + g0 * g1 * pvap )
+      ! Is neutralization set up for the group?
+      if (neutral_volfrc(igroup) > 0._f) then
+    
+        ! When the particle is less than fully neutralized, calculate a new
+        ! dmdt based upon assuming that the saturation vapor pressure (pvap)
+        ! is 0.
+        if (volfrc >= neutral_volfrc(igroup)) then
+          dmdt = max((pvap * (ss + 1._f)) * g0, dmdt)
+        else
+
+          ! You can only lose sulfuric acid (condensed) mass until the volume fraction
+          ! for neutralization is reached. At that point the particle is fully
+          ! neutralized and the vapor pressure goes to 0. The volume of condensed gas
+          ! in excess of full neutralization is:
+          !
+          !  condv - othervtot * ((1 - neutral_volfrc) / neutral_volfrc)
+          !
+          ! NOTE: Limit the growth rate so that the neutralized volume fraction is
+          ! not overshot. Test have shown that this requires reducing the rate by a
+          ! factor of 2; although, other values probably work too.
+          dmdt = max(-(condv - othervtot * ((1._f - neutral_volfrc(igroup)) / neutral_volfrc(igroup))) &
                     * rhoelem(ibin,iepart) / 2._f / dtime, &
                    dmdt)
+        end if
+      else if(neutral_volfrc(igroup) .eq. -1._f)then
+        ! The particle does not evaporate due to neutralization.
+        ! for example, in trop_strat model, the sulfate does not 
+        ! evaporate in the mixed particles, because it is assumed
+        ! that it is neutralized by ammonia.
+        dmdt = max((pvap * (ss + 1._f)) * g0, dmdt)
+        !write(*,*) "igroup",igroup," in pheat.F90:neutral_volfrc"
       end if
-    elseif(neutral_volfrc(igroup) .eq. -1._f)then
-      ! The particle does not evaporate due to neutralization.
-      ! for example, in trop_strat model, the sulfate does not 
-      ! evaporate in the mixed particles, because it is assumed
-      ! that it is neutralized by ammonia.
-      dmdt = max((pvap * (ss + 1._f)) * g0, dmdt)
-      !write(*,*) "igroup",igroup," in pheat.F90:neutral_volfrc"
+      gc_cgs = gc(iz,igas)/zmet(iz)
+      if(gc_cgs .lt. 1.e-18_f) dmdt = 0._f 
     end if
+
+    ! test: limit pressure level to lower stratosphere
+    if(cstate%f_p(iz) .lt. 200000._f .and. cstate%f_p(iz) .gt. 30000._f) then
+    !---------------- HNO3 -----------------
+    if (ncore(igroup) .gt. 0 .and. igas .eq. igashno3) then
+      rvap = RGAS / gwtmol(igas)
+      gc_cgs = gc(iz,igas)/zmet(iz)
+      !dmdt = 0._f
+      dmdt = g0 * (gc_cgs * RGAS / gwtmol(igas) * t(iz) - pvap*akas)/(1._f + g0 * g1 * pvap)
+
+      !------------------ zhu 2023 08 ----------------
+      ! calculate total H2SO4,NH3 and HNO3 mass concentration
+      if (dmdt .lt. 0) then ! if particle is evaporating, we check if we should let it stay because of AN
+        totalcoremass = 0._f
+        pcnh3 = 0._f
+        pchno3 = 0._f
+        do jelemg = 2,nelemg(igroup)
+          jesub = jelemg - 1 + iepart
+          jcoregas = igrowgas(jesub)
+          do jbin = 1,NBIN
+            totalcoremass = totalcoremass+pc(iz,jbin,jesub)
+            if(jcoregas .eq. igasnh3) pcnh3 = pcnh3 + pc(iz,jbin,jesub)
+            if(jcoregas .eq. igashno3) pchno3 = pchno3 + pc(iz,jbin,jesub)
+          end do
+        end do
+        pch2so4 = 0._f
+        do jbin = 1,NBIN
+          pch2so4 = pch2so4 + pc(iz,jbin,iepart)*rmass(jbin,igroup) &
+                  +pc(iz,jbin,1)*rmass(jbin,1) ! add h2so4 mass from group1
+        end do
+        pch2so4 = pch2so4-totalcoremass
+        pch2so4 = max(pch2so4,0._f)
+        ! if cond HNO3 is lower than the AN that should be there, we let the particle grow
+        if(t(iz) .lt. 230._f .and. t(iz) .gt. 180._f) then
+          if(t(iz) .gt. 198._f)then
+            ! assuming forming (NH4)3H(SO4)2 first the rest forming NH4NO3
+            pcAN = (pcnh3-pch2so4*17._f/98._f*3./2.)*63._f/17._f
+            if(pchno3 .lt. pcAN)then ! this means condensed hno3 is less than AN that should be there
+              !preventing HNO3 gas goes negative; stop growing if 99% of HNO3 is in solid phase
+              if(gc(iz,igas) .gt. pchno3*0.01_f)then
+                dmdt = g0 * (pcAN-pchno3)/10._f/zmet(iz) * RGAS / gwtmol(igas) * &
+                   t(iz)/(1._f + g0 * g1 * pvap)
+              else
+                dmdt = 0._f
+              end if
+            end if
+          else ! if temperature lower than 198K, AS deliquescence
+            pcAN = pcnh3*63._f/17._f
+            if(pchno3 .lt. pcAN)then
+              !preventing HNO3 gas goes negative; stop growing if 99% of HNO3 is in solid phase
+              if(gc(iz,igas) .gt. pchno3*0.01_f)then
+                dmdt = g0 * (pcAN-pchno3)/10._f/zmet(iz) * RGAS / gwtmol(igas) &
+                      * t(iz)/(1._f + g0 * g1 * pvap)
+              else
+                dmdt = 0._f
+              end if
+            end if
+          end if !198K
+        end if  !180-230K
+      end if
+        
+      !------------------ zhu 2023 08 ----------------
+    endif     ! igroup = 2 and igas = HNO3
+                                                
+    !------------------- NH3 --------------------
+    if (ncore(igroup) .gt. 0 .and. igas .eq. igasnh3) then
+      dmdt = 0._f
+      rvap = RGAS / gwtmol(igas)
+      gc_cgs = gc(iz,igas) / zmet(iz)
+
+      ! cold environment, assume vapor pressure of NH3 is zero
+      ! suggested by Brian Toon and Maggie Tolbert
+      ! NH3(g) condenses each time hits one mixed particle
+      if(cstate%f_t(iz) .lt. 230._f .and. gc_cgs .gt. 1.e-18_f)then
+        dmdt = g0 * gc_cgs * rvap * t(iz)
+      endif        
+    endif ! igroup = 2 and igas = NH3
+    end if !p(iz) limitation
   else
   
     ! Latent heat of condensing gas 

@@ -51,7 +51,7 @@ subroutine evapp(carma, cstate, iz, rc)
     ip = ienconc(ig)
 
     ! No evaporation unless particles are volatile
-    if( itype(ip) .eq. I_VOLATILE )then
+    if(itype(ip+ncore(ig)) .ne. I_GROWCORE)then
 
       ! Make sure that these always get intializaed, since they can
       ! cause problems in other parts of the code if they aren't.     
@@ -191,6 +191,42 @@ subroutine evapp(carma, cstate, iz, rc)
           endif            ! evaplg > 0
         enddo              ! ibin=1,NBIN
       endif                ! enough particles
+
+    elseif(itype(ip+ncore(ig)) .eq. I_GROWCORE)then
+      ! if the first element is not volatile and the last core element is volatile core
+      totevap(:,ig) = .false.
+      cmf(:,ig)     = 0._f
+
+      if (pconmax(iz, ig) > FEW_PC) then
+
+        ic1 = icorelem(ncore(ig),ig)
+
+        ! Loop over source bins and calculate temporary evaporation source
+        ! for droplets in next smaller bin assuming no total evaporation <evdrop>
+        do ibin = 1, NBIN
+          evdrop = pc(iz,ibin,ip)*evaplg(ibin,ig)
+
+          ! Check for evaporation of a sufficient number of droplets
+          ! if( evdrop .gt. 0._f .and. pc(iz,ibin,ip) .gt. SMALL_PC )then
+          if( evdrop .gt. 0._f )then
+
+            ! No cores: transfer droplets within group
+            if( ic1 .eq. 0 )then
+              call evap_ingrp(carma,cstate,iz,ibin,ig,ip,rc)
+            else
+
+              ! First core is not involatile (therefore none are)
+              ! -- this is a hack until enforced/checked in setupbins() --
+              ! transfer droplets within group
+              !
+              if( itype(ic1) .eq. I_GROWCORE )then
+                 call evap_ingrp(carma,cstate,iz,ibin,ig,ip,rc)
+              endif
+            endif
+          endif
+        enddo
+      endif
+
     endif                  ! volatile particles
   enddo                    ! ig=1,NGROUP
 

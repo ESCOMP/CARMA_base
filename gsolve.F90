@@ -56,6 +56,9 @@ subroutine gsolve(carma, cstate, iz, previous_ice, previous_liquid, scale_thresh
     ! This is because in the old scheme, the particles were solved for implicitly, but the
     ! gas and latent heat were solved for explicitly using the same rates.
     gasprod(igas) = ((previous_ice(igas) - total_ice(igas)) + (previous_liquid(igas) - total_liquid(igas))) / dtime
+    if(abs(previous_ice(igas)-total_ice(igas)+previous_liquid(igas)-total_liquid(igas)) &
+         .lt. (previous_ice(igas)+previous_liquid(igas))*1.e-10) gasprod(igas) = 0._f
+         
     rlprod        = rlprod - ((previous_ice(igas) - total_ice(igas)) * (rlhe(iz,igas) + rlhm(iz,igas)) + &
                        (previous_liquid(igas) - total_liquid(igas)) * (rlhe(iz,igas))) / (CP * rhoa(iz) * dtime)
 

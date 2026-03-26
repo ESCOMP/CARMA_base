@@ -98,7 +98,8 @@ subroutine coagp(carma, cstate, ibin, ielem, rc)
           i_pkern = 1
 
           if( itype(ielem) .eq. I_COREMASS .or. &
-              itype(ielem) .eq. I_VOLCORE )then          ! core mass
+              itype(ielem) .eq. I_VOLCORE .or. &
+              itype(ielem) .eq. I_GROWCORE)then          ! core mass
 
             i_pkern = 3        ! Use different kernel for core mass prod.
 
@@ -200,7 +201,8 @@ subroutine coagp(carma, cstate, ibin, ielem, rc)
           i_pkern = 2
 
           if( itype(ielem) .eq. I_COREMASS .or. &
-              itype(ielem) .eq. I_VOLCORE )then          ! core mass
+              itype(ielem) .eq. I_VOLCORE .or. &
+              itype(ielem) .eq. I_GROWCORE)then          ! core mass
 
             i_pkern = 4     ! Use different kernel for core mass production
 

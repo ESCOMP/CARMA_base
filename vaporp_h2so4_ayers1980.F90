@@ -40,6 +40,7 @@ subroutine vaporp_H2SO4_Ayers1980(carma, cstate, iz, rc, pvap_liq, pvap_ice)
   real(kind=f)            :: factor_kulm                     ! Kulmala correction terms
   real(kind=f)            :: en, temp
   real(kind=f)            :: sulfeq
+  real(kind=f)            :: wtpct_h2so4_total, wtpct_hno3_total
   real(kind=f), parameter :: t0_kulm     = 340._f            !  T0 set in the low end of the Ayers measurement range (338-445K)
   real(kind=f), parameter :: t_crit_kulm = 905._f            !  Critical temperature = 1.5 * Boiling point
   real(kind=f), parameter :: fk0         = -10156._f / t0_kulm + 16.259_f   !  Log(Kulmala correction factor)
@@ -57,8 +58,20 @@ subroutine vaporp_H2SO4_Ayers1980(carma, cstate, iz, rc, pvap_liq, pvap_ice)
 
   ! Compute the sulfate composition based on Hanson parameterization
   ! to temperature and water vapor concentration.
-  wtpct(iz) = wtpct_tabaz(carma, temp, gc_cgs, pvapl(iz, igash2o), rc)
-
+  !wtpct(iz) = wtpct_tabaz(carma, temp, gc_cgs, pvapl(iz,ibin,igash2o), rc)
+  !call wtpct_luo_mix(carma, cstate, iz, rc, ibin, wtpct(iz,ibin), wtpct_hno3(iz,ibin))
+  if (t(iz) .lt. 195._f)then
+     call wtpct_luo_total(carma, cstate, iz, rc, wtpct(iz), wtpct_hno3(iz))
+     !wtpct(iz) = wtpct_tabaz(carma, temp, gc_cgs, pvapl(iz,igash2o), rc)
+     !call wtpct_luo_total(carma, cstate, iz, rc, wtpct_h2so4_total, wtpct_hno3_total)
+     !write(*,*) "wtpct(iz)",wtpct(iz),"wtpct_hno3(iz)",wtpct_hno3(iz)
+  else
+     wtpct(iz) = wtpct_tabaz(carma, temp, gc_cgs, pvapl(iz,igash2o), rc)
+     !write(*,*) "wtpct(iz)",wtpct(iz)
+     !wtpct_h2so4_total = wtpct_tabaz(carma, temp, gc_cgs, pvapl(iz,ibin,igash2o), rc)
+  end if
+  if (rc < 0) return
+  
   ! Parameterized fit to Giauque's (1959) enthalpies v. wt %:
   en = 4.184_f * (23624.8_f - 1.14208e8_f / ((wtpct(iz) - 105.318_f)**2 + 4798.69_f))
   en = max(en, 0.0_f)

@@ -279,5 +279,207 @@ contains
   
     return
   end function sulfate_surf_tens
-            
+  
+  function ternary_surf_tens(carma,WTP1,WTP2,TEMP,rc)
+!  @(#) ternary_surf_tens.f   Zhu  Sep-2009  modify 5/2010
+!  reference: E. Martin, et al.,2000. Geophy.Res.Letters.     
+!  Calculates surface tension (erg/cm2) of ternary solution as a function 
+!  of temperature and weight percent of different species.
+!
+!  parameterized our results using a polynomial equation
+!   gamma(x,y)=(sum(gamma(i,j)*x(i)*y(j))[i,j = 0,5])/(gamma0+gamma1*x+gamma2*y)
+!
+!
+!  Argument list input:
+!     WTP1 = aerosol composition in weight % H2SO4 (0-100)
+!     WTP2 = aerosol composition in weight % HNO3 (0-100)
+!     TEMP = temperature in Kelvin
+!
+!  Output:
+!     ternary solution surface tension (g/cm3) [function name]
+!
+!
+!  Include global constants and variables
+!
+      
+!  coefficients in a Polynomial Expansion of the surface 
+!  tension of H2SO4/HNO3/H2O solution.  
+!  at 293K and 253K seperately  
+    type(carma_type), intent(in)         :: carma   !! the carma object
+    integer, intent(inout)               :: rc      !! return code, negative indicates failure
+
+    real(kind=f)                         :: ternary_surf_tens
+    real(kind=f), intent(in)             :: WTP1     !! weight percent
+    real(kind=f), intent(in)             :: WTP2    !! weight percent 
+    real(kind=f), intent(in)             :: TEMP    !! temperature    
+ 
+    integer 			:: i,j
+    real(kind=f)		:: gammaij293(36), gammaij253(36)
+    real(kind=f)		:: gamma0_293, gamma0_253
+    real(kind=f)		:: gamma1_293, gamma1_253
+    real(kind=f)		:: gamma2_293, gamma2_253
+    real(kind=f)               ::  total293     !total of <gammaij>*<wtpct of HNO3>*<wtpct of H2SO4>
+    real(kind=f)               ::  total253
+    real(kind=f)               ::  gamma293
+    real(kind=f)               ::  gamma253   
+ 
+    data gammaij293/72010000._f, 3893000._f,  97360._f, -1832._f,   12.82_f,  0.1076_f,&
+     &     1073000._f,  0._f,        0._f,       0._f,    -0.2811_f,   0._f,&
+     &     8580._f,     0._f,        0._f,      0.3358_f,  0._f,       0._f,&
+     &     -103.6_f,    0._f,      -0.1866_f, 	  0._f,    0._f,       0._f,&
+     &     2.27_f,    0.004895_f,    0._f,         0._f,   0._f,       0._f,&
+     &     -0.02333_f,  0._f,        0._f,        0._f,    0._f,       0._f/ 
+     
+    data gammaij253/36010000._f, 589400._f,  53970._f,    -2994._f,     69.19_f,   -0.5648_f,&
+     &     812700._f,    0._f,        0._f,      0._f,      0.01001_f,     0._f,&
+     &     21940._f,     0._f,        0._f,   -0.09681_f,     0._f,        0._f,&
+     &     -455.4,       0._f,     0.08724_f,    0._f,        0._f,        0._f,&
+     &     7.115_f,   -0.03648_f,     0._f,      0._f,        0._f,        0._f,&
+     &     -0.04483_f,   0._f,        0._f,      0._f,        0._f,        0._f/
+      
+    gamma0_293 = 9.949_f*100._f
+    gamma0_253 = 6.726_f*100._f
+    gamma1_293 = 7.321_f
+    gamma1_253 = 9.692_f
+    gamma2_293 = 2.917_f*10._f
+    gamma2_253 = 8.276_f
+     
+    if (WTP1 .LT. 0.0 .OR. WTP1 .GT. 100.0) then
+      print *,'ternary_surf_tens: Illegal value for wtp_h2so4:',WTP1
+      print *,'ternary_surf_tens: temp=',temp
+      rc = RC_ERROR
+	  return
+    endif
+      
+    if (WTP2 .LT. 0.0 .OR. WTP2 .GT. 100.0) then
+      print *,'ternary_surf_tens: Illegal value for wtp_hno3:',WTP2
+      print *,'ternary_surf_tens: temp=',temp
+      rc= RC_ERROR
+	  return
+    endif
+      
+    ! get the ternary surface tension in 293K and 253K
+    total293 = 0.0_f     !total of <gammaij>*<wtpct of HNO3>*<wtpct of H2SO4>
+    total253 = 0.0_f
+    gamma293 = 0.0_f
+    gamma253 = 0.0_f
+      
+    do i = 0,5
+      do j= 0,5
+        total293 = total293+gammaij293(6*i+j+1)*(WTP1**i)*(WTP2**j)
+        total253 = total253+gammaij253(6*i+j+1)*(WTP1**i)*(WTP2**j)
+      enddo
+    enddo
+    gamma293 = total293 / ((gamma0_293 + gamma1_293 * WTP1 + gamma2_293 * WTP2)**2._f)
+    gamma253 = total253 / ((gamma0_253 + gamma1_253 * WTP1 + gamma2_253 * WTP2)**2._f)
+     
+    ! calculate surface tension in different temperature by interpolation
+    ternary_surf_tens = gamma253 + (gamma293 - gamma253)/ (293._f - 253._f) * (TEMP - 253._f)
+
+    return
+  end function ternary_surf_tens
+      
+  function ternary_density(carma,WTP1,WTP2,TEMP,rc)
+
+!  @(#) ternary_density.f  Zhu  Oct.2009      
+!  Calculates density (g/cm3) of ternary solution 
+!  as a function of temperature, weight percent of different compositions.
+!
+!  Argument list input:
+!     WTP1 = aerosol composition in weight % H2SO4 (0-100)
+!     WTP2 = aerosol composition in weight % HNO3 (0-100) 
+!     TEMP = temperature in Kelvin
+!
+!  Output:
+!     ternary_density (g/cm3) [function name]
+!
+!  This function requires setup_sulfate_density to be run
+!  first to read in the density coefficients DNC0 and DNC1
+!  and the tabulated weight percents DNWTP.
+!
+!  Include global constants and variables
+!
+     
+!  coefficients in a Polynomial Expansion of the surface 
+!  tension of H2SO4/HNO3/H2O solution.  
+!  at 293K and 253K seperately  
+    
+    type(carma_type), intent(in)         :: carma   !! the carma object
+    integer, intent(inout)               :: rc      !! return code, negative indicates failure
+
+    real(kind=f)                         :: ternary_density
+    real(kind=f), intent(in)             :: WTP1     !! weight percent
+    real(kind=f), intent(in)             :: WTP2    !! weight percent 
+    real(kind=f), intent(in)             :: TEMP    !! temperature
+
+    integer 			:: i,j
+    real(kind=f)		:: rhoij293(20)   , rhoij253(20)   
+    real(kind=f)               :: rho293 !total of <gammaij>*<wtpct of HNO3>*<wtpct of H2SO4>
+    real(kind=f)               :: rho253
+
+    data rhoij293 /0.9982_f,        0.0058487_f,     -0.000023873_f,     0.00000079815_f,&
+     &             0.0079119_f,      0.000029369_f,    0.0000018949_f,   -0.000000036905_f,&
+     &            -0.000076431_f,    0.0000028093_f,  -0.000000064247_f,        0_f,&
+     &             0.0000022885_f,  -0.000000021422_f,       0_f,               0_f,&
+     &            -0.000000014651_f,    0._f,                0_f,               0_f/
+ 
+    data rhoij253 /1.0015_f,           0.0097509_f,     -0.00018340_f,     0.0000029113_f,&
+     &              0.0096589_f,       -0.000039433_f,    0.0000038149_f,  -0.000000063144_f,&
+     &             -0.00011562_f,       0.0000043442_f,  -0.000000070749_f,       0_f,&
+     &              0.0000026848_f,    -0.000000036871_f,      0_f,               0_f,&
+     &             -0.000000016015_f,       0_f,               0_f,               0_f/
+      
+    ! get the ternary density in 293K and 253K
+    rho293 = 0.0_f !total of <gammaij>*<wtpct of HNO3>*<wtpct of H2SO4>
+    rho253 = 0.0_f
+    do i = 1,5
+      do j= 1,4
+        rho293 = rho293 + rhoij293((i-1)*4._f+j)* (WTP1**(j-1)) * (WTP2**(i-1))
+        rho253 = rho253 + rhoij253((i-1)*4._f+j)* (WTP1**(j-1)) * (WTP2**(i-1))
+      enddo
+    enddo
+
+    ! calculate density in different temperature by interpolation
+    ternary_density = rho253 + (rho293 - rho253) / (293._f - 253._f)* (TEMP - 253._f)
+
+    if(ternary_density .lt. 0.)then
+      write(*,*) 'rho253',rho253,'rho293',rho293,'TEMP',TEMP
+	  write(*,*) 'WTP H2SO4',WTP1,'WTP HNO3',WTP2
+	  write(*,*) 'ternary density',ternary_density
+	  rc = RC_ERROR
+	  return
+    endif
+
+    return
+  end function ternary_density
+      
+  function NAT_surf_tens(carma,TEMP,rc)
+!  @(#) NAT_surf_tens zhu 2014 6     
+!  Calculates surface tension (dyne/cm = erg/cm2) of NAT as a function of temperature.
+! 
+!     TEMP = temperature in Kelvin
+!
+!  Output:
+!     NAT_surf_tens (erg/cm2) [function name]
+!
+!  drdla and Turco 1991 Denitrification through PSC Formation: A 1-D Model Incorporating Temperature Oscillations
+
+    type(carma_type), intent(in)         :: carma   !! the carma object
+    integer, intent(inout)               :: rc      !! return code, negative indicates failure
+
+    real(kind=f)                         :: NAT_surf_tens
+    real(kind=f), intent(in)             :: TEMP    !! temperature
+
+    NAT_surf_tens = 112._f - 0.155_f*TEMP
+
+    if(NAT_surf_tens .lt. 0.)then
+      write(*,*) 'temp',TEMP
+      write(*,*) 'NAT surface tension',NAT_surf_tens
+	  rc = RC_ERROR
+	  return
+    endif
+
+    return
+  end function NAT_surf_tens
+  
 end module sulfate_utils

@@ -79,9 +79,48 @@ subroutine totalcondensate(carma, cstate, iz, total_ice, total_liquid, rc)
           else
             total_liquid(igas) = total_liquid(igas) + volatilemass
           end if
+        else
+          if(abs(volatilemass) .gt. FEW_PC)then
+            if(do_print) write(*,*) 'totalcondensate.F90:ERROR - VOLATILE mass is negative.'
+            if(do_print) write(*,*) 'ibin,',ibin,'iz',iz
+            if(do_print) write(*,*) 'H2SO4',pc(iz, ibin, ielem),'rmass',rmass(ibin, igroup)
+            if(do_print) write(*,*) 'H2SO4 mass',pc(iz, ibin, ielem) * rmass(ibin, igroup), 'coremass',coremass
+            if(do_print) write(*,*) 'FEW_PC',FEW_PC,'SMALL_PC',SMALL_PC
+            if(do_print) write(*,*) "ncore(igroup)",ncore(igroup)
+            do i = 1, ncore(igroup)
+              if(do_print) write(*,*) "icorelem(i, igroup)",icorelem(i, igroup)
+              if(do_print) write(*,*) "pc(iz, ibin, icore)", pc(iz, ibin, icore)
+            enddo
+            rc = RC_WARNING_RETRY
+            return
+          else
+            total_liquid(igas) = total_liquid(igas)+0._f
+            total_ice(igas) = total_ice(igas)+0._f
+          end if
         end if
       end do
     end if
+
+    do i = 1, ncore(igroup)
+      icore = icorelem(i,igroup)
+      igas = igrowgas(icore)
+
+      if((itype(icore) == I_GROWCORE) .and. (igas /= 0)) then
+        do ibin = 1, NBIN
+          if (pc(iz,ibin,icore) > 0._f) then
+            if(is_grp_ice(igroup)) then
+              total_ice(igas) = total_ice(igas) + pc(iz,ibin,icore)
+            else
+              total_liquid(igas) = total_liquid(igas) + pc(iz,ibin,icore)
+            end if
+            ! else
+            ! rc = -1
+            ! if(do_print) write(*,*) 'totalcondensate.F90:ERROR - GROWCORE mass is negative.'
+          end if
+        end do
+      end if
+    end do
+
   end do
       
   return

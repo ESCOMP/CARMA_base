@@ -122,7 +122,7 @@ contains
   !!  @version Feb-2009
   !!  @author  Chuck Bardeen
   subroutine CARMA_Create(carma, NBIN, NELEM, NGROUP, NSOLUTE, NGAS, NWAVE, rc, &
-    LUNOPRT, wave, dwave, do_wave_emit, NREFIDX)
+    LUNOPRT, wave, dwave, do_wave_emit, NREFIDX, NGROWCORE)
 
     type(carma_type), intent(out)      :: carma     !! the carma object
     integer, intent(in)                :: NBIN      !! number of radius bins per group
@@ -137,6 +137,7 @@ contains
     real(kind=f), intent(in), optional :: dwave(NWAVE) !! wavelength width (cm)
     logical, intent(in), optional      :: do_wave_emit(NWAVE) !! do emission in band?
     integer, intent(in), optional      :: NREFIDX   !! number of refractive indices per wavelength
+    integer, intent(in), optional      :: NGROWCORE !! maximum number of growcore in a group
 
     ! Local Varaibles
     integer                            :: ier
@@ -163,7 +164,11 @@ contains
     else
       carma%f_NREFIDX = 0
     end if
-
+    if(present(NGROWCORE)) then
+      carma%f_NGROWCORE = NGROWCORE
+    else
+      carma%f_NGROWCORE= 0
+    end if
 
     ! Allocate tables for the groups.
     allocate( &
@@ -862,6 +867,8 @@ contains
     carma%f_igash2o   = 0
     carma%f_igash2so4 = 0
     carma%f_igasso2   = 0
+    carma%f_igashno3  = 0
+    carma%f_igasnh3   = 0
 
     do igas = 1, carma%f_NGAS
       if (carma%f_gas(igas)%f_icomposition == I_GCOMP_H2O) then
@@ -870,6 +877,10 @@ contains
         carma%f_igash2so4 = igas
       else if (carma%f_gas(igas)%f_icomposition == I_GCOMP_SO2) then
         carma%f_igasso2 = igas
+      else if (carma%f_gas(igas)%f_icomposition == I_GCOMP_HNO3) then
+        carma%f_igashno3 = igas
+      else if (carma%f_gas(igas)%f_icomposition == I_GCOMP_NH3) then
+        carma%f_igasnh3 = igas
       end if
     end do
 

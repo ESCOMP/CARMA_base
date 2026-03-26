@@ -34,6 +34,7 @@
 #define NSOLUTE       carma%f_NSOLUTE
 #define NWAVE         carma%f_NWAVE
 #define NREFIDX       carma%f_NREFIDX
+#define NGROWCORE     carma%f_NGROWCORE
 
 !  Model logical units for I/O
 #define LUNOPRT       carma%f_LUNOPRT
@@ -181,6 +182,8 @@
 #define igash2o       carma%f_igash2o
 #define igash2so4     carma%f_igash2so4
 #define igasso2       carma%f_igasso2
+#define igashno3      carma%f_igashno3
+#define igasnh3       carma%f_igasnh3
 #define tstick        carma%f_tstick
 #define gsticki       carma%f_gsticki
 #define gstickl       carma%f_gstickl
@@ -212,6 +215,7 @@
 #define pl            cstate%f_pl
 #define relhum        cstate%f_relhum
 #define wtpct         cstate%f_wtpct
+#define wtpct_hno3    cstate%f_wtpct_hno3
 #define told          cstate%f_told
 #define rmu           cstate%f_rmu
 #define thcond        cstate%f_thcond
@@ -264,6 +268,9 @@
 #define rlprod        cstate%f_rlprod
 #define phprod        cstate%f_phprod
 #define kappahygro    cstate%f_kappahygro
+#define gprod_grow    cstate%f_gprod_grow
+#define dmdtmain      cstate%f_dmdtmain
+#define dmdte         cstate%f_dmdte
 
 !  Coagulation kernels and bin pair mapping
 #define ck0           carma%f_ck0

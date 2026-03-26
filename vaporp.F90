@@ -46,6 +46,9 @@ subroutine vaporp(carma, cstate, iz, igas, rc)
     case(I_VAPRTN_H2SO4_AYERS1980)
       call vaporp_h2so4_ayers1980(carma, cstate, iz, rc, pvapl(iz, igas), pvapi(iz, igas))
 
+    case(I_VAPRTN_HNO3_LUO1995_HANSON1988)  
+    call vaporp_hno3_luo1995_hanson1988(carma, cstate, iz, rc, pvapl(iz, igas), pvapi(iz, igas))
+
     case default
       if (do_print) write(LUNOPRT,*) "vaporp:: ERROR - Unknown vapor pressure routine  (", ivaprtn(igas), &
         ") for gas (", igas, ")."

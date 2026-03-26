@@ -440,7 +440,8 @@ contains
     integer                               :: NBIN
     integer                               :: NGAS
     integer                               :: NWAVE
-
+    integer                               :: NGROWCORE
+    
     ! Assume success.
     rc = RC_OK
 
@@ -457,6 +458,7 @@ contains
       NBIN    = cstate%f_carma%f_NBIN
       NGAS    = cstate%f_carma%f_NGAS
       NWAVE   = cstate%f_carma%f_NWAVE
+      NGROWCORE=cstate%f_carma%f_NGROWCORE
 
       allocate( &
         cstate%f_zmet(NZ), &
@@ -485,6 +487,7 @@ contains
         cstate%f_pl(NZP1), &
         cstate%f_relhum(NZ), &
         cstate%f_wtpct(NZ), &
+        cstate%f_wtpct_hno3(NZ), &
         cstate%f_rmu(NZ), &
         cstate%f_thcond(NZ), &
         cstate%f_thcondnc(NZ,NBIN,NGROUP), &
@@ -629,6 +632,9 @@ contains
           cstate%f_growlg(NBIN,NGROUP), &
           cstate%f_evaplg(NBIN,NGROUP), &
           cstate%f_gasprod(NGAS), &
+          cstate%f_dmdte(NBIN,NGROWCORE,NGROUP), &
+          cstate%f_dmdtmain(NBIN,NGROUP), &
+          cstate%f_gprod_grow(NGROUP,NGAS), &
           cstate%f_rlheat(NZ), &
           cstate%f_radint(NZ,NWAVE), &
           cstate%f_partheat(NZ), &
@@ -723,6 +729,7 @@ contains
         cstate%f_pl, &
         cstate%f_relhum, &
         cstate%f_wtpct, &
+        cstate%f_wtpct_hno3, &
         cstate%f_rmu, &
         cstate%f_thcond, &
         cstate%f_thcondnc, &
@@ -809,6 +816,9 @@ contains
           cstate%f_growlg, &
           cstate%f_evaplg, &
           cstate%f_gasprod, &
+          cstate%f_dmdte, &
+          cstate%f_dmdtmain, &
+          cstate%f_gprod_grow, &
           cstate%f_rlheat, &
           cstate%f_radint, &
           cstate%f_partheat, &
@@ -1325,9 +1335,10 @@ contains
   !! @see CARMA_GetGas
   !! @see CARMA_Step
   !! @see CARMASTATE_SetGas
-  subroutine CARMASTATE_GetGas(cstate, igas, mmr, rc, satice, satliq, eqice, eqliq, wtpct)
+  subroutine CARMASTATE_GetGas(cstate, igas, NELEM, mmr, rc, satice, satliq, eqice, eqliq, wtpct)
     type(carmastate_type), intent(in)     :: cstate            !! the carma state object
     integer, intent(in)                   :: igas              !! the gas index
+    integer, intent(in)                   :: NELEM             !! total element number
     real(kind=f), intent(out)             :: mmr(cstate%f_NZ)    !! the gas mass mixing ratio [kg/kg]
     integer, intent(out)                  :: rc                !! return code, negative indicates failure
     real(kind=f), optional, intent(out)   :: satice(cstate%f_NZ) !! the gas saturation wrt ice
@@ -1335,6 +1346,8 @@ contains
     real(kind=f), optional, intent(out)   :: eqice(cstate%f_NZ)  !! the gas vapor pressure wrt ice
     real(kind=f), optional, intent(out)   :: eqliq(cstate%f_NZ)  !! the gas vapor pressure wrt liquid
     real(kind=f), optional, intent(out)   :: wtpct(cstate%f_NZ)  !! weight percent aerosol composition
+
+    integer :: ielem, hno3elem,nh3elem
 
     ! Assume success.
     rc = RC_OK
@@ -1355,8 +1368,27 @@ contains
     if (present(satliq)) satliq(:) = cstate%f_supsatl(:, igas) + 1._f
     if (present(eqice))  eqice(:)  = cstate%f_pvapi(:, igas) / cstate%f_p(:)
     if (present(eqliq))  eqliq(:)  = cstate%f_pvapl(:, igas) / cstate%f_p(:)
-    if (present(wtpct))  wtpct(:)  = cstate%f_wtpct(:)
-
+    ! currently the wtpct of H2SO4, HNO3 and H2O are the liquid ternary system
+    ! the wtpct of NH3 is simply calculated propotional to the mass of HNO3, not as part of the ternary system
+    ! therefore, the value of NH3 wtpct is not beteen 0-100 and not sum up to 100 with the other three compositions
+    if (present(wtpct))then
+      if (cstate%f_carma%f_gas(igas)%f_icomposition .eq. I_GCOMP_H2SO4)then
+        wtpct(:)  = cstate%f_wtpct(:)
+      elseif (cstate%f_carma%f_gas(igas)%f_icomposition .eq. I_GCOMP_HNO3)then
+        wtpct(:)  = cstate%f_wtpct_hno3(:)
+      elseif (cstate%f_carma%f_gas(igas)%f_icomposition .eq. I_GCOMP_NH3)then
+        do ielem = 1,NELEM
+          if(cstate%f_carma%f_element(ielem)%f_icomposition .eq. I_NH3) nh3elem = ielem
+          if(cstate%f_carma%f_element(ielem)%f_icomposition .eq. I_HNO3) hno3elem = ielem
+        end do
+        wtpct(:)  = cstate%f_wtpct_hno3(:)*sum(cstate%f_pc(:, :, nh3elem),DIM=2)/sum(cstate%f_pc(:, :, hno3elem),DIM=2)
+      elseif (cstate%f_carma%f_gas(igas)%f_icomposition .eq. I_GCOMP_H2O)then
+        wtpct(:) = 100._f - cstate%f_wtpct(:) - cstate%f_wtpct_hno3(:)
+      else
+        wtpct(:) = 0._f
+      end if
+    end if
+    
     return
   end subroutine CARMASTATE_GetGas
 

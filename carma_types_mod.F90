@@ -290,6 +290,7 @@ module carma_types_mod
     !  NSOLUTE  number of solutes (may be 0)
     !  NWAVE    number of wavelength bands (may be 0)
     !  NREFIDX  number of refractive indices per wavelength (may be 0)
+    !  NGROWCORE total number of cores in the group that has growcore
     !
     integer :: f_NGROUP
     integer :: f_NELEM
@@ -298,7 +299,8 @@ module carma_types_mod
     integer :: f_NSOLUTE
     integer :: f_NWAVE
     integer :: f_NREFIDX
-
+    integer :: f_NGROWCORE
+    
     ! Output logical unit numbers
     !
     ! NOTE: CARMA will not directly access files or keep track of file names. It is the
@@ -383,6 +385,8 @@ module carma_types_mod
     !   igash2o     gas index for H2O
     !   igash2so4   gas index for H2SO4
     !   igasso2     gas index for SO2
+    !   igashno3    gas index for HNO3
+    !   igasnh3     gas index for NH3
     !   dt_threshold convergence criteria for temperature [fraction]
     !   cstick      accommodation coefficient - coagulation
     !   gsticki     accommodation coefficient - growth (ice), default = 0.93
@@ -414,6 +418,8 @@ module carma_types_mod
     integer                                       :: f_igash2o
     integer                                       :: f_igash2so4
     integer                                       :: f_igasso2
+    integer                                       :: f_igashno3
+    integer                                       :: f_igasnh3   
     integer                                       :: f_maxsubsteps
     integer                                       :: f_minsubsteps
     integer                                       :: f_maxretries
@@ -719,6 +725,9 @@ module carma_types_mod
     real(kind=f), allocatable, dimension(:,:)     :: f_growlg     ! (NBIN,NGROUP)
     real(kind=f), allocatable, dimension(:,:)     :: f_evaplg     ! (NBIN,NGROUP)
     real(kind=f), allocatable, dimension(:)       :: f_gasprod    ! (NGAS)
+    real(kind=f), allocatable, dimension(:,:,:)   :: f_dmdte      ! (NBIN,NGROWCORE,NGROUP)
+    real(kind=f), allocatable, dimension(:,:)     :: f_dmdtmain   ! (NBIN,NGROUP)
+    real(kind=f), allocatable, dimension(:,:)     :: f_gprod_grow ! (NGROUP,NGAS)
     real(kind=f), allocatable, dimension(:)       :: f_rlheat     ! (NZ)
     real(kind=f), allocatable, dimension(:,:)     :: f_ftoppart   ! (NBIN,NELEM)
     real(kind=f), allocatable, dimension(:,:)     :: f_fbotpart   ! (NBIN,NELEM)
@@ -777,6 +786,7 @@ module carma_types_mod
     real(kind=f), allocatable, dimension(:)     :: f_told       ! (NZ)
     real(kind=f), allocatable, dimension(:)     :: f_relhum     ! (NZ)
     real(kind=f), allocatable, dimension(:)     :: f_wtpct      ! (NZ)
+    real(kind=f), allocatable, dimension(:)     :: f_wtpct_hno3 ! (NZ)
 
     ! Condensational growth parameters
     !

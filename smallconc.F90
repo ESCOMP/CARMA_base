@@ -47,6 +47,9 @@ subroutine smallconc(carma, cstate, iz, ibin, ielem, rc)
     if ((itype(ielem) .eq. I_COREMASS) .or. (itype(ielem) .eq. I_VOLCORE)) then
       small_val = SMALL_PC * rmass(ibin,ig) * FIX_COREF
     
+    elseif (itype(ielem) .eq. I_GROWCORE) then
+      small_val = SMALL_PC * rmass(ibin,ig) * (FIX_COREF/1.e7_f)**2
+      
     ! Element is core second moment
     elseif (itype(ielem) .eq. I_CORE2MOM) then
       small_val = SMALL_PC * (rmass(ibin,ig) * FIX_COREF)**2

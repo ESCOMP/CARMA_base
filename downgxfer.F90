@@ -80,7 +80,7 @@ subroutine downgxfer(carma, cstate, iz, rc)
           ! handled much more slickly in setupnuc()
           if( itype(iefrom) .eq. I_INVOLATILE .or. itype(iefrom) .eq. I_VOLATILE )then
             ipow_from = 0
-          elseif ( itype(iefrom) .eq. I_COREMASS .or. itype(iefrom) .eq. I_VOLCORE )then
+          elseif ( itype(iefrom) .eq. I_COREMASS .or. itype(iefrom) .eq. I_VOLCORE .or. itype(ielem) .eq. I_GROWCORE)then
             ipow_from = 1
           else
             ipow_from = 2
@@ -88,7 +88,7 @@ subroutine downgxfer(carma, cstate, iz, rc)
 
           if( itype(ielem) .eq. I_INVOLATILE .or. itype(ielem) .eq. I_VOLATILE )then
             ipow_to = 0
-          elseif ( itype(ielem) .eq. I_COREMASS .or. itype(ielem) .eq. I_VOLCORE )then
+          elseif ( itype(ielem) .eq. I_COREMASS .or. itype(ielem) .eq. I_VOLCORE .or. itype(ielem) .eq. I_GROWCORE)then
             ipow_to = 1
           else
             ipow_to = 2

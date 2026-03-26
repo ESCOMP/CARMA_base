@@ -27,7 +27,8 @@ module carma_enums_mod
   integer, public, parameter :: I_COREMASS   = 3    !! Core Mass
   integer, public, parameter :: I_VOLCORE    = 4    !! Voltile Core
   integer, public, parameter :: I_CORE2MOM   = 5    !! Core Mass - 2 Moments
-
+  integer, public, parameter :: I_GROWCORE   = 6    !! growcore
+  
   !!  Define values of flag used for nucleation process
   !!  specification (inucproc).
   !!
@@ -45,6 +46,7 @@ module carma_enums_mod
   integer, public, parameter :: I_HETNUC            = 4096  !! Heterogeneous Nucleation
   integer, public, parameter :: I_HOMNUC            = 8192  !! Binary homogeneous gas-to-particle nucleation
   integer, public, parameter :: I_HETNUCSULF        = 16384 !! Binary homogeneous gas-to-particle nucleation
+  integer, public, parameter :: I_SWELL_3H2O   = 5   !! NAT
 
   !  Define values of flag used for collection process (icollec)
   integer, public, parameter :: I_COLLEC_CONST = 1   !! Constant Collection Efficiency
@@ -90,6 +92,7 @@ module carma_enums_mod
   integer, public, parameter :: I_VAPRTN_H2O_MURPHY2005    = 2   !! H2O, Murphy & Koop [2005]
   integer, public, parameter :: I_VAPRTN_H2O_GOFF1946      = 3   !! H2O, Goff & Gratch [1946], used in CAM
   integer, public, parameter :: I_VAPRTN_H2SO4_AYERS1980   = 4   !! H2SO4, Ayers [1980] & Kumala [1990]
+  integer, public, parameter :: I_VAPRTN_HNO3_LUO1995_HANSON1988 = 6  !! Ternary solution, Luo [1995] & Hanson [1988]
 
   ! Routines to calculate fall velocities
   integer, public, parameter :: I_FALLRTN_STD              = 1   !! Standard CARMA 2.3 routine (spherical only)
@@ -105,7 +108,28 @@ module carma_enums_mod
   integer, public, parameter :: I_GCOMP_H2O             = 1   !! Water Vapor
   integer, public, parameter :: I_GCOMP_H2SO4           = 2   !! Sulphuric Acid
   integer, public, parameter :: I_GCOMP_SO2             = 3   !! Sulfer Dioxide
+  integer, public, parameter :: I_GCOMP_HNO3            = 4   !! Nitric acid
+  integer, public, parameter :: I_GCOMP_NH3             = 5   !! Ammonia
 
+  ! Element Composition
+  integer, public, parameter      :: I_H2SO4          = 1       !! H2SO4 coposition
+  integer, public, parameter      :: I_OC             = 2       !! OC composition
+  integer, public, parameter      :: I_SOA1           = 3       !! SOA composition1
+  integer, public, parameter      :: I_SOA2           = 4       !! SOA composition2
+  integer, public, parameter      :: I_SOA3           = 5       !! SOA composition3
+  integer, public, parameter      :: I_SOA4           = 6       !! SOA composition4
+  integer, public, parameter      :: I_SOA5           = 7       !! SOA composition5
+  integer, public, parameter      :: I_BC             = 8       !! BC composition
+  integer, public, parameter      :: I_DUST           = 9       !! dust composition
+  integer, public, parameter      :: I_SALT           = 10       !! sea salt composition
+  integer, public, parameter      :: I_HNO3           = 11      !! HNO3 composition
+  integer, public, parameter      :: I_NH3            = 12      !! NH3 composition
+  integer, public, parameter      :: I_SOA            = 13       !! conbined SOA composition
+  integer, public, parameter      :: I_ICE            = 14       !! ice composition 
+  integer, public, parameter      :: I_WATER          = 15       !! water composition 
+  integer, public, parameter      :: I_H2O            = 16       !! H2O composition 
+  integer, public, parameter      :: I_METEOR_SMOKE   = 17
+  
   ! How is the CARMA group represented in the parent model
   integer, public, parameter :: I_CNSTTYPE_PROGNOSTIC   = 1   !! Prognostic, advected constituent for each bin
   integer, public, parameter :: I_CNSTTYPE_DIAGNOSTIC   = 2   !! Diagnostic, bins diagonosed from model state
