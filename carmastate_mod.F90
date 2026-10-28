@@ -131,7 +131,7 @@ contains
 
     ! Store away the grid location information.
     cstate%f_yc  = yc
-    cstate%f_xc  = yc
+    cstate%f_xc  = xc
 
     ! Allocate all the dynamic variables related to state.
     call CARMASTATE_Allocate(cstate, rc)
@@ -448,7 +448,7 @@ contains
     ! existing allocations.
 
     ! Allocate the variables needed for setupatm.
-    if (.not. (allocated(cstate%f_zmet))) then
+    alloc_arrays: if (.not. (allocated(cstate%f_zmet))) then
 
       NZ      = cstate%f_NZ
       NZP1    = cstate%f_NZP1
@@ -503,7 +503,6 @@ contains
       end if
 
       cstate%f_relhum(:)      = 0._f
-      cstate%f_pc(:,:,:)      = 0._f
       cstate%f_pcd(:,:,:)     = 0._f
       cstate%f_pc_surf(:,:)   = 0._f
       cstate%f_sedimentationflux(:,:)   = 0._f
@@ -668,7 +667,10 @@ contains
         cstate%f_coagpe(:,:,:) = 0._f
         cstate%f_ckernel(:,:,:,:,:) = 0._f
       end if
-    end if
+    end if alloc_arrays
+
+    ! re-initialize to zero every time
+    cstate%f_pc(:,:,:) = 0._f
 
     return
   end subroutine CARMASTATE_Allocate
@@ -1073,7 +1075,7 @@ contains
 
     integer                               :: ienconc        ! index of element that is the particle concentration for the group
     integer                               :: igroup         ! Group containing this bin
-    integer                               :: icore          ! coremass index for group  
+    integer                               :: icore          ! coremass index for group
 
     ! Assume success.
     rc = RC_OK
@@ -1108,20 +1110,20 @@ contains
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       mmr(:) = mmr(:) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     end if
-      
+
     ! NOTE: The concentration element will be handled different, we want to return
     ! the mmr of the element NOT the mmr of the total particle, so you need to subtract
     ! the sum of the core masses.
     ienconc = cstate%f_carma%f_group(igroup)%f_ienconc
 
     if (ienconc == ielem) then
-      
+
       ! Subtract the core massed from the total mass
       do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
         mmr(:) = mmr(:) - cstate%f_pc(:, ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) / cstate%f_rhoa_wet(:)
       end do
     end if
-    
+
     ! NOTE: Could add a check here to make sure that the conc_md is greater than or
     ! equal to 0.
     where (cstate%f_pc(:, ibin, ienconc) <= 0.0_f) mmr(:) = 0.0_f
@@ -1139,17 +1141,17 @@ contains
       else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
         surface = surface / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       end if
-      
+
       ! NOTE: The concentration element will be handled different, we want to return
       ! the mass concentration of the element NOT the mass concentration of the total
       ! particle, so you need to subtract the sum of the core masses.
       if (ienconc == ielem) then
-        
+
         ! Subtract the core massed from the total mass
         do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
           surface = surface - cstate%f_pc_surf(ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) * 1e4_f / 1e3_f
         end do
-      end if 
+      end if
     end if
 
     ! Do they also want the mass flux of particles that sediment to the surface?
@@ -1170,12 +1172,12 @@ contains
       ! the sedimentation flux of the element NOT the sedimentation flux of the total
       ! particle, so you need to subtract the sum of the core masses.
       if (ienconc == ielem) then
-        
+
         ! Subtract the core massed from the total mass
         do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
           sedimentationflux = sedimentationflux - cstate%f_sedimentationflux(ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) * 1e4_f / 1e3_f
         end do
-      end if 
+      end if
     end if
 
     ! Is the hygroscopicity parameter requested?
@@ -1437,15 +1439,15 @@ contains
       rc = RC_ERROR
       return
     end if
-    
+
     ienconc = cstate%f_carma%f_group(igroup)%f_ienconc
-    
+
     ! Determine the current mass density of the species represented by the concentration element
     ! (concentration_element*rmass - sum(coremass))
-    conc_md(:) = cstate%f_pc(:, ibin, ienconc) * cstate%f_carma%f_group(igroup)%f_rmass(ibin) 
+    conc_md(:) = cstate%f_pc(:, ibin, ienconc) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
 
     do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
-      conc_md(:) = conc_md(:) - cstate%f_pc(:, ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore))  
+      conc_md(:) = conc_md(:) - cstate%f_pc(:, ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore))
     end do
 
     ! Use the specified mass mixing ratio and the air density to determine the mass
@@ -1459,7 +1461,7 @@ contains
     else if (cstate%f_carma%f_element(ielem)%f_itype == I_CORE2MOM) then
       cstate%f_pc(:, ibin, ielem) = cstate%f_pc(:, ibin, ielem) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     end if
-    
+
     ! Update the concentration element to be the concentration of the particle (i.e. mass density
     ! of the concentration element species plus the sum of the coremasses).
     !
@@ -1467,11 +1469,11 @@ contains
     ! greater than or equal to the sum of the cores masses and you don't end up with a
     ! negative concentration species mass.
     if (ielem /= ienconc) then
-      cstate%f_pc(:, ibin, ienconc) = conc_md(:) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)   
+      cstate%f_pc(:, ibin, ienconc) = conc_md(:) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     end if
-    
+
     do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
-      cstate%f_pc(:, ibin, ienconc) = cstate%f_pc(:, ibin, ienconc) + cstate%f_pc(:, ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) /  cstate%f_carma%f_group(igroup)%f_rmass(ibin)  
+      cstate%f_pc(:, ibin, ienconc) = cstate%f_pc(:, ibin, ienconc) + cstate%f_pc(:, ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) /  cstate%f_carma%f_group(igroup)%f_rmass(ibin)
     end do
 
     ! If they specified an initial mass of particles on the surface, then use that
@@ -1480,10 +1482,10 @@ contains
 
       ! Determine the current mass density of the species represented by the concentration element
       ! (concentration_element*rmass - sum(coremass))
-      conc_mc = cstate%f_pc_surf(ibin, ienconc) * cstate%f_carma%f_group(igroup)%f_rmass(ibin) 
+      conc_mc = cstate%f_pc_surf(ibin, ienconc) * cstate%f_carma%f_group(igroup)%f_rmass(ibin)
 
       do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
-        conc_mc = conc_mc - cstate%f_pc_surf(ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore))  
+        conc_mc = conc_mc - cstate%f_pc_surf(ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore))
       end do
 
       ! Convert from g/cm2 to kg/m2
@@ -1504,11 +1506,11 @@ contains
       ! greater than or equal to the sum of the cores masses and you don't end up with a
       ! negative concentration species mass.
       if (ielem /= ienconc) then
-        cstate%f_pc_surf(ibin, ienconc) = conc_mc / cstate%f_carma%f_group(igroup)%f_rmass(ibin)   
+        cstate%f_pc_surf(ibin, ienconc) = conc_mc / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       end if
-    
+
       do icore = 1, cstate%f_carma%f_group(igroup)%f_ncore
-        cstate%f_pc_surf(ibin, ienconc) = cstate%f_pc_surf(ibin, ienconc) + cstate%f_pc_surf(ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)  
+        cstate%f_pc_surf(ibin, ienconc) = cstate%f_pc_surf(ibin, ienconc) + cstate%f_pc_surf(ibin, cstate%f_carma%f_group(igroup)%f_icorelem(icore)) / cstate%f_carma%f_group(igroup)%f_rmass(ibin)
       end do
     else
       cstate%f_pc_surf(ibin, ielem) = 0.0_f
