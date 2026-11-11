@@ -230,7 +230,7 @@ subroutine setupckern(carma, cstate, rc)
       temp2 = 6._f*PI*rmu(k)
 
       do j1 = 1, NGROUP
-        do j2 = j1, NGROUP
+        do j2 = 1, NGROUP
           use_vw(j1, j2) = is_grp_sulfate(j1) .and. is_grp_sulfate(j2)
         end do
       end do
@@ -368,7 +368,7 @@ subroutine setupckern(carma, cstate, rc)
                     e_langmuir = e3
                   else if( re_larg .gt. 1000._f )then
                     e_langmuir = e1
-                  else if( re_larg .le. 1000._f )then
+                  else
                     re60 = re_larg/60._f
                     e_langmuir = (e3  + re60*e1)/(1._f + re60)
                   endif
@@ -432,12 +432,13 @@ subroutine setupckern(carma, cstate, rc)
 
                     if( r_larg .gt. data_r(NR_DATA) )then
 
-                      ! Extrapolate on R and interpolate on p
+                      ! Extrapolate on R (use the largest radius in the input data)
+                      ! and interpolate on p.
                       !
-                      ! NOTE: This expression has a bugin it, since jr won't
-                      ! be defined.
-                      e_coll = (1._f-pblni)*data_e(jp  ,jr) + &
-                               (   pblni)*data_e(jp+1,jr)
+                      ! (since data_e is logarithm of efficiencies)
+                      jr = NR_DATA
+                      e_coll = exp((1._f-pblni)*data_e(jp  ,jr) + &
+                                   (   pblni)*data_e(jp+1,jr))
 
                     else
 
