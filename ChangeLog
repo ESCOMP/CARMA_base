@@ -1,4 +1,31 @@
 ===============================================================
+Tag name: carma4_11
+Originator(s): fvitt
+Date: 11 Nov 2026
+
+Fix ERP, PEM and theaded PET CAM tests issues
+
+M       carmastate_mod.F90
+    - Zeroing f_pc on every CARMASTATE_Allocate call (that is, every
+      CARMASTATE_Create) means the stale core terms in steps 1–2 are exactly zero.
+      SetBin now computes each column from that column's constituents alone, so the
+      result no longer depends on chunking or column order, and the restarted run
+      matches the initial run.
+
+M       setupckern.F90
+    - Fill all of use_vw(NGROUP,NGROUP). Only the upper triangle was set,
+      but icoag is symmetric, so use_vw(j1,j2) with j2 < j1 was read
+      uninitialized. The kernel then depended on stack contents, which
+      varied with the OpenMP thread count (ERC_D_Ln9_P6x4 QPCARMATS failed).
+    - When the larger particle exceeds the largest radius in the collection
+      data, use the last data row (jr was undefined) and take exp() of the
+      interpolated value, since data_e holds log efficiencies.
+    - Make the final branch of the e_langmuir calculation a plain else to
+      remove a maybe-uninitialized warning; results are unchanged.
+
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+===============================================================
 Tag name: carma4_10
 Originator(s): tilmes, zywshoon
 Date: 5 Aug 2025
